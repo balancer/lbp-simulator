@@ -28,6 +28,8 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Background3D } from "@/components/ui/Background3D";
+import { Toaster } from "@/components/ui/toast";
+import { PlayPauseButton } from "@/components/ui/PlayPauseButton";
 
 export default function RootLayout({
   children,
@@ -47,6 +49,8 @@ export default function RootLayout({
         >
         <Background3D />
           {children}
+          <Toaster />
+          <PlayPauseButton />
         </ThemeProvider>
       </body>
     </html>

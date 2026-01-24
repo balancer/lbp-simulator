@@ -15,15 +15,19 @@ import {
 } from "recharts";
 
 export function SimulatorMain() {
-  const { simulationData, bids, demandCurve } = useSimulatorStore();
+  const { simulationData, bids, demandCurve, config, currentStep } = useSimulatorStore();
   const { resolvedTheme } = useTheme();
   
   // Get theme-aware colors for axis labels
   const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280"; // muted-foreground equivalent
 
-  const demandChartData = simulationData.map((d, i) => ({
+  // Show all simulation data points (chart displays all points from the start)
+  // Prices update in simulationData when bids are made
+  const chartData = simulationData;
+
+  const demandChartData = chartData.map((d, i) => ({
     ...d,
-    fairValue: demandCurve[i],
+    fairValue: demandCurve[i] || 0,
   }));
 
   return (
@@ -59,11 +63,11 @@ export function SimulatorMain() {
             </TabsList>
           </div>
 
-          <div className="min-h-[400px] border rounded-md bg-background/50 p-4 relative">
-            <TabsContent value="chart" className="mt-0 h-[400px]">
+          <div className="border rounded-md bg-background/50 p-4 relative h-[600px]">
+            <TabsContent value="chart" className="mt-0 h-[calc(100%-2rem)]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                  data={simulationData}
+                  data={chartData}
                   margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid
@@ -121,15 +125,16 @@ export function SimulatorMain() {
               </div>
             </TabsContent>
 
-            <TabsContent value="bids" className="mt-0 h-full">
-              <div className="relative overflow-x-auto h-[400px]">
+            <TabsContent value="bids" className="mt-0 h-[calc(100%-2rem)]">
+              <div className="relative overflow-x-auto h-full">
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-muted-foreground uppercase bg-muted/50 sticky top-0">
                     <tr>
                       <th className="px-4 py-3">Time</th>
+                      <th className="px-4 py-3">Type</th>
                       <th className="px-4 py-3">Account</th>
-                      <th className="px-4 py-3 text-right">In (USDC)</th>
-                      <th className="px-4 py-3 text-right">Out (TKN)</th>
+                      <th className="px-4 py-3 text-right">Amount In</th>
+                      <th className="px-4 py-3 text-right">Amount Out</th>
                       <th className="px-4 py-3 text-right">Price</th>
                     </tr>
                   </thead>
@@ -137,46 +142,67 @@ export function SimulatorMain() {
                     {bids.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className="text-center py-8 text-muted-foreground"
                         >
                           No bids yet. Start simulation.
                         </td>
                       </tr>
                     ) : (
-                      bids.map((bid, i) => (
-                        <tr
-                          key={bid.timestamp + i}
-                          className="bg-background border-b hover:bg-muted/50"
-                        >
-                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                            {bid.time}
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs">
-                            {bid.account}
-                          </td>
-                          <td className="px-4 py-3 text-right text-emerald-600">
-                            {bid.amountIn.toLocaleString(undefined, {
-                              maximumFractionDigits: 0,
-                            })}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {bid.amountOut.toLocaleString(undefined, {
-                              maximumFractionDigits: 0,
-                            })}
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            ${bid.price.toFixed(4)}
-                          </td>
-                        </tr>
-                      ))
+                      bids.map((bid, i) => {
+                        const isBuy = bid.direction === "buy";
+                        const inToken = isBuy ? "USDC" : config.tokenSymbol;
+                        const outToken = isBuy ? config.tokenSymbol : "USDC";
+                        
+                        return (
+                          <tr
+                            key={bid.timestamp + i}
+                            className="bg-background border-b hover:bg-muted/50"
+                          >
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                              {bid.time}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-medium ${
+                                  isBuy
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                    : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                                }`}
+                              >
+                                {isBuy ? "Buy" : "Sell"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-xs">
+                              {bid.account}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={isBuy ? "text-emerald-600" : ""}>
+                                {bid.amountIn.toLocaleString(undefined, {
+                                  maximumFractionDigits: 2,
+                                })}{" "}
+                                {inToken}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              {bid.amountOut.toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                              })}{" "}
+                              {outToken}
+                            </td>
+                            <td className="px-4 py-3 text-right font-medium">
+                              ${bid.price.toFixed(4)}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
             </TabsContent>
 
-            <TabsContent value="demand" className="mt-0 h-[400px]">
+            <TabsContent value="demand" className="mt-0 h-[calc(100%-2rem)]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={demandChartData}
@@ -211,6 +237,7 @@ export function SimulatorMain() {
                     strokeWidth={2}
                     dot={false}
                     name="price"
+                    animationDuration={300}
                   />
                   <Line
                     type="monotone"
@@ -220,6 +247,7 @@ export function SimulatorMain() {
                     strokeDasharray="5 5"
                     dot={false}
                     name="fairValue"
+                    animationDuration={300}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -229,7 +257,7 @@ export function SimulatorMain() {
               </div>
             </TabsContent>
 
-            <TabsContent value="weights" className="mt-0 h-[400px]">
+            <TabsContent value="weights" className="mt-0 h-[calc(100%-2rem)]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={simulationData}
@@ -324,7 +352,7 @@ export function SimulatorMain() {
         </Tabs>
       </div>
 
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-1 flex">
         <BidForm />
       </div>
     </div>

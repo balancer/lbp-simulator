@@ -11,10 +11,11 @@ import {
 export interface Bid {
   time: string;
   account: string;
-  amountIn: number; // USDC
-  amountOut: number; // TKN
+  amountIn: number; // Input amount
+  amountOut: number; // Output amount
   price: number;
   timestamp: number;
+  direction: "buy" | "sell"; // buy = USDC -> Token, sell = Token -> USDC
 }
 
 interface SimulatorState {
@@ -31,12 +32,21 @@ interface SimulatorState {
   currentUsdcBalance: number;
   intervalId: NodeJS.Timeout | null;
 
+  // User Wallet State
+  userTknBalance: number;
+  userUsdcBalance: number;
+
   // Actions
   updateConfig: (partialConfig: Partial<LBPConfig>) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   resetConfig: () => void;
   tick: () => void;
   processBuy: (amountUSDC: number) => void;
+  processSell: (amountToken: number) => void;
+  updateUserBalance: (tknDelta: number, usdcDelta: number) => void;
+  // Internal functions for bot trades (don't affect user wallet)
+  _processPoolBuy: (amountUSDC: number, account?: string) => void;
+  _processPoolSell: (amountToken: number, account?: string) => void;
 }
 
 const DEFAULT_CONFIG: LBPConfig = {
@@ -69,6 +79,10 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   currentTknBalance: DEFAULT_CONFIG.tknBalanceIn,
   currentUsdcBalance: DEFAULT_CONFIG.usdcBalanceIn,
   intervalId: null,
+
+  // User wallet balances - player starts with 10k USDC and 0 tokens
+  userTknBalance: 0,
+  userUsdcBalance: 10000,
 
   updateConfig: (partialConfig) => {
     const currentConfig = get().config;
@@ -130,12 +144,15 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentUsdcBalance: DEFAULT_CONFIG.usdcBalanceIn,
       demandCurve: getDemandCurve(DEFAULT_CONFIG.duration, TOTAL_STEPS),
       intervalId: null,
+      userTknBalance: 0,
+      userUsdcBalance: 10000,
     });
   },
 
-  processBuy: (amountUSDC: number) => {
+  // Internal functions for pool-only trades (used by bots, doesn't affect user wallet)
+  // These must be defined before processBuy/processSell that use them
+  _processPoolBuy: (amountUSDC: number, account?: string) => {
     const {
-      config,
       currentTknBalance,
       currentUsdcBalance,
       currentStep,
@@ -143,7 +160,6 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       bids,
     } = get();
 
-    // Get current weights from the pre-calculated step data (approximation)
     const stepData = simulationData[currentStep];
     if (!stepData) return;
 
@@ -155,11 +171,9 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       amountUSDC,
     );
 
-    // Update Balances
     const newUsdcBalance = currentUsdcBalance + amountUSDC;
     const newTknBalance = currentTknBalance - amountOut;
 
-    // Calculate new Spot Price after trade
     const newPrice = calculateSpotPrice(
       newUsdcBalance,
       stepData.usdcWeight,
@@ -167,18 +181,15 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       stepData.tknWeight,
     );
 
-    // Record Bid
     const newBid: Bid = {
       time: `${stepData.time.toFixed(1)}h`,
-      account: `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
+      account: account || `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
       amountIn: amountUSDC,
       amountOut: amountOut,
       price: newPrice,
       timestamp: Date.now(),
+      direction: "buy",
     };
-
-    // UPDATE HISTORY: Modifying the "Future" prediction
-    // For simplicity: We just update the current step's price in the data array
 
     const updatedData = [...simulationData];
     updatedData[currentStep] = {
@@ -188,7 +199,6 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       usdcBalance: newUsdcBalance,
     };
 
-    // Also need to re-project FUTURE steps because Balances changed!
     for (let i = currentStep + 1; i < TOTAL_STEPS; i++) {
       const futureStep = updatedData[i];
       const futurePrice = calculateSpotPrice(
@@ -210,6 +220,136 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentTknBalance: newTknBalance,
       currentUsdcBalance: newUsdcBalance,
       simulationData: updatedData,
+    });
+  },
+
+  _processPoolSell: (amountToken: number, account?: string) => {
+    const {
+      currentTknBalance,
+      currentUsdcBalance,
+      currentStep,
+      simulationData,
+      bids,
+    } = get();
+
+    const stepData = simulationData[currentStep];
+    if (!stepData) return;
+
+    const amountOut = calculateOutGivenIn(
+      currentTknBalance,
+      stepData.tknWeight,
+      currentUsdcBalance,
+      stepData.usdcWeight,
+      amountToken,
+    );
+
+    const newTknBalance = currentTknBalance + amountToken;
+    const newUsdcBalance = currentUsdcBalance - amountOut;
+
+    const newPrice = calculateSpotPrice(
+      newUsdcBalance,
+      stepData.usdcWeight,
+      newTknBalance,
+      stepData.tknWeight,
+    );
+
+    const newBid: Bid = {
+      time: `${stepData.time.toFixed(1)}h`,
+      account: account || `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
+      amountIn: amountToken,
+      amountOut: amountOut,
+      price: newPrice,
+      timestamp: Date.now(),
+      direction: "sell",
+    };
+
+    const updatedData = [...simulationData];
+    updatedData[currentStep] = {
+      ...stepData,
+      price: newPrice,
+      tknBalance: newTknBalance,
+      usdcBalance: newUsdcBalance,
+    };
+
+    for (let i = currentStep + 1; i < TOTAL_STEPS; i++) {
+      const futureStep = updatedData[i];
+      const futurePrice = calculateSpotPrice(
+        newUsdcBalance,
+        futureStep.usdcWeight,
+        newTknBalance,
+        futureStep.tknWeight,
+      );
+      updatedData[i] = {
+        ...futureStep,
+        price: futurePrice,
+        tknBalance: newTknBalance,
+        usdcBalance: newUsdcBalance,
+      };
+    }
+
+    set({
+      bids: [newBid, ...bids],
+      currentTknBalance: newTknBalance,
+      currentUsdcBalance: newUsdcBalance,
+      simulationData: updatedData,
+    });
+  },
+
+  processSell: (amountToken: number) => {
+    const { currentTknBalance, currentUsdcBalance, currentStep, simulationData } = get();
+    const stepData = simulationData[currentStep];
+    if (!stepData) return;
+
+    // Calculate output before processing
+    const amountOut = calculateOutGivenIn(
+      currentTknBalance,
+      stepData.tknWeight,
+      currentUsdcBalance,
+      stepData.usdcWeight,
+      amountToken,
+    );
+
+    // Process pool trade (updates pool balances and records bid)
+    get()._processPoolSell(amountToken, `0x${Math.floor(Math.random() * 16777215).toString(16)}...`);
+
+    // Update user wallet: subtract token, add USDC
+    const { userTknBalance, userUsdcBalance } = get();
+    set({
+      userTknBalance: Math.max(0, userTknBalance - amountToken),
+      userUsdcBalance: Math.max(0, userUsdcBalance + amountOut),
+    });
+  },
+
+  processBuy: (amountUSDC: number) => {
+    const { currentTknBalance, currentUsdcBalance, currentStep, simulationData } = get();
+    const stepData = simulationData[currentStep];
+    if (!stepData) return;
+
+    // Calculate output before processing
+    const amountOut = calculateOutGivenIn(
+      currentUsdcBalance,
+      stepData.usdcWeight,
+      currentTknBalance,
+      stepData.tknWeight,
+      amountUSDC,
+    );
+
+    // Process pool trade (updates pool balances and records bid)
+    get()._processPoolBuy(amountUSDC, `0x${Math.floor(Math.random() * 16777215).toString(16)}...`);
+
+    // Update user wallet: subtract USDC, add token
+    const { userTknBalance, userUsdcBalance } = get();
+    set({
+      userTknBalance: Math.max(0, userTknBalance + amountOut),
+      userUsdcBalance: Math.max(0, userUsdcBalance - amountUSDC),
+    });
+  },
+
+  updateUserBalance: (tknDelta: number, usdcDelta: number) => {
+    const { userTknBalance, userUsdcBalance } = get();
+    set({
+      userTknBalance: Math.max(0, userTknBalance + tknDelta),
+      userUsdcBalance: Math.max(0, userUsdcBalance + usdcDelta),
     });
   },
 
@@ -238,17 +378,18 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     const currentPrice = currentData.price;
 
     // Simple Bot: If Price < Fair Price, Buy!
+    // Use internal pool function (doesn't affect user wallet)
     if (currentPrice < fairPrice) {
       const diff = (fairPrice - currentPrice) / fairPrice; // % discount
       if (Math.random() < diff * 2) {
         // Random Buy Size between 10k and 100k USDC
         const buySize = 10_000 + Math.random() * 90_000;
-        processBuy(buySize);
+        get()._processPoolBuy(buySize);
       }
     } else {
       // Noise trades
       if (Math.random() < 0.1) {
-        processBuy(1000 + Math.random() * 5000);
+        get()._processPoolBuy(1000 + Math.random() * 5000);
       }
     }
   },
