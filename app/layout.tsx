@@ -16,6 +16,14 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: "LBP Simulator | Balancer",
   description: "Simulate a lBP sale to understand price discovery.",
+  icons: {
+    icon: [
+      { url: "/logo-balancer-black.svg", media: "(prefers-color-scheme: light)" },
+      { url: "/logo-balancer-white.svg", media: "(prefers-color-scheme: dark)" },
+    ],
+    shortcut: "/logo-balancer-black.svg",
+    apple: "/logo-balancer-black.svg",
+  },
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
