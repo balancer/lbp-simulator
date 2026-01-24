@@ -10,14 +10,12 @@ const inter = Inter({
 const newsreader = Newsreader({
   subsets: ["latin"],
   variable: "--font-serif",
-  style: "italic", // Tally often uses italic serif for headings, or regular. Let's include both if possible or just variable.
-  // Newsreader is variable, so just subsets is enough.
-  // Tally uses 'GT Alpina' which is often used in italic for display.
+  style: "italic",
 });
 
 export const metadata: Metadata = {
-  title: "Sale Simulator | Tally",
-  description: "Simulate a token sale to understand price discovery.",
+  title: "LBP Simulator | Balancer",
+  description: "Simulate a lBP sale to understand price discovery.",
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
