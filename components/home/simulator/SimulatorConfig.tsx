@@ -195,6 +195,30 @@ export function SimulatorConfig() {
                     }
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Creator Fee</Label>
+                  <Select
+                    value={String(config.creatorFee || 5)}
+                    onValueChange={(value) =>
+                      updateConfig({ creatorFee: Number(value) })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select creator fee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((fee) => (
+                        <SelectItem key={fee} value={String(fee)}>
+                          {fee}%
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Balancer fee is always 10%. Creator fee can be set from 1% to 10%.
+                  </p>
+                </div>
               </div>
 
               <div className="col-span-2 space-y-4 pt-2">

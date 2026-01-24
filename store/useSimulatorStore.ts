@@ -63,6 +63,7 @@ const DEFAULT_CONFIG: LBPConfig = {
   usdcWeightOut: 90,
   startDelay: 0,
   duration: 72, // 72 hours (3 days)
+  creatorFee: 5, // 5% creator fee (default)
 };
 
 const TOTAL_STEPS = 300; // Granularity of simulation

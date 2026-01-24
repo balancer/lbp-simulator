@@ -15,6 +15,7 @@ export interface LBPConfig {
   startDelay: number; // Delay before start (in blocks/time)
   duration: number; // Duration of LBP (in hours)
   swapFee?: number; // Swap fee (e.g., 0.01 for 1%)
+  creatorFee: number; // Creator fee percentage (1-10%)
 }
 
 export interface SimulationStep {

@@ -1,7 +1,10 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { SaleDetailsTab } from "./details/SaleDetailsTab";
+import { HowItWorksTab } from "./details/HowItWorksTab";
+import { TokenOverviewTab } from "./details/TokenOverviewTab";
+import { ProjectDetailsTab } from "./details/ProjectDetailsTab";
 
 export function DetailsSection() {
   return (
@@ -36,59 +39,16 @@ export function DetailsSection() {
         </TabsList>
 
         <TabsContent value="details">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="border-border/60 shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Sale Parameters</h3>
-                <div className="space-y-4 text-sm">
-                  <div className="flex justify-between border-b pb-2">
-                    <span className="text-muted-foreground">Auction type</span>
-                    <span className="font-medium">Batch Auction</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-2">
-                    <span className="text-muted-foreground">Goal</span>
-                    <span className="font-medium">Fair price discovery</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-2">
-                    <span className="text-muted-foreground">Total Supply</span>
-                    <span className="font-medium">100,000,000 ACME</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-2">
-                    <span className="text-muted-foreground">
-                      Tokens for sale
-                    </span>
-                    <span className="font-medium">10,000,000 (10%)</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-border/60 shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Allocation</h3>
-                <div className="flex items-center justify-center h-[200px] bg-muted/20 rounded-md text-muted-foreground">
-                  Allocation Chart Placeholder
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <SaleDetailsTab />
         </TabsContent>
-        <TabsContent
-          value="how-it-works"
-          className="min-h-[200px] text-muted-foreground"
-        >
-          Content for 'How the Sale Works'
+        <TabsContent value="how-it-works">
+          <HowItWorksTab />
         </TabsContent>
-        <TabsContent
-          value="token"
-          className="min-h-[200px] text-muted-foreground"
-        >
-          Content for 'Token Overview'
+        <TabsContent value="token">
+          <TokenOverviewTab />
         </TabsContent>
-        <TabsContent
-          value="project"
-          className="min-h-[200px] text-muted-foreground"
-        >
-          Content for 'Project Details'
+        <TabsContent value="project">
+          <ProjectDetailsTab />
         </TabsContent>
       </Tabs>
       </div>
