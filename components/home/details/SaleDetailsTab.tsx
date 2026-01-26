@@ -2,10 +2,16 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useShallow } from "zustand/react/shallow";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { memo } from "react";
 
-export function SaleDetailsTab() {
-  const { config } = useSimulatorStore();
+function SaleDetailsTabComponent() {
+  const { config } = useSimulatorStore(
+    useShallow((state) => ({
+      config: state.config,
+    })),
+  );
 
   // Calculate tokens for sale
   const tokensForSale = config.tknBalanceIn;
@@ -16,19 +22,17 @@ export function SaleDetailsTab() {
     return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
   };
 
-  // Donut chart data for fee allocation
   const BALANCER_FEE = 10; // Always 10%
-  const creatorFee = config.creatorFee || 5;
-  const remainingFee = 100 - BALANCER_FEE - creatorFee;
+  const swapFee = config.swapFee || 1;
+  const remainingFee = 100 - BALANCER_FEE - swapFee;
 
   const donutData = [
     { name: "Balancer Fee", value: BALANCER_FEE },
-    { name: "Creator Fee", value: creatorFee },
+    { name: "Swap Fee", value: swapFee },
     { name: "Remaining", value: remainingFee },
   ];
 
-  // Orange and purple colors from the project gradient
-  const COLORS = ["#e9d5ff", "#fed7aa", "#6b7280"]; // purple-200, orange-200, gray
+  const COLORS = ["#e9d5ff", "#fed7aa", "#6b7280"];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -91,7 +95,7 @@ export function SaleDetailsTab() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: any) => `${value}%`}
+                  formatter={(value: number | undefined) => value != null ? `${value}%` : ""}
                   contentStyle={{
                     borderRadius: "8px",
                     border: "1px solid hsl(var(--border))",
@@ -112,3 +116,5 @@ export function SaleDetailsTab() {
     </div>
   );
 }
+
+export default SaleDetailsTabComponent;

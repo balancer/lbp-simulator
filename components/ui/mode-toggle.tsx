@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { memo, useCallback } from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -12,8 +13,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function ModeToggle() {
+function ModeToggleComponent() {
   const { setTheme } = useTheme()
+
+  // Memoize theme change handlers to prevent unnecessary re-renders
+  const handleLightTheme = useCallback(() => {
+    setTheme("light")
+  }, [setTheme])
+
+  const handleDarkTheme = useCallback(() => {
+    setTheme("dark")
+  }, [setTheme])
+
+  const handleSystemTheme = useCallback(() => {
+    setTheme("system")
+  }, [setTheme])
 
   return (
     <DropdownMenu>
@@ -24,17 +38,19 @@ export function ModeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+      <DropdownMenuContent align="end" className="z-[100]">
+        <DropdownMenuItem onClick={handleLightTheme}>
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={handleDarkTheme}>
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem onClick={handleSystemTheme}>
           System
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
+
+export const ModeToggle = memo(ModeToggleComponent)

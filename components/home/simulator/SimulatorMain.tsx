@@ -1,34 +1,83 @@
 "use client";
 
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useShallow } from "zustand/react/shallow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BidForm } from "./BidForm";
-import { useTheme } from "next-themes";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { useMemo, memo } from "react";
+import { useDebounce } from "@/lib/useDebounce";
+import { useThrottle } from "@/lib/useThrottle";
+import { usePricePathsWorker } from "@/lib/hooks/usePricePathsWorker";
+import { PriceChartTab } from "./tabs/PriceChartTab";
+import { SwapsTab } from "./tabs/SwapsTab";
+import { DemandChartTab } from "./tabs/DemandChartTab";
+import { WeightsChartTab } from "./tabs/WeightsChartTab";
 
-export function SimulatorMain() {
-  const { simulationData, bids, demandCurve, config, currentStep } = useSimulatorStore();
-  const { resolvedTheme } = useTheme();
-  
-  // Get theme-aware colors for axis labels
-  const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280"; // muted-foreground equivalent
+function SimulatorMainComponent() {
+  const { simulationData, swaps, demandCurve, config, currentStep, simulationSpeed, demandPressureConfig, isPlaying } =
+    useSimulatorStore(
+      useShallow((state) => ({
+        simulationData: state.simulationData,
+        swaps: state.swaps,
+        demandCurve: state.demandCurve,
+        config: state.config,
+        currentStep: state.currentStep,
+        simulationSpeed: state.simulationSpeed,
+        demandPressureConfig: state.demandPressureConfig,
+        isPlaying: state.isPlaying,
+      })),
+    );
 
-  // Show all simulation data points (chart displays all points from the start)
-  // Prices update in simulationData when bids are made
-  const chartData = simulationData;
+  // Throttle chart data updates during simulation to reduce rendering overhead
+  // Sample data points during simulation for better performance
+  const chartData = useMemo(() => {
+    if (!isPlaying) {
+      return simulationData;
+    }
+    // During simulation, sample every 5th point to reduce rendering load
+    return simulationData.filter((_, index) => index % 5 === 0 || index === simulationData.length - 1);
+  }, [simulationData, isPlaying]);
 
-  const demandChartData = chartData.map((d, i) => ({
-    ...d,
-    fairValue: demandCurve[i] || 0,
-  }));
+  // Throttle chart data updates during simulation
+  // Always call the hook (Rules of Hooks), but use delay=0 when not playing to return immediately
+  const throttledChartData = useThrottle(chartData, isPlaying ? 200 : 0);
+
+  // Disable animation when speed is high to ensure smooth updates
+  const shouldAnimate = simulationSpeed <= 1;
+
+  // Debounce demand pressure config to avoid recalculating on every change
+  const debouncedDemandPressureConfig = useDebounce(demandPressureConfig, 500);
+
+  // Use Web Worker for expensive calculations (only when not playing)
+  // The hook now uses stable comparisons internally to prevent infinite loops
+  const { paths: potentialPaths } = usePricePathsWorker(
+    config,
+    debouncedDemandPressureConfig,
+    simulationData.length - 1,
+    [0.5, 1.0, 1.5],
+    !isPlaying, // Only calculate when simulation is paused
+  );
+
+  // Merge potential paths into chart data (only when not playing)
+  const chartDataWithPaths = useMemo(() => {
+    if (isPlaying || potentialPaths.length === 0) {
+      // When playing or paths not ready, don't include potential paths to reduce computation
+      return throttledChartData;
+    }
+    return throttledChartData.map((data: any, i: number) => ({
+      ...data,
+      potentialPathLow: potentialPaths[0]?.[i] ?? null,
+      potentialPathMedium: potentialPaths[1]?.[i] ?? null,
+      potentialPathHigh: potentialPaths[2]?.[i] ?? null,
+    }));
+  }, [throttledChartData, potentialPaths, isPlaying]);
+
+  const demandChartData = useMemo(() => {
+    return throttledChartData.map((d: any, i: number) => ({
+      ...d,
+      fairValue: demandCurve[i] || 0,
+    }));
+  }, [throttledChartData, demandCurve]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -43,10 +92,10 @@ export function SimulatorMain() {
                 Price chart
               </TabsTrigger>
               <TabsTrigger
-                value="bids"
+                value="swaps"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none px-4 py-2"
               >
-                Bids
+                Sales
               </TabsTrigger>
               <TabsTrigger
                 value="demand"
@@ -64,289 +113,49 @@ export function SimulatorMain() {
           </div>
 
           <div className="border rounded-md bg-background/50 p-4 relative h-[600px]">
+            <div className="mb-3 p-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-md flex items-start gap-2">
+              <svg
+                className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-xs text-emerald-800 dark:text-emerald-200">
+                <span className="font-semibold">Dynamic price:</span> Decays with time, rises with demand. Dotted lines show potential price paths based on different demand scenarios.
+              </p>
+            </div>
             <TabsContent value="chart" className="mt-0 h-[calc(100%-2rem)]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="hsl(var(--border))"
-                    opacity={0.4}
-                  />
-                  <XAxis
-                    dataKey="timeLabel"
-                    hide={true}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={["auto", "auto"]}
-                    stroke={axisLabelColor}
-                    fontSize={12}
-                    tickFormatter={(val) => `$${val.toFixed(2)}`}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: axisLabelColor }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid hsl(var(--border))",
-                      backgroundColor: "hsl(var(--popover))",
-                      color: "hsl(var(--popover-foreground))",
-                    }}
-                    itemStyle={{ color: "hsl(var(--foreground))" }}
-                    labelStyle={{
-                      color: "hsl(var(--muted-foreground))",
-                      marginBottom: "0.25rem",
-                    }}
-                    formatter={(value: any) => [
-                      `$${Number(value).toFixed(4)}`,
-                      "Price",
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#4f46e5" // indigo-600
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6, fill: "#4f46e5" }}
-                    animationDuration={300}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="absolute bottom-2 right-4 text-xs text-muted-foreground font-mono">
-                Steps: {simulationData.length} | Price: $
-                {simulationData[simulationData.length - 1]?.price.toFixed(4)}
-              </div>
+              <PriceChartTab
+                chartData={chartDataWithPaths}
+                isPlaying={isPlaying}
+                shouldAnimate={shouldAnimate}
+                simulationData={simulationData}
+              />
             </TabsContent>
 
-            <TabsContent value="bids" className="mt-0 h-[calc(100%-2rem)]">
-              <div className="relative overflow-x-auto h-full">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-muted-foreground uppercase bg-muted/50 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3">Time</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Account</th>
-                      <th className="px-4 py-3 text-right">Amount In</th>
-                      <th className="px-4 py-3 text-right">Amount Out</th>
-                      <th className="px-4 py-3 text-right">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bids.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          No bids yet. Start simulation.
-                        </td>
-                      </tr>
-                    ) : (
-                      bids.map((bid, i) => {
-                        const isBuy = bid.direction === "buy";
-                        const inToken = isBuy ? "USDC" : config.tokenSymbol;
-                        const outToken = isBuy ? config.tokenSymbol : "USDC";
-                        
-                        return (
-                          <tr
-                            key={bid.timestamp + i}
-                            className="bg-background border-b hover:bg-muted/50"
-                          >
-                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                              {bid.time}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`px-2 py-1 rounded text-xs font-medium ${
-                                  isBuy
-                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                                    : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                                }`}
-                              >
-                                {isBuy ? "Buy" : "Sell"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 font-mono text-xs">
-                              {bid.account}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <span className={isBuy ? "text-emerald-600" : ""}>
-                                {bid.amountIn.toLocaleString(undefined, {
-                                  maximumFractionDigits: 2,
-                                })}{" "}
-                                {inToken}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {bid.amountOut.toLocaleString(undefined, {
-                                maximumFractionDigits: 2,
-                              })}{" "}
-                              {outToken}
-                            </td>
-                            <td className="px-4 py-3 text-right font-medium">
-                              ${bid.price.toFixed(4)}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <TabsContent value="swaps" className="mt-0 h-[calc(100%-2rem)]">
+              <SwapsTab swaps={swaps} />
             </TabsContent>
 
             <TabsContent value="demand" className="mt-0 h-[calc(100%-2rem)]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={demandChartData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="hsl(var(--border))"
-                    opacity={0.4}
-                  />
-                  <XAxis dataKey="timeLabel" hide={true} />
-                  <YAxis
-                    domain={["auto", "auto"]}
-                    stroke={axisLabelColor}
-                    fontSize={12}
-                    tickFormatter={(val) => `$${val.toFixed(2)}`}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: axisLabelColor }}
-                  />
-                  <Tooltip
-                    formatter={(value: any, name: any) => [
-                      `$${Number(value).toFixed(4)}`,
-                      name === "price" ? "Actual Price" : "Fair Value",
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#4f46e5"
-                    strokeWidth={2}
-                    dot={false}
-                    name="price"
-                    animationDuration={300}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="fairValue"
-                    stroke="#10b981" // emerald
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    name="fairValue"
-                    animationDuration={300}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="text-center mt-2 text-xs text-muted-foreground">
-                Green dotted line represents Market "Fair Value". If Price
-                (Blue) drops below, Bots buy.
-              </div>
+              <DemandChartTab
+                chartData={demandChartData}
+                shouldAnimate={shouldAnimate}
+              />
             </TabsContent>
 
             <TabsContent value="weights" className="mt-0 h-[calc(100%-2rem)]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={simulationData}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="tknWeightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#bfdbfe" /> {/* blue-200 */}
-                      <stop offset="50%" stopColor="#e9d5ff" /> {/* purple-200 */}
-                      <stop offset="100%" stopColor="#fed7aa" /> {/* orange-200 */}
-                    </linearGradient>
-                    <linearGradient id="usdcWeightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#bfdbfe" /> {/* blue-200 */}
-                      <stop offset="50%" stopColor="#e9d5ff" /> {/* purple-200 */}
-                      <stop offset="100%" stopColor="#fed7aa" /> {/* orange-200 */}
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="hsl(var(--border))"
-                    opacity={0.4}
-                  />
-                  <XAxis
-                    dataKey="timeLabel"
-                    stroke={axisLabelColor}
-                    fontSize={12}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: axisLabelColor }}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    stroke={axisLabelColor}
-                    fontSize={12}
-                    tickFormatter={(val) => `${val}%`}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: axisLabelColor }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid hsl(var(--border))",
-                      backgroundColor: "hsl(var(--popover))",
-                      color: "hsl(var(--popover-foreground))",
-                    }}
-                    itemStyle={{ color: "hsl(var(--foreground))" }}
-                    labelStyle={{
-                      color: "hsl(var(--muted-foreground))",
-                      marginBottom: "0.25rem",
-                    }}
-                    formatter={(value: any, name: any) => [
-                      `${Number(value).toFixed(2)}%`,
-                      name === "tknWeight" ? "Token Weight" : "USDC Weight",
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="tknWeight"
-                    stroke="url(#tknWeightGradient)"
-                    strokeWidth={3}
-                    dot={false}
-                    name="tknWeight"
-                    activeDot={{ r: 6, fill: "#e9d5ff" }}
-                    animationDuration={300}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="usdcWeight"
-                    stroke="url(#usdcWeightGradient)"
-                    strokeWidth={3}
-                    dot={false}
-                    name="usdcWeight"
-                    activeDot={{ r: 6, fill: "#fed7aa" }}
-                    animationDuration={300}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200"></div>
-                  <span>Token Weight</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200"></div>
-                  <span>USDC Weight</span>
-                </div>
-              </div>
+              <WeightsChartTab
+                chartData={simulationData}
+                shouldAnimate={shouldAnimate}
+              />
             </TabsContent>
           </div>
         </Tabs>
@@ -358,3 +167,5 @@ export function SimulatorMain() {
     </div>
   );
 }
+
+export const SimulatorMain = memo(SimulatorMainComponent);

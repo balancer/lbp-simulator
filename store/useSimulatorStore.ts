@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { shallow } from "zustand/shallow";
 import {
   calculateSimulationData,
   LBPConfig,
@@ -6,9 +7,14 @@ import {
   calculateSpotPrice,
   calculateOutGivenIn,
   getDemandCurve,
+  getDemandPressureCurve,
+  calculateTradingVolume,
+  DemandPressureConfig,
+  DEFAULT_DEMAND_PRESSURE_CONFIG,
 } from "@/lib/lbp-math";
 
-export interface Bid {
+export interface Swap {
+  id: string; // Unique identifier for React keys
   time: string;
   account: string;
   amountIn: number; // Input amount
@@ -21,11 +27,13 @@ export interface Bid {
 interface SimulatorState {
   config: LBPConfig;
   simulationData: SimulationStep[];
-  bids: Bid[];
+  swaps: Swap[];
   isPlaying: boolean;
   currentStep: number;
   totalSteps: number;
   demandCurve: number[];
+  demandPressureCurve: number[];
+  demandPressureConfig: DemandPressureConfig;
 
   // Simulation State
   currentTknBalance: number;
@@ -36,9 +44,14 @@ interface SimulatorState {
   userTknBalance: number;
   userUsdcBalance: number;
 
+  // Simulation Speed
+  simulationSpeed: number; // Speed multiplier (1x, 10x, 25x, 50x)
+
   // Actions
   updateConfig: (partialConfig: Partial<LBPConfig>) => void;
   setIsPlaying: (isPlaying: boolean) => void;
+  setSimulationSpeed: (speed: number) => void;
+  updateDemandPressureConfig: (config: Partial<DemandPressureConfig>) => void;
   resetConfig: () => void;
   tick: () => void;
   processBuy: (amountUSDC: number) => void;
@@ -63,6 +76,7 @@ const DEFAULT_CONFIG: LBPConfig = {
   usdcWeightOut: 90,
   startDelay: 0,
   duration: 72, // 72 hours (3 days)
+  swapFee: 1, // 1% swap fee (default)
   creatorFee: 5, // 5% creator fee (default)
 };
 
@@ -71,11 +85,17 @@ const TOTAL_STEPS = 300; // Granularity of simulation
 export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   config: DEFAULT_CONFIG,
   simulationData: calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS),
-  bids: [],
+  swaps: [],
   isPlaying: false,
   currentStep: 0, // Start before step 0
   totalSteps: TOTAL_STEPS,
   demandCurve: getDemandCurve(DEFAULT_CONFIG.duration, TOTAL_STEPS),
+  demandPressureConfig: DEFAULT_DEMAND_PRESSURE_CONFIG,
+  demandPressureCurve: getDemandPressureCurve(
+    DEFAULT_CONFIG.duration,
+    TOTAL_STEPS,
+    DEFAULT_DEMAND_PRESSURE_CONFIG,
+  ),
 
   currentTknBalance: DEFAULT_CONFIG.tknBalanceIn,
   currentUsdcBalance: DEFAULT_CONFIG.usdcBalanceIn,
@@ -84,6 +104,9 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   // User wallet balances - player starts with 10k USDC and 0 tokens
   userTknBalance: 0,
   userUsdcBalance: 10000,
+
+  // Simulation speed (default 1x)
+  simulationSpeed: 1,
 
   updateConfig: (partialConfig) => {
     const currentConfig = get().config;
@@ -101,18 +124,25 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     }
 
     // Recalculate static data
+    const { demandPressureConfig } = get();
     const newData = calculateSimulationData(newConfig, TOTAL_STEPS);
     const newDemand = getDemandCurve(newConfig.duration, TOTAL_STEPS);
+    const newDemandPressure = getDemandPressureCurve(
+      newConfig.duration,
+      TOTAL_STEPS,
+      demandPressureConfig,
+    );
 
     set({
       config: newConfig,
       simulationData: newData,
       demandCurve: newDemand,
+      demandPressureCurve: newDemandPressure,
       // Reset live vars when config changes
       currentTknBalance: newConfig.tknBalanceIn,
       currentUsdcBalance: newConfig.usdcBalanceIn,
       currentStep: 0,
-      bids: [],
+      swaps: [],
     });
   },
 
@@ -122,13 +152,46 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     if (existingId) clearInterval(existingId);
 
     if (isPlaying) {
+      const { simulationSpeed } = get();
+      const intervalMs = 500 / simulationSpeed; // Faster speed = shorter interval
       const id = setInterval(() => {
         get().tick();
-      }, 500); // 500ms per tick
+      }, intervalMs);
       set({ isPlaying: true, intervalId: id });
     } else {
       set({ isPlaying: false, intervalId: null });
     }
+  },
+
+  setSimulationSpeed: (speed) => {
+    const { isPlaying, intervalId } = get();
+    
+    // If simulation is playing, restart with new speed
+    if (isPlaying && intervalId) {
+      clearInterval(intervalId);
+      const intervalMs = 500 / speed;
+      const id = setInterval(() => {
+        get().tick();
+      }, intervalMs);
+      set({ simulationSpeed: speed, intervalId: id });
+    } else {
+      set({ simulationSpeed: speed });
+    }
+  },
+
+  updateDemandPressureConfig: (partialConfig: Partial<DemandPressureConfig>) => {
+    const { demandPressureConfig, config } = get();
+    const newConfig = { ...demandPressureConfig, ...partialConfig };
+    const newCurve = getDemandPressureCurve(
+      config.duration,
+      TOTAL_STEPS,
+      newConfig,
+    );
+
+    set({
+      demandPressureConfig: newConfig,
+      demandPressureCurve: newCurve,
+    });
   },
 
   resetConfig: () => {
@@ -138,15 +201,22 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     set({
       config: DEFAULT_CONFIG,
       simulationData: calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS),
-      bids: [],
+      swaps: [],
       isPlaying: false,
       currentStep: 0,
       currentTknBalance: DEFAULT_CONFIG.tknBalanceIn,
       currentUsdcBalance: DEFAULT_CONFIG.usdcBalanceIn,
       demandCurve: getDemandCurve(DEFAULT_CONFIG.duration, TOTAL_STEPS),
+      demandPressureConfig: DEFAULT_DEMAND_PRESSURE_CONFIG,
+      demandPressureCurve: getDemandPressureCurve(
+        DEFAULT_CONFIG.duration,
+        TOTAL_STEPS,
+        DEFAULT_DEMAND_PRESSURE_CONFIG,
+      ),
       intervalId: null,
       userTknBalance: 0,
       userUsdcBalance: 10000,
+      simulationSpeed: 1,
     });
   },
 
@@ -158,7 +228,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentUsdcBalance,
       currentStep,
       simulationData,
-      bids,
+      swaps,
     } = get();
 
     const stepData = simulationData[currentStep];
@@ -182,7 +252,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       stepData.tknWeight,
     );
 
-    const newBid: Bid = {
+    const newSwap: Swap = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
       time: `${stepData.time.toFixed(1)}h`,
       account: account || `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
       amountIn: amountUSDC,
@@ -216,12 +287,23 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       };
     }
 
-    set({
-      bids: [newBid, ...bids],
-      currentTknBalance: newTknBalance,
-      currentUsdcBalance: newUsdcBalance,
-      simulationData: updatedData,
-    });
+    // Only update if values actually changed (shallow comparison optimization)
+    const currentState = get();
+    if (
+      currentState.currentTknBalance !== newTknBalance ||
+      currentState.currentUsdcBalance !== newUsdcBalance ||
+      currentState.swaps.length !== swaps.length + 1
+    ) {
+      set({
+        swaps: [newSwap, ...swaps],
+        currentTknBalance: newTknBalance,
+        currentUsdcBalance: newUsdcBalance,
+        simulationData: updatedData,
+      });
+    } else {
+      // Still need to update simulationData even if balances didn't change
+      set({ simulationData: updatedData });
+    }
   },
 
   _processPoolSell: (amountToken: number, account?: string) => {
@@ -230,7 +312,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentUsdcBalance,
       currentStep,
       simulationData,
-      bids,
+      swaps,
     } = get();
 
     const stepData = simulationData[currentStep];
@@ -254,7 +336,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       stepData.tknWeight,
     );
 
-    const newBid: Bid = {
+    const newSwap: Swap = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
       time: `${stepData.time.toFixed(1)}h`,
       account: account || `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
       amountIn: amountToken,
@@ -289,7 +372,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     }
 
     set({
-      bids: [newBid, ...bids],
+      swaps: [newSwap, ...swaps],
       currentTknBalance: newTknBalance,
       currentUsdcBalance: newUsdcBalance,
       simulationData: updatedData,
@@ -360,7 +443,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       totalSteps,
       simulationData,
       demandCurve,
-      processBuy,
+      demandPressureCurve,
+      demandPressureConfig,
       setIsPlaying,
     } = get();
 
@@ -369,28 +453,49 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       return;
     }
 
-    // 1. Advance Step
+    // 1. Advance Step (only update if changed)
     const nextStep = currentStep + 1;
-    set({ currentStep: nextStep });
+    if (nextStep !== currentStep) {
+      set({ currentStep: nextStep });
+    }
 
-    // 2. BOT LOGIC
+    // 2. DEMAND PRESSURE DRIVEN BOT LOGIC
     const currentData = simulationData[nextStep];
     const fairPrice = demandCurve[nextStep];
     const currentPrice = currentData.price;
+    const demandPressure = demandPressureCurve[nextStep];
 
-    // Simple Bot: If Price < Fair Price, Buy!
-    // Use internal pool function (doesn't affect user wallet)
-    if (currentPrice < fairPrice) {
-      const diff = (fairPrice - currentPrice) / fairPrice; // % discount
-      if (Math.random() < diff * 2) {
-        // Random Buy Size between 10k and 100k USDC
-        const buySize = 10_000 + Math.random() * 90_000;
-        get()._processPoolBuy(buySize);
-      }
-    } else {
-      // Noise trades
-      if (Math.random() < 0.1) {
-        get()._processPoolBuy(1000 + Math.random() * 5000);
+    // Calculate price discount (how much below fair value)
+    const priceDiscount = currentPrice < fairPrice 
+      ? (fairPrice - currentPrice) / fairPrice 
+      : 0;
+
+    // Calculate expected trading volume based on demand pressure
+    const baseVolume = calculateTradingVolume(
+      demandPressure,
+      priceDiscount,
+      demandPressureConfig,
+    );
+
+    // Determine number of swaps based on volume (Poisson-like distribution)
+    // Higher volume = more likely to have swaps, and potentially multiple swaps
+    const swapProbability = Math.min(1, baseVolume * 0.3); // Scale probability
+    const numSwaps = Math.random() < swapProbability 
+      ? Math.floor(baseVolume * 2) + 1 // At least 1 swap if probability hits
+      : 0;
+
+    // Generate swaps based on demand pressure
+    for (let i = 0; i < numSwaps; i++) {
+      // Trade size varies based on demand pressure and config
+      const sizeMultiplier = 1 + Math.random() * demandPressureConfig.tradeSizeVariation;
+      const tradeSize = demandPressureConfig.baseTradeSize * sizeMultiplier * demandPressure;
+      
+      // Only buy when price is below fair value (arbitrage opportunity)
+      if (currentPrice < fairPrice) {
+        get()._processPoolBuy(tradeSize);
+      } else if (Math.random() < 0.05) {
+        // Small chance of noise trades even when price is above fair value
+        get()._processPoolBuy(tradeSize * 0.1);
       }
     }
   },

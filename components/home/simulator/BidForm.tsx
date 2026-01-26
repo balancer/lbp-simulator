@@ -1,32 +1,35 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useShallow } from "zustand/react/shallow";
 import { calculateOutGivenIn } from "@/lib/lbp-math";
 import { ArrowUpDown, Wallet } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 
 type SwapDirection = "buy" | "sell"; // buy = USDC -> Token, sell = Token -> USDC
 
-export function BidForm() {
-  const {
-    config,
-    currentStep,
-    simulationData,
-    currentTknBalance,
-    currentUsdcBalance,
-    processBuy,
-    processSell,
-  } = useSimulatorStore();
+function BidFormComponent() {
+  const { config, currentStep, simulationData, currentTknBalance, currentUsdcBalance, processBuy, processSell, userTknBalance, userUsdcBalance } =
+    useSimulatorStore(
+      useShallow((state) => ({
+        config: state.config,
+        currentStep: state.currentStep,
+        simulationData: state.simulationData,
+        currentTknBalance: state.currentTknBalance,
+        currentUsdcBalance: state.currentUsdcBalance,
+        processBuy: state.processBuy,
+        processSell: state.processSell,
+        userTknBalance: state.userTknBalance,
+        userUsdcBalance: state.userUsdcBalance,
+      })),
+    );
 
   const [direction, setDirection] = useState<SwapDirection>("buy");
   const [inputAmount, setInputAmount] = useState<string>("");
-  
-  // Get user wallet balances from store
-  const { userTknBalance, userUsdcBalance } = useSimulatorStore();
 
   // Get current step data for calculations
   const stepData = simulationData[currentStep] || simulationData[0];
@@ -247,7 +250,7 @@ export function BidForm() {
             </div>
             <Button
               variant="outline"
-              className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 border-0"
+              className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0"
             >
               <div className="h-6 w-6 rounded-full bg-slate-700 flex items-center justify-center text-xs font-semibold text-white">
                 {outputToken === "USDC" ? "U" : config.tokenSymbol[0]}
@@ -304,3 +307,5 @@ export function BidForm() {
     </Card>
   );
 }
+
+export const BidForm = memo(BidFormComponent);
