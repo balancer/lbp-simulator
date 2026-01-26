@@ -70,9 +70,10 @@ export function DemandPressureConfig() {
         <Button
           variant="outline"
           size="icon"
-          className="h-10 w-10"
+          className="h-10 w-full"
           title="Configure Demand Pressure"
         >
+          Model the demmand pressure
           <TrendingUp className="h-4 w-4" />
         </Button>
       </DialogTrigger>

@@ -207,8 +207,8 @@ export function SimulatorConfig() {
                     </Button>
                   ))}
                 </div>
-                <DemandPressureConfig />
               </div>
+                <DemandPressureConfig />
             </div>
 
             <Separator />
