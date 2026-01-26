@@ -23,25 +23,98 @@ import {
 import { Settings, Play, Pause, RotateCcw, Plus, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { DemandPressureConfig } from "./DemandPressureConfig";
+import { useState, useEffect } from "react";
+import { useDebounce } from "@/lib/useDebounce";
+import { LBPConfig } from "@/lib/lbp-math";
+import { useShallow } from "zustand/shallow";
 
 export function SimulatorConfig() {
-  const { config, updateConfig, isPlaying, setIsPlaying, resetConfig } =
-    useSimulatorStore();
+  const { config, updateConfig, isPlaying, setIsPlaying, resetConfig, simulationSpeed, setSimulationSpeed } =
+    useSimulatorStore(
+      useShallow((state) => ({
+        config: state.config,
+        updateConfig: state.updateConfig,
+        isPlaying: state.isPlaying,
+        setIsPlaying: state.setIsPlaying,
+        resetConfig: state.resetConfig,
+        simulationSpeed: state.simulationSpeed,
+        setSimulationSpeed: state.setSimulationSpeed,
+      })),
+    );
+
+  // Local state for immediate UI updates (for sliders/inputs that trigger expensive recalculations)
+  const [localDuration, setLocalDuration] = useState(config.duration);
+  const [localTknWeightIn, setLocalTknWeightIn] = useState(config.tknWeightIn);
+  const [localTknWeightOut, setLocalTknWeightOut] = useState(config.tknWeightOut);
+  const [localPercentForSale, setLocalPercentForSale] = useState(config.percentForSale);
+  const [localTotalSupply, setLocalTotalSupply] = useState(config.totalSupply);
+  const [localUsdcBalanceIn, setLocalUsdcBalanceIn] = useState(config.usdcBalanceIn);
+
+  // Update local state when store config changes
+  useEffect(() => {
+    setLocalDuration(config.duration);
+    setLocalTknWeightIn(config.tknWeightIn);
+    setLocalTknWeightOut(config.tknWeightOut);
+    setLocalPercentForSale(config.percentForSale);
+    setLocalTotalSupply(config.totalSupply);
+    setLocalUsdcBalanceIn(config.usdcBalanceIn);
+  }, [config.duration, config.tknWeightIn, config.tknWeightOut, config.percentForSale, config.totalSupply, config.usdcBalanceIn]);
+
+  // Debounce expensive config updates
+  const debouncedDuration = useDebounce(localDuration, 500);
+  const debouncedTknWeightIn = useDebounce(localTknWeightIn, 500);
+  const debouncedTknWeightOut = useDebounce(localTknWeightOut, 500);
+  const debouncedPercentForSale = useDebounce(localPercentForSale, 500);
+  const debouncedTotalSupply = useDebounce(localTotalSupply, 500);
+  const debouncedUsdcBalanceIn = useDebounce(localUsdcBalanceIn, 500);
+
+  // Update store when debounced values change
+  useEffect(() => {
+    if (debouncedDuration !== config.duration) {
+      updateConfig({ duration: debouncedDuration });
+    }
+  }, [debouncedDuration, config.duration, updateConfig]);
+
+  useEffect(() => {
+    if (debouncedTknWeightIn !== config.tknWeightIn) {
+      updateConfig({
+        tknWeightIn: debouncedTknWeightIn,
+        usdcWeightIn: 100 - debouncedTknWeightIn,
+      });
+    }
+  }, [debouncedTknWeightIn, config.tknWeightIn, updateConfig]);
+
+  useEffect(() => {
+    if (debouncedTknWeightOut !== config.tknWeightOut) {
+      updateConfig({
+        tknWeightOut: debouncedTknWeightOut,
+        usdcWeightOut: 100 - debouncedTknWeightOut,
+      });
+    }
+  }, [debouncedTknWeightOut, config.tknWeightOut, updateConfig]);
+
+  useEffect(() => {
+    if (debouncedPercentForSale !== config.percentForSale || debouncedTotalSupply !== config.totalSupply) {
+      updateConfig({
+        percentForSale: debouncedPercentForSale,
+        totalSupply: debouncedTotalSupply,
+      });
+    }
+  }, [debouncedPercentForSale, debouncedTotalSupply, config.percentForSale, config.totalSupply, updateConfig]);
+
+  useEffect(() => {
+    if (debouncedUsdcBalanceIn !== config.usdcBalanceIn) {
+      updateConfig({ usdcBalanceIn: debouncedUsdcBalanceIn });
+    }
+  }, [debouncedUsdcBalanceIn, config.usdcBalanceIn, updateConfig]);
 
   const handleWeightChange = (newTknWeightIn: number) => {
-    // Basic constraint: weights sum to 100 roughly, but we track them separately in config
-    // Let's implement a simple slide where tknWeight + usdcWeight = 100
-    updateConfig({
-      tknWeightIn: newTknWeightIn,
-      usdcWeightIn: 100 - newTknWeightIn,
-    });
+    setLocalTknWeightIn(newTknWeightIn);
   };
 
   const handleEndWeightChange = (newTknWeightOut: number) => {
-    updateConfig({
-      tknWeightOut: newTknWeightOut,
-      usdcWeightOut: 100 - newTknWeightOut,
-    });
+    setLocalTknWeightOut(newTknWeightOut);
   };
 
   return (
@@ -107,18 +180,34 @@ export function SimulatorConfig() {
                 </Button>
                 <div className="flex-1 space-y-2">
                   <Label className="text-xs">
-                    Duration: {config.duration} Hours
+                    Duration: {localDuration} Hours
                   </Label>
                   <Slider
-                    value={[config.duration]}
-                    onValueChange={(vals) =>
-                      updateConfig({ duration: vals[0] })
-                    }
+                    value={[localDuration]}
+                    onValueChange={(vals) => setLocalDuration(vals[0])}
                     max={2160}
                     step={1}
                     className="w-full"
                   />
                 </div>
+                <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+                  {[1, 5, 10].map((speed) => (
+                    <Button
+                      key={speed}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSimulationSpeed(speed)}
+                      className={`h-7 px-3 text-xs rounded-sm ${
+                        simulationSpeed === speed
+                          ? "bg-background shadow-sm text-foreground font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {speed}x
+                    </Button>
+                  ))}
+                </div>
+                <DemandPressureConfig />
               </div>
             </div>
 
@@ -156,9 +245,9 @@ export function SimulatorConfig() {
                   <Label>Total Supply</Label>
                   <Input
                     type="number"
-                    value={config.totalSupply}
+                    value={localTotalSupply}
                     onChange={(e) =>
-                      updateConfig({ totalSupply: Number(e.target.value) })
+                      setLocalTotalSupply(Number(e.target.value))
                     }
                   />
                 </div>
@@ -167,21 +256,21 @@ export function SimulatorConfig() {
                   <div className="flex justify-between">
                     <Label>Percentage for Sale</Label>
                     <span className="text-sm text-muted-foreground">
-                      {config.percentForSale}%
+                      {localPercentForSale}%
                     </span>
                   </div>
                   <Slider
-                    value={[config.percentForSale]}
+                    value={[localPercentForSale]}
                     max={90}
                     min={1}
                     step={1}
                     onValueChange={(vals) =>
-                      updateConfig({ percentForSale: vals[0] })
+                      setLocalPercentForSale(vals[0])
                     }
                   />
                   <p className="text-xs text-muted-foreground text-right">
                     Tokens for Sale:{" "}
-                    {(config.tknBalanceIn / 1_000_000).toFixed(2)}M
+                    {(localTotalSupply * (localPercentForSale / 100) / 1_000_000).toFixed(2)}M
                   </p>
                 </div>
 
@@ -189,23 +278,23 @@ export function SimulatorConfig() {
                   <Label>Collateral Initial Liquidity (USDC)</Label>
                   <Input
                     type="number"
-                    value={config.usdcBalanceIn}
+                    value={localUsdcBalanceIn}
                     onChange={(e) =>
-                      updateConfig({ usdcBalanceIn: Number(e.target.value) })
+                      setLocalUsdcBalanceIn(Number(e.target.value))
                     }
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Creator Fee</Label>
+                  <Label>Swap Fee</Label>
                   <Select
-                    value={String(config.creatorFee || 5)}
+                    value={String(config.swapFee || 5)}
                     onValueChange={(value) =>
-                      updateConfig({ creatorFee: Number(value) })
+                      updateConfig({ swapFee: Number(value) })
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select creator fee" />
+                      <SelectValue placeholder="Select swap fee" />
                     </SelectTrigger>
                     <SelectContent>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((fee) => (
@@ -216,7 +305,7 @@ export function SimulatorConfig() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Balancer fee is always 10%. Creator fee can be set from 1% to 10%.
+                    Balancer fee is always 10%. Swap fee can be set from 1% to 10%.
                   </p>
                 </div>
               </div>
@@ -228,7 +317,7 @@ export function SimulatorConfig() {
                     {config.tknWeightIn}%
                   </span>
                   <Slider
-                    value={[config.tknWeightIn]}
+                    value={[localTknWeightIn]}
                     max={99}
                     min={1}
                     step={1}
@@ -247,7 +336,7 @@ export function SimulatorConfig() {
                     {config.tknWeightOut}%
                   </span>
                   <Slider
-                    value={[config.tknWeightOut]}
+                    value={[localTknWeightOut]}
                     max={99}
                     min={1}
                     step={1}

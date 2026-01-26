@@ -6,9 +6,9 @@ import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo, useMemo } from "react";
 
-export function Header() {
+function HeaderComponent() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -16,10 +16,11 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  const logoSrc =
-    mounted && resolvedTheme === "dark"
+  const logoSrc = useMemo(() => {
+    return mounted && resolvedTheme === "dark"
       ? "/logo-balancer-white.svg"
       : "/logo-balancer-black.svg";
+  }, [mounted, resolvedTheme]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
@@ -39,7 +40,7 @@ export function Header() {
           </Link>
           <ModeToggle />
           <Link href="https://balancer.fi/">
-            <Button className="hidden md:inline-flex bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold rounded-xl px-6 h-11 items-center gap-2">
+            <Button className="hidden md:inline-flex bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 font-semibold rounded-xl px-6 h-11 items-center gap-2 transition-colors duration-200">
               Build on Balancer
               <ArrowUpRight className="h-4 w-4" />
             </Button>
@@ -49,3 +50,5 @@ export function Header() {
     </header>
   );
 }
+
+export const Header = memo(HeaderComponent);

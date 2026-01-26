@@ -3,11 +3,18 @@
 import { Badge } from "@/components/ui/badge";
 import { Clock } from "lucide-react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
+import { useShallow } from "zustand/react/shallow";
 
-export function SimulatorHeader() {
-  const { config, currentUsdcBalance, currentStep, simulationData } =
-    useSimulatorStore();
+function SimulatorHeaderComponent() {
+  const { config, currentUsdcBalance, currentStep, simulationData } = useSimulatorStore(
+    useShallow((state) => ({
+      config: state.config,
+      currentUsdcBalance: state.currentUsdcBalance,
+      currentStep: state.currentStep,
+      simulationData: state.simulationData,
+    })),
+  );
 
   const timeRemaining = useMemo(() => {
     // config.duration is in Hours
@@ -77,3 +84,5 @@ export function SimulatorHeader() {
     </div>
   );
 }
+
+export const SimulatorHeader = memo(SimulatorHeaderComponent);

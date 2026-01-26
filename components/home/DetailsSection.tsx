@@ -1,10 +1,10 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SaleDetailsTab } from "./details/SaleDetailsTab";
 import { HowItWorksTab } from "./details/HowItWorksTab";
 import { TokenOverviewTab } from "./details/TokenOverviewTab";
 import { ProjectDetailsTab } from "./details/ProjectDetailsTab";
+import SaleDetailsTabComponent from "./details/SaleDetailsTab";
 
 export function DetailsSection() {
   return (
@@ -22,7 +22,7 @@ export function DetailsSection() {
             value="how-it-works"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none px-3 sm:px-4 py-3 text-sm sm:text-base whitespace-nowrap"
           >
-            How the Sale Works
+            How the LBP Works
           </TabsTrigger>
           <TabsTrigger
             value="token"
@@ -39,7 +39,7 @@ export function DetailsSection() {
         </TabsList>
 
         <TabsContent value="details">
-          <SaleDetailsTab />
+          <SaleDetailsTabComponent/>
         </TabsContent>
         <TabsContent value="how-it-works">
           <HowItWorksTab />
