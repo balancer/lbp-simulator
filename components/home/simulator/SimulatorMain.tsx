@@ -97,25 +97,25 @@ function SimulatorMainComponent() {
             <TabsList className="bg-transparent p-0 justify-start h-auto border-b w-full rounded-none">
               <TabsTrigger
                 value="chart"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none px-4 py-2"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:shadow-none px-4 py-2"
               >
                 Price chart
               </TabsTrigger>
               <TabsTrigger
                 value="swaps"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none px-4 py-2"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:shadow-none px-4 py-2"
               >
                 Sales
               </TabsTrigger>
               <TabsTrigger
                 value="demand"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none px-4 py-2"
+                className="rounded-none border-b-2 border-transparent  data-[state=active]:shadow-none px-4 py-2"
               >
                 Fair price discovery
               </TabsTrigger>
               <TabsTrigger
                 value="weights"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none px-4 py-2"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:shadow-none px-4 py-2"
               >
                 Weights
               </TabsTrigger>
