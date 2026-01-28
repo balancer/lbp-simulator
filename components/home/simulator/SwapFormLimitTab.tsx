@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export function SwapFormLimitTab() {
   const {
@@ -170,56 +175,66 @@ export function SwapFormLimitTab() {
 
       {/* Open orders list */}
       {openOrders.length > 0 && (
-        <div className="space-y-2 pt-2">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Open limit orders
-          </div>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {openOrders.map((order) => (
-              <div
-                key={order.id}
-                className="flex items-center justify-between p-2 border border-border/60 rounded-md text-xs bg-background/60"
-              >
-                <div className="space-y-0.5">
-                  <div>
-                    Buy up to{" "}
-                    <span className="font-medium">
-                      {(order.collateralAmount / order.triggerPrice).toLocaleString(
-                        undefined,
-                        { maximumFractionDigits: 4 },
-                      )}{" "}
-                      {config.tokenSymbol}
-                    </span>
-                  </div>
-                  <div className="text-muted-foreground">
-                    When price ≤{" "}
-                    <span className="font-medium">
-                      {order.triggerPrice.toLocaleString(undefined, {
-                        maximumFractionDigits: 4,
-                      })}{" "}
-                      {config.collateralToken}
-                    </span>
-                    , spend up to{" "}
-                    <span className="font-medium">
-                      {order.collateralAmount.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      {config.collateralToken}
-                    </span>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => cancelLimitOrder(order.id)}
+        <Collapsible className="space-y-2 pt-2">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+            >
+              <span>Open limit orders</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-foreground/70">
+                {openOrders.length}
+              </span>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="space-y-2 max-h-40 overflow-y-auto mt-1.5">
+              {openOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex items-center justify-between p-2 border border-border/60 rounded-md text-xs bg-background/60"
                 >
-                  Cancel
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
+                  <div className="space-y-0.5">
+                    <div>
+                      Buy up to{" "}
+                      <span className="font-medium">
+                        {(order.collateralAmount / order.triggerPrice).toLocaleString(
+                          undefined,
+                          { maximumFractionDigits: 4 },
+                        )}{" "}
+                        {config.tokenSymbol}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      When price ≤{" "}
+                      <span className="font-medium">
+                        {order.triggerPrice.toLocaleString(undefined, {
+                          maximumFractionDigits: 4,
+                        })}{" "}
+                        {config.collateralToken}
+                      </span>
+                      , spend up to{" "}
+                      <span className="font-medium">
+                        {order.collateralAmount.toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        {config.collateralToken}
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => cancelLimitOrder(order.id)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </div>
   );
