@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, memo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -13,7 +12,7 @@ import { TokenLogo } from "@/components/ui/TokenLogo";
 
 type SwapDirection = "buy" | "sell"; // buy = Collateral -> Token, sell = Token -> Collateral
 
-function BidFormComponent() {
+function SwapFormSwapTabComponent() {
   const {
     config,
     currentStep,
@@ -166,148 +165,144 @@ function BidFormComponent() {
   const outputBalance = direction === "buy" ? userTknBalance : userUsdcBalance;
 
   return (
-    <Card className="h-[600px] border-border/60 shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg">Swap</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Input Section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">You pay</span>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Wallet className="h-3 w-3" />
-              <span>
-                {inputBalance.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-              <Button
-                variant="link"
-                onClick={handleMax}
-                className="text-indigo-600 hover:text-indigo-700 font-medium ml-1 h-auto p-0 text-xs min-w-0"
-              >
-                Max
-              </Button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-4 border border-border rounded-lg bg-background">
-            <div className="flex-1">
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={inputAmount}
-                onChange={(e) => setInputAmount(e.target.value)}
-                className="text-2xl font-semibold border-0 p-0 h-auto focus-visible:ring-0 bg-transparent dark:bg-transparent shadow-none"
-              />
-              <div className="text-sm text-muted-foreground mt-1">
-                $
-                {inputUsdValue.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-            </div>
+    <div className="space-y-4">
+      {/* Input Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">You pay</span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Wallet className="h-3 w-3" />
+            <span>
+              {inputBalance.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
+            </span>
             <Button
-              variant="outline"
-              className="flex items-center gap-2 px-3 py-2 h-auto"
+              variant="link"
+              onClick={handleMax}
+              className="text-indigo-600 hover:text-indigo-700 font-medium ml-1 h-auto p-0 text-xs min-w-0"
             >
-              <TokenLogo token={inputToken} size={24} />
-              <span className="font-medium">{inputToken}</span>
+              Max
             </Button>
           </div>
         </div>
-
-        {/* Swap Button */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border"></div>
-          </div>
-          <div className="relative flex justify-center">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full h-10 w-10 bg-background border-border hover:bg-muted"
-              onClick={handleSwap}
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Output Section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">You receive</span>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Wallet className="h-3 w-3" />
-              <span>
-                {outputBalance.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                })}
-              </span>
+        <div className="flex items-center gap-2 p-4 border border-border rounded-lg bg-background">
+          <div className="flex-1">
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={inputAmount}
+              onChange={(e) => setInputAmount(e.target.value)}
+              className="text-2xl font-semibold border-0 p-0 h-auto focus-visible:ring-0 bg-transparent dark:bg-transparent shadow-none"
+            />
+            <div className="text-sm text-muted-foreground mt-1">
+              $
+              {inputUsdValue.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
             </div>
           </div>
-          <div className="flex items-center gap-2 p-4 border border-border rounded-lg bg-background">
-            <div className="flex-1">
-              <div className="text-2xl font-semibold">
-                {outputAmount > 0
-                  ? outputAmount.toLocaleString(undefined, {
-                      maximumFractionDigits: 6,
-                    })
-                  : "0.00"}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                $
-                {outputUsdValue.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0"
-            >
-              <TokenLogo token={outputToken} size={24} />
-              <span className="font-medium">{outputToken}</span>
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 px-3 py-2 h-auto"
+          >
+            <TokenLogo token={inputToken} size={24} />
+            <span className="font-medium">{inputToken}</span>
+          </Button>
         </div>
+      </div>
 
-        {/* Price Info */}
-        <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-          <div className="flex justify-between">
-            <span>Price:</span>
-            <span className="font-medium text-foreground">
-              ${currentPrice.toFixed(4)} {config.tokenSymbol}/{config.collateralToken}
+      {/* Swap Button */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border"></div>
+        </div>
+        <div className="relative flex justify-center">
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full h-10 w-10 bg-background border-border hover:bg-muted"
+            onClick={handleSwap}
+          >
+            <ArrowUpDown className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Output Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">You receive</span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Wallet className="h-3 w-3" />
+            <span>
+              {outputBalance.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
         </div>
-
-        {/* Error Message */}
-        {hasInsufficientBalance && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive">
-            Insufficient balance for this transaction.
+        <div className="flex items-center gap-2 p-4 border border-border rounded-lg bg-background">
+          <div className="flex-1">
+            <div className="text-2xl font-semibold">
+              {outputAmount > 0
+                ? outputAmount.toLocaleString(undefined, {
+                    maximumFractionDigits: 6,
+                  })
+                : "0.00"}
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              $
+              {outputUsdValue.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
+            </div>
           </div>
-        )}
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0"
+          >
+            <TokenLogo token={outputToken} size={24} />
+            <span className="font-medium">{outputToken}</span>
+          </Button>
+        </div>
+      </div>
 
-        {/* Submit Button */}
-        <Button
-          onClick={handleSubmit}
-          disabled={!isValidAmount || hasInsufficientBalance}
-          className="w-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
-          size="lg"
-        >
-          {direction === "buy"
-            ? `Buy ${config.tokenSymbol}`
-            : `Sell ${config.tokenSymbol}`}
-        </Button>
+      {/* Price Info */}
+      <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
+        <div className="flex justify-between">
+          <span>Price:</span>
+          <span className="font-medium text-foreground">
+            ${currentPrice.toFixed(4)} {config.tokenSymbol}/{config.collateralToken}
+          </span>
+        </div>
+      </div>
 
-        <p className="text-xs text-center text-muted-foreground">
-          This transaction is simulated and will not cost real tokens.
-        </p>
-      </CardContent>
-    </Card>
+      {/* Error Message */}
+      {hasInsufficientBalance && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive">
+          Insufficient balance for this transaction.
+        </div>
+      )}
+
+      {/* Submit Button */}
+      <Button
+        onClick={handleSubmit}
+        disabled={!isValidAmount || hasInsufficientBalance}
+        className="w-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        size="lg"
+      >
+        {direction === "buy"
+          ? `Buy ${config.tokenSymbol}`
+          : `Sell ${config.tokenSymbol}`}
+      </Button>
+
+      <p className="text-xs text-center text-muted-foreground">
+        This transaction is simulated and will not cost real tokens.
+      </p>
+    </div>
   );
 }
 
-export const BidForm = memo(BidFormComponent);
+export const SwapFormSwapTab = memo(SwapFormSwapTabComponent);
+

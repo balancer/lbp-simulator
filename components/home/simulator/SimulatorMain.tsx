@@ -3,7 +3,7 @@
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BidForm } from "./BidForm";
+import { SwapForm } from "./SwapForm";
 import { useMemo, memo } from "react";
 import { useDebounce } from "@/lib/useDebounce";
 import { useThrottle } from "@/lib/useThrottle";
@@ -174,7 +174,7 @@ function SimulatorMainComponent() {
       </div>
 
       <div className="lg:col-span-1 flex">
-        <BidForm />
+        <SwapForm />
       </div>
     </div>
   );

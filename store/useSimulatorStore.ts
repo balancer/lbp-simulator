@@ -24,10 +24,21 @@ export interface Swap {
   direction: "buy" | "sell"; // buy = USDC -> Token, sell = Token -> USDC
 }
 
+export interface LimitOrder {
+  id: string;
+  type: "buy";
+  triggerPrice: number; // Price in collateral token per project token
+  collateralAmount: number; // Max collateral to spend when triggered
+  status: "open" | "filled" | "cancelled";
+  createdAt: number;
+  filledAt?: number;
+}
+
 interface SimulatorState {
   config: LBPConfig;
   simulationData: SimulationStep[];
   swaps: Swap[];
+  limitOrders: LimitOrder[];
   isPlaying: boolean;
   currentStep: number;
   totalSteps: number;
@@ -61,6 +72,12 @@ interface SimulatorState {
   processBuy: (amountUSDC: number) => void;
   processSell: (amountToken: number) => void;
   updateUserBalance: (tknDelta: number, usdcDelta: number) => void;
+  createLimitOrder: (order: {
+    type: "buy";
+    triggerPrice: number;
+    collateralAmount: number;
+  }) => void;
+  cancelLimitOrder: (id: string) => void;
   // Internal functions for bot trades (don't affect user wallet)
   _processPoolBuy: (amountUSDC: number, account?: string) => void;
   _processPoolSell: (amountToken: number, account?: string) => void;
@@ -91,6 +108,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   config: DEFAULT_CONFIG,
   simulationData: calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS),
   swaps: [],
+  limitOrders: [],
   isPlaying: false,
   currentStep: 0, // Start before step 0
   totalSteps: TOTAL_STEPS,
@@ -449,6 +467,33 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     });
   },
 
+  createLimitOrder: ({ type, triggerPrice, collateralAmount }) => {
+    if (type !== "buy" || triggerPrice <= 0 || collateralAmount <= 0) return;
+
+    const newOrder: LimitOrder = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      type,
+      triggerPrice,
+      collateralAmount,
+      status: "open",
+      createdAt: Date.now(),
+    };
+
+    set((state) => ({
+      limitOrders: [...state.limitOrders, newOrder],
+    }));
+  },
+
+  cancelLimitOrder: (id: string) => {
+    set((state) => ({
+      limitOrders: state.limitOrders.map((order) =>
+        order.id === id && order.status === "open"
+          ? { ...order, status: "cancelled" }
+          : order,
+      ),
+    }));
+  },
+
   tick: () => {
     const {
       currentStep,
@@ -458,6 +503,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       demandPressureCurve,
       demandPressureConfig,
       setIsPlaying,
+      limitOrders,
     } = get();
 
     if (currentStep >= totalSteps - 1) {
@@ -509,6 +555,34 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
         // Small chance of noise trades even when price is above fair value
         get()._processPoolBuy(tradeSize * 0.1);
       }
+    }
+
+    // 3. Execute user limit orders when conditions are met
+    if (limitOrders.length > 0) {
+      const updatedOrders: LimitOrder[] = limitOrders.map((order) => {
+        if (order.status !== "open") return order;
+
+        // Only buy-type limit orders are currently supported
+        if (order.type === "buy" && currentPrice <= order.triggerPrice) {
+          const { userUsdcBalance } = get();
+
+          if (userUsdcBalance >= order.collateralAmount) {
+            // Execute a simulated buy using existing logic
+            get().processBuy(order.collateralAmount);
+
+            const filledOrder: LimitOrder = {
+              ...order,
+              status: "filled",
+              filledAt: Date.now(),
+            };
+            return filledOrder;
+          }
+        }
+
+        return order;
+      });
+
+      set({ limitOrders: updatedOrders });
     }
   },
 }));
