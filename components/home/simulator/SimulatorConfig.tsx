@@ -278,7 +278,8 @@ function SimulatorConfigComponent() {
                     value={localDuration}
                     onChange={(e) => {
                       const val = Number(e.target.value);
-                      if (!isNaN(val)) setLocalDuration(Math.max(0, Math.min(val, 1440)));
+                      if (!isNaN(val))
+                        setLocalDuration(Math.max(0, Math.min(val, 1440)));
                     }}
                   />
                 </div>
@@ -433,9 +434,12 @@ function SimulatorConfigComponent() {
               <div className="col-span-2 space-y-4 pt-2">
                 <Label>Start Weights (Token / USDC)</Label>
                 <div className="flex items-center gap-4">
-                  <span className="w-12 text-sm font-mono">
-                    {config.tknWeightIn}%
-                  </span>
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="text-sm font-mono">
+                      {config.tknWeightIn}%
+                    </span>
+                    <p className="text-left">Token</p>
+                  </div>
                   <Slider
                     value={[localTknWeightIn]}
                     max={99}
@@ -443,18 +447,26 @@ function SimulatorConfigComponent() {
                     step={1}
                     onValueChange={(vals) => handleWeightChange(vals[0])}
                   />
-                  <span className="w-12 text-sm font-mono">
-                    {config.usdcWeightIn}%
-                  </span>
+                  <div>
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-sm font-mono">
+                        {config.usdcWeightIn}%
+                      </span>
+                      <p>{config.collateralToken}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="col-span-2 space-y-4 pt-2">
                 <Label>End Weights (Token / USDC)</Label>
                 <div className="flex items-center gap-4">
-                  <span className="w-12 text-sm font-mono">
-                    {config.tknWeightOut}%
-                  </span>
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="text-sm font-mono">
+                      {config.tknWeightIn}%
+                    </span>
+                    <p className="text-left">Token</p>
+                  </div>
                   <Slider
                     value={[localTknWeightOut]}
                     max={99}
@@ -462,9 +474,12 @@ function SimulatorConfigComponent() {
                     step={1}
                     onValueChange={(vals) => handleEndWeightChange(vals[0])}
                   />
-                  <span className="w-12 text-sm font-mono">
-                    {config.usdcWeightOut}%
-                  </span>
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="text-sm font-mono">
+                      {config.usdcWeightIn}%
+                    </span>
+                    <p>{config.collateralToken}</p>
+                  </div>
                 </div>
               </div>
             </div>
