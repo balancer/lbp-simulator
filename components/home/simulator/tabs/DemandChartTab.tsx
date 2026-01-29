@@ -42,43 +42,60 @@ function DemandChartTabComponent({
             domain={["auto", "auto"]}
             stroke={axisLabelColor}
             fontSize={12}
-            tickFormatter={(val) => `$${val.toFixed(2)}`}
+            tickFormatter={(val) => `${val.toFixed(0)}`}
             axisLine={false}
             tickLine={false}
             tick={{ fill: axisLabelColor }}
           />
           <Tooltip
-            formatter={(value: any, name: any) => [
-              `$${Number(value).toFixed(4)}`,
-              name === "price" ? "Actual Price" : "Fair Value",
-            ]}
+            formatter={(value: any, name: any) => {
+              const labelMap: Record<string, string> = {
+                buyPressure: "Buy pressure (USDC/step)",
+                sellPressure: "Sell pressure (USDC/step)",
+                netPressure: "Net demand (buy - sell)",
+              };
+              return [
+                `${Number(value).toFixed(0)}`,
+                labelMap[name as string] ?? name,
+              ];
+            }}
           />
           <Line
             type="monotone"
-            dataKey="price"
-            stroke="url(#demand-pressure-gradient)"
+            dataKey="buyPressure"
+            stroke="#16a34a" // green-600
             strokeWidth={2}
             dot={false}
-            name="price"
+            name="buyPressure"
             isAnimationActive={shouldAnimate}
             animationDuration={shouldAnimate ? 300 : 0}
           />
           <Line
             type="monotone"
-            dataKey="fairValue"
-            stroke="#2f2f2f"
+            dataKey="sellPressure"
+            stroke="#dc2626" // red-600
             strokeWidth={2}
-            strokeDasharray="5 5"
+            strokeDasharray="4 4"
             dot={false}
-            name="fairValue"
+            name="sellPressure"
+            isAnimationActive={shouldAnimate}
+            animationDuration={shouldAnimate ? 300 : 0}
+          />
+          <Line
+            type="monotone"
+            dataKey="netPressure"
+            stroke="#2563eb" // blue-600
+            strokeWidth={3}
+            dot={false}
+            name="netPressure"
             isAnimationActive={shouldAnimate}
             animationDuration={shouldAnimate ? 300 : 0}
           />
         </LineChart>
       </ResponsiveContainer>
       <div className="text-center mt-2 text-xs text-muted-foreground mt-0 ">
-        Green dotted line represents Market "Fair Value". If Price (Blue) drops
-        below, Bots buy.
+        Net demand curve = buy pressure − sell pressure (USDC per step). Above
+        zero means net buying; below zero means net selling.
       </div>
     </>
   );

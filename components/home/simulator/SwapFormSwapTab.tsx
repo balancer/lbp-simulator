@@ -17,6 +17,8 @@ function SwapFormSwapTabComponent() {
     config,
     currentStep,
     simulationData,
+    baseSnapshots,
+    priceHistory,
     currentTknBalance,
     currentUsdcBalance,
     processBuy,
@@ -28,6 +30,8 @@ function SwapFormSwapTabComponent() {
       config: state.config,
       currentStep: state.currentStep,
       simulationData: state.simulationData,
+      baseSnapshots: state.baseSnapshots,
+      priceHistory: state.priceHistory,
       currentTknBalance: state.currentTknBalance,
       currentUsdcBalance: state.currentUsdcBalance,
       processBuy: state.processBuy,
@@ -40,9 +44,17 @@ function SwapFormSwapTabComponent() {
   const [direction, setDirection] = useState<SwapDirection>("buy");
   const [inputAmount, setInputAmount] = useState<string>("");
 
-  // Get current step data for calculations
-  const stepData = simulationData[currentStep] || simulationData[0];
-  const currentPrice = stepData?.price || 0;
+  // Get current step data for calculations (weights from snapshot, price from live data)
+  const stepData = baseSnapshots.length > 0 && baseSnapshots[currentStep]
+    ? baseSnapshots[currentStep]
+    : simulationData[currentStep] || simulationData[0];
+  
+  // Get current price from live simulation data
+  const currentPrice = baseSnapshots.length > 0 && baseSnapshots[currentStep]
+    ? baseSnapshots[currentStep].price
+    : priceHistory.length > 0 && priceHistory[currentStep] > 0
+    ? priceHistory[currentStep]
+    : stepData?.price || 0;
 
   // Calculate output amount based on input
   const outputAmount = useMemo(() => {

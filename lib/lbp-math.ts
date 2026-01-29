@@ -53,6 +53,26 @@ export const DEFAULT_DEMAND_PRESSURE_CONFIG: DemandPressureConfig = {
   multiplier: 1,
 };
 
+export type SellPressurePreset = "loyal" | "greedy";
+
+export interface SellPressureConfig {
+  preset: SellPressurePreset;
+  // Loyal community parameters
+  loyalSoldPct: number; // percentage of community-held tokens targeted for sale over campaign (0-100)
+  loyalConcentrationPct: number; // percentage of sell weight concentrated at start+end (0-100)
+  // Greedy community parameters
+  greedySpreadPct: number; // price spread over cost basis before selling (e.g. 2 = 2%)
+  greedySellPct: number; // percentage of holdings sold when threshold hit (0-100)
+}
+
+export const DEFAULT_SELL_PRESSURE_CONFIG: SellPressureConfig = {
+  preset: "loyal",
+  loyalSoldPct: 5,
+  loyalConcentrationPct: 60,
+  greedySpreadPct: 2,
+  greedySellPct: 100,
+};
+
 /**
  * Calculates Spot Price based on Balancer formula
  * Price = (BalanceUSDC / WeightUSDC) / (BalanceTKN / WeightTKN)
@@ -208,6 +228,40 @@ export function getDemandPressureCurve(
 ): number[] {
   const cumulative = getCumulativeBuyPressureCurve(hours, steps, config);
   return getPerStepBuyFlowFromCumulative(cumulative);
+}
+
+/**
+ * Loyal community sell schedule.
+ *
+ * Returns per-step weights that sum to 1, emphasizing the
+ * beginning and end of the sale according to `concentrationPct`.
+ */
+export function getLoyalSellSchedule(
+  hours: number,
+  steps: number,
+  concentrationPct: number,
+): number[] {
+  const safeSteps = Math.max(1, steps);
+  const weights = new Array(safeSteps + 1).fill(1);
+
+  const clampedConc = clampNumber(concentrationPct, 0, 100);
+  if (clampedConc > 0) {
+    // Portion of steps on each side that get extra weight
+    const edgeFraction = clampedConc / 200; // split between start & end
+    const edgeSteps = Math.max(1, Math.floor(safeSteps * edgeFraction));
+
+    for (let i = 0; i <= safeSteps; i++) {
+      if (i < edgeSteps || i > safeSteps - edgeSteps) {
+        weights[i] *= 2; // double weight at edges
+      }
+    }
+  }
+
+  const total = weights.reduce((acc, w) => acc + w, 0);
+  if (total === 0) {
+    return new Array(safeSteps + 1).fill(0);
+  }
+  return weights.map((w) => w / total);
 }
 
 /**

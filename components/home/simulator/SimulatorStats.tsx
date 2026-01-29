@@ -6,22 +6,33 @@ import { useShallow } from "zustand/react/shallow";
 import { memo } from "react";
 
 function SimulatorStatsComponent() {
-  const { config, currentStep, simulationData } = useSimulatorStore(
+  const { config, currentStep, simulationData, baseSnapshots, priceHistory } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
       currentStep: state.currentStep,
       simulationData: state.simulationData,
+      baseSnapshots: state.baseSnapshots,
+      priceHistory: state.priceHistory,
     })),
   );
 
-  // Safe access to current data
-  const currentData = simulationData[currentStep] || simulationData[0];
+  // Get current price from live simulation data (baseSnapshots or priceHistory)
+  // Fall back to static simulationData if worker hasn't computed yet
+  const getCurrentPrice = () => {
+    if (baseSnapshots.length > 0 && baseSnapshots[currentStep]) {
+      return baseSnapshots[currentStep].price;
+    }
+    if (priceHistory.length > 0 && priceHistory[currentStep] > 0) {
+      return priceHistory[currentStep];
+    }
+    const staticData = simulationData[currentStep] || simulationData[0];
+    return staticData?.price || 0;
+  };
 
-  // Use config or live data
-  const tokensForSale = config.tknBalanceIn; // Simplified logic vs %
-  const currentPrice = currentData?.price || 0;
-  const impliedMarketCap = currentData?.marketCap || 0;
+  const currentPrice = getCurrentPrice();
   const startPrice = simulationData[0]?.price || 0;
+  const tokensForSale = config.tknBalanceIn;
+  const impliedMarketCap = currentPrice * config.totalSupply;
 
   const stats = [
     {

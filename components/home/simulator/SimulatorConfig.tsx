@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { DemandPressureConfig } from "./DemandPressureConfig";
+import { SellPressureConfig } from "./SellPressureConfig";
 import { useState, useEffect } from "react";
 import { useDebounce } from "@/lib/useDebounce";
 import { LBPConfig } from "@/lib/lbp-math";
@@ -220,7 +221,10 @@ export function SimulatorConfig() {
                   ))}
                 </div>
               </div>
+              <div className="flex flex-col gap-2">
                 <DemandPressureConfig />
+                <SellPressureConfig />
+              </div>
             </div>
 
             <Separator />

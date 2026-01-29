@@ -18,6 +18,7 @@ interface PriceChartTabProps {
   isPlaying: boolean;
   shouldAnimate: boolean;
   simulationData: any[];
+  currentStep: number;
 }
 
 function PriceChartTabComponent({
@@ -25,15 +26,22 @@ function PriceChartTabComponent({
   isPlaying,
   shouldAnimate,
   simulationData,
+  currentStep,
 }: PriceChartTabProps) {
   const { resolvedTheme } = useTheme();
   const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
+
+  // Filter chart data to only show up to currentStep
+  // If currentStep is 0 (not started), show all data
+  const filteredChartData = currentStep > 0
+    ? chartData.filter((d) => (d.index ?? 0) <= currentStep)
+    : chartData;
 
   return (
     <>
       <ResponsiveContainer width="100%" height="95%">
         <LineChart
-          data={chartData}
+          data={filteredChartData}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           <CartesianGrid
