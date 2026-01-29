@@ -234,33 +234,37 @@ export function getDemandPressureCurve(
  * Loyal community sell schedule.
  *
  * Returns per-step weights that sum to 1, emphasizing the
- * beginning and end of the sale according to `concentrationPct`.
+ * beginning and end of the sale via a Gaussian bump curve
+ * controlled by `concentrationPct` (0–100).
  */
 export function getLoyalSellSchedule(
-  hours: number,
+  _hours: number,
   steps: number,
   concentrationPct: number,
 ): number[] {
   const safeSteps = Math.max(1, steps);
-  const weights = new Array(safeSteps + 1).fill(1);
 
   const clampedConc = clampNumber(concentrationPct, 0, 100);
-  if (clampedConc > 0) {
-    // Portion of steps on each side that get extra weight
-    const edgeFraction = clampedConc / 200; // split between start & end
-    const edgeSteps = Math.max(1, Math.floor(safeSteps * edgeFraction));
+  const a = clampedConc / 100; // 0..1
 
-    for (let i = 0; i <= safeSteps; i++) {
-      if (i < edgeSteps || i > safeSteps - edgeSteps) {
-        weights[i] *= 2; // double weight at edges
-      }
-    }
+  const sigmaMax = 0.25; // smooth spread
+  const sigmaMin = Math.max(1 / safeSteps, 0.03); // avoid too needle-like / unstable
+  const sigma = sigmaMax + (sigmaMin - sigmaMax) * a;
+
+  const gauss = (t: number) => Math.exp(-0.5 * (t / sigma) ** 2);
+
+  const bumpAtEdge = gauss(0) + gauss(1); // ~ 1 + almost 0
+  const bumpScale = bumpAtEdge > 0 ? 1 / bumpAtEdge : 1;
+
+  const weights = new Array<number>(safeSteps + 1);
+  for (let i = 0; i <= safeSteps; i++) {
+    const x = i / safeSteps; // 0..1
+    const bump = (gauss(x) + gauss(1 - x)) * bumpScale;
+    weights[i] = 1 + a * bump;
   }
 
   const total = weights.reduce((acc, w) => acc + w, 0);
-  if (total === 0) {
-    return new Array(safeSteps + 1).fill(0);
-  }
+  if (total === 0) return new Array(safeSteps + 1).fill(0);
   return weights.map((w) => w / total);
 }
 
