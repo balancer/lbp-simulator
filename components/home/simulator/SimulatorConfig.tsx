@@ -25,12 +25,13 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { DemandPressureConfig } from "./DemandPressureConfig";
-import { useState, useEffect } from "react";
+import { SellPressureConfig } from "./SellPressureConfig";
+import { useState, useEffect, useTransition, memo } from "react";
 import { useDebounce } from "@/lib/useDebounce";
 import { LBPConfig } from "@/lib/lbp-math";
 import { useShallow } from "zustand/shallow";
 
-export function SimulatorConfig() {
+function SimulatorConfigComponent() {
   const {
     config,
     updateConfig,
@@ -54,6 +55,39 @@ export function SimulatorConfig() {
       setIsConfigOpen: state.setIsConfigOpen,
     })),
   );
+
+  const [isPending, startTransition] = useTransition();
+  const [shouldRenderHeavyComponents, setShouldRenderHeavyComponents] = useState(isConfigOpen);
+
+  // Handle sheet close smoothly - unmount heavy components immediately to prevent lag
+  const handleSheetOpenChange = (open: boolean) => {
+    if (!open) {
+      // Immediately unmount heavy components when closing starts
+      // This prevents React from rendering them during the animation
+      setShouldRenderHeavyComponents(false);
+      // Reset local state to match store to avoid stale values
+      setLocalDuration(config.duration);
+      setLocalTknWeightIn(config.tknWeightIn);
+      setLocalTknWeightOut(config.tknWeightOut);
+      setLocalPercentForSale(config.percentForSale);
+      setLocalTotalSupply(config.totalSupply);
+      setLocalUsdcBalanceIn(config.usdcBalanceIn);
+    }
+    setIsConfigOpen(open);
+  };
+
+  // Render heavy components when opening (with slight delay to ensure smooth open)
+  useEffect(() => {
+    if (isConfigOpen) {
+      // Small delay to let the sheet animation start smoothly
+      const timer = setTimeout(() => {
+        setShouldRenderHeavyComponents(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      setShouldRenderHeavyComponents(false);
+    }
+  }, [isConfigOpen]);
 
   // Local state for immediate UI updates (for sliders/inputs that trigger expensive recalculations)
   const [localDuration, setLocalDuration] = useState(config.duration);
@@ -81,45 +115,60 @@ export function SimulatorConfig() {
   const debouncedTotalSupply = useDebounce(localTotalSupply, 500);
   const debouncedUsdcBalanceIn = useDebounce(localUsdcBalanceIn, 500);
 
-  // Update store when debounced values change
+  // Update store when debounced values change (only when sheet is open to avoid lag on close)
   useEffect(() => {
+    if (!isConfigOpen) return; // Skip updates when sheet is closed
     if (debouncedDuration !== config.duration) {
-      updateConfig({ duration: debouncedDuration });
+      startTransition(() => {
+        updateConfig({ duration: debouncedDuration });
+      });
     }
-  }, [debouncedDuration, config.duration, updateConfig]);
+  }, [debouncedDuration, config.duration, updateConfig, isConfigOpen]);
 
   useEffect(() => {
+    if (!isConfigOpen) return;
     if (debouncedTknWeightIn !== config.tknWeightIn) {
-      updateConfig({
-        tknWeightIn: debouncedTknWeightIn,
-        usdcWeightIn: 100 - debouncedTknWeightIn,
+      startTransition(() => {
+        updateConfig({
+          tknWeightIn: debouncedTknWeightIn,
+          usdcWeightIn: 100 - debouncedTknWeightIn,
+        });
       });
     }
-  }, [debouncedTknWeightIn, config.tknWeightIn, updateConfig]);
+  }, [debouncedTknWeightIn, config.tknWeightIn, updateConfig, isConfigOpen]);
 
   useEffect(() => {
+    if (!isConfigOpen) return;
     if (debouncedTknWeightOut !== config.tknWeightOut) {
-      updateConfig({
-        tknWeightOut: debouncedTknWeightOut,
-        usdcWeightOut: 100 - debouncedTknWeightOut,
+      startTransition(() => {
+        updateConfig({
+          tknWeightOut: debouncedTknWeightOut,
+          usdcWeightOut: 100 - debouncedTknWeightOut,
+        });
       });
     }
-  }, [debouncedTknWeightOut, config.tknWeightOut, updateConfig]);
+  }, [debouncedTknWeightOut, config.tknWeightOut, updateConfig, isConfigOpen]);
 
   useEffect(() => {
+    if (!isConfigOpen) return;
     if (debouncedPercentForSale !== config.percentForSale || debouncedTotalSupply !== config.totalSupply) {
-      updateConfig({
-        percentForSale: debouncedPercentForSale,
-        totalSupply: debouncedTotalSupply,
+      startTransition(() => {
+        updateConfig({
+          percentForSale: debouncedPercentForSale,
+          totalSupply: debouncedTotalSupply,
+        });
       });
     }
-  }, [debouncedPercentForSale, debouncedTotalSupply, config.percentForSale, config.totalSupply, updateConfig]);
+  }, [debouncedPercentForSale, debouncedTotalSupply, config.percentForSale, config.totalSupply, updateConfig, isConfigOpen]);
 
   useEffect(() => {
+    if (!isConfigOpen) return;
     if (debouncedUsdcBalanceIn !== config.usdcBalanceIn) {
-      updateConfig({ usdcBalanceIn: debouncedUsdcBalanceIn });
+      startTransition(() => {
+        updateConfig({ usdcBalanceIn: debouncedUsdcBalanceIn });
+      });
     }
-  }, [debouncedUsdcBalanceIn, config.usdcBalanceIn, updateConfig]);
+  }, [debouncedUsdcBalanceIn, config.usdcBalanceIn, updateConfig, isConfigOpen]);
 
   const handleWeightChange = (newTknWeightIn: number) => {
     setLocalTknWeightIn(newTknWeightIn);
@@ -130,7 +179,7 @@ export function SimulatorConfig() {
   };
 
   return (
-    <Sheet open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+    <Sheet open={isConfigOpen} onOpenChange={handleSheetOpenChange}>
       <SheetTrigger asChild>
         <Button
           variant="secondary"
@@ -220,7 +269,13 @@ export function SimulatorConfig() {
                   ))}
                 </div>
               </div>
-                <DemandPressureConfig />
+              {/* Only render heavy components when sheet is open and ready */}
+              {shouldRenderHeavyComponents && (
+                <div className="flex flex-col gap-2">
+                  <DemandPressureConfig />
+                  <SellPressureConfig />
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -393,3 +448,5 @@ export function SimulatorConfig() {
     </Sheet>
   );
 }
+
+export const SimulatorConfig = memo(SimulatorConfigComponent);

@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { shallow } from "zustand/shallow";
 import {
   calculateSimulationData,
   LBPConfig,
@@ -8,10 +7,13 @@ import {
   calculateOutGivenIn,
   getDemandCurve,
   getDemandPressureCurve,
-  calculateTradingVolume,
   DemandPressureConfig,
   DEFAULT_DEMAND_PRESSURE_CONFIG,
+  SellPressureConfig,
+  DEFAULT_SELL_PRESSURE_CONFIG,
+  getLoyalSellSchedule,
 } from "@/lib/lbp-math";
+import type { SimulationStateSnapshot } from "@/lib/simulation-core";
 
 export interface Swap {
   id: string; // Unique identifier for React keys
@@ -54,6 +56,12 @@ export interface TwapOrder {
 interface SimulatorState {
   config: LBPConfig;
   simulationData: SimulationStep[];
+  // Lightweight price history for charts (avoids rewriting simulationData each tick)
+  priceHistory: Float64Array;
+  priceHistoryVersion: number;
+  // Precomputed deterministic path from simulation worker
+  baseSnapshots: SimulationStateSnapshot[];
+  baseSnapshotsVersion: number;
   swaps: Swap[];
   limitOrders: LimitOrder[];
   twapOrders: TwapOrder[];
@@ -63,6 +71,14 @@ interface SimulatorState {
   demandCurve: number[];
   demandPressureCurve: number[];
   demandPressureConfig: DemandPressureConfig;
+  sellPressureConfig: SellPressureConfig;
+  sellPressureSchedule: number[];
+  // Derived approximate sell pressure curve in USDC per step (for charts)
+  sellPressureCurve: number[];
+
+  // Community holdings for sell-pressure modeling
+  communityTokensHeld: number;
+  communityAvgCost: number; // average cost basis in collateral per token
 
   // Simulation State
   currentTknBalance: number;
@@ -85,6 +101,7 @@ interface SimulatorState {
   setSimulationSpeed: (speed: number) => void;
   setIsConfigOpen: (open: boolean) => void;
   updateDemandPressureConfig: (config: Partial<DemandPressureConfig>) => void;
+  updateSellPressureConfig: (config: Partial<SellPressureConfig>) => void;
   resetConfig: () => void;
   tick: () => void;
   processBuy: (amountUSDC: number) => void;
@@ -104,6 +121,7 @@ interface SimulatorState {
     priceProtectionPct: number;
   }) => void;
   cancelTwapOrder: (id: string) => void;
+  setBaseSnapshots: (snapshots: SimulationStateSnapshot[]) => void;
   // Internal functions for bot trades (don't affect user wallet)
   _processPoolBuy: (amountUSDC: number, account?: string) => void;
   _processPoolSell: (amountToken: number, account?: string) => void;
@@ -129,10 +147,61 @@ const DEFAULT_CONFIG: LBPConfig = {
 };
 
 const TOTAL_STEPS = 300; // Granularity of simulation
+const MAX_SWAPS = 500;
+
+function computeSellPressureCurve(
+  config: LBPConfig,
+  schedule: number[],
+  sellConfig: SellPressureConfig,
+): number[] {
+  const steps = schedule.length;
+  if (steps === 0) return [];
+
+  const initialPrice = calculateSpotPrice(
+    config.usdcBalanceIn,
+    config.usdcWeightIn,
+    config.tknBalanceIn,
+    config.tknWeightIn,
+  );
+  const totalSupplyTokens = config.tknBalanceIn;
+
+  if (sellConfig.preset === "loyal") {
+    if (sellConfig.loyalSoldPct <= 0) {
+      return new Array(steps).fill(0);
+    }
+    const totalSellTokens =
+      totalSupplyTokens * (sellConfig.loyalSoldPct / 100);
+    const totalSellUSDC = totalSellTokens * initialPrice;
+    return schedule.map((w) => totalSellUSDC * w);
+  }
+
+  // Greedy community: path-dependent in the real simulation (depends on price vs
+  // cost basis). For the demand-curve chart we approximate a deterministic sell
+  // curve so the user can see \"some\" sell pressure:
+  //
+  // - Assume only a modest portion of supply will be sold on profit-taking.
+  // - Higher spread => fewer expected sells.
+  const maxGreedyFractionOfSupply = 0.35; // 35% of initial tokens at most
+  const spreadFactor = 1 / (1 + sellConfig.greedySpreadPct / 10);
+  const intensity = (sellConfig.greedySellPct / 100) * spreadFactor;
+  const greedySellTokens =
+    totalSupplyTokens * maxGreedyFractionOfSupply * intensity;
+  const greedySellUSDC = greedySellTokens * initialPrice;
+
+  // Use the same schedule shape (edges heavier) so loyal/greedy are comparable
+  // visually, just with different total mass.
+  return schedule.map((w) => greedySellUSDC * w);
+}
 
 export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   config: DEFAULT_CONFIG,
   simulationData: calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS),
+  priceHistory: new Float64Array(
+    calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS).map((d) => d.price),
+  ),
+  priceHistoryVersion: 0,
+  baseSnapshots: [],
+  baseSnapshotsVersion: 0,
   swaps: [],
   limitOrders: [],
   twapOrders: [],
@@ -146,6 +215,21 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     TOTAL_STEPS,
     DEFAULT_DEMAND_PRESSURE_CONFIG,
   ),
+  sellPressureConfig: DEFAULT_SELL_PRESSURE_CONFIG,
+  sellPressureSchedule: getLoyalSellSchedule(
+    DEFAULT_CONFIG.duration,
+    TOTAL_STEPS,
+    DEFAULT_SELL_PRESSURE_CONFIG.loyalConcentrationPct,
+  ),
+  sellPressureCurve: computeSellPressureCurve(
+    DEFAULT_CONFIG,
+    getLoyalSellSchedule(
+      DEFAULT_CONFIG.duration,
+      TOTAL_STEPS,
+      DEFAULT_SELL_PRESSURE_CONFIG.loyalConcentrationPct,
+    ),
+    DEFAULT_SELL_PRESSURE_CONFIG,
+  ),
 
   currentTknBalance: DEFAULT_CONFIG.tknBalanceIn,
   currentUsdcBalance: DEFAULT_CONFIG.usdcBalanceIn,
@@ -154,6 +238,10 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   // User wallet balances - player starts with 10k USDC and 0 tokens
   userTknBalance: 0,
   userUsdcBalance: 10000,
+
+  // Community holdings (for sell pressure)
+  communityTokensHeld: 0,
+  communityAvgCost: 0,
 
   // Simulation speed (default 1x)
   simulationSpeed: 1,
@@ -177,7 +265,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     }
 
     // Recalculate static data
-    const { demandPressureConfig } = get();
+    const { demandPressureConfig, sellPressureConfig } = get();
     const newData = calculateSimulationData(newConfig, TOTAL_STEPS);
     const newDemand = getDemandCurve(newConfig.duration, TOTAL_STEPS);
     const newDemandPressure = getDemandPressureCurve(
@@ -185,12 +273,28 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       TOTAL_STEPS,
       demandPressureConfig,
     );
+    const newSellSchedule = getLoyalSellSchedule(
+      newConfig.duration,
+      TOTAL_STEPS,
+      sellPressureConfig.loyalConcentrationPct,
+    );
+    const newSellCurve = computeSellPressureCurve(
+      newConfig,
+      newSellSchedule,
+      sellPressureConfig,
+    );
 
     set({
       config: newConfig,
       simulationData: newData,
+      priceHistory: new Float64Array(newData.map((d) => d.price)),
+      priceHistoryVersion: 0,
+      baseSnapshots: [],
+      baseSnapshotsVersion: 0,
       demandCurve: newDemand,
       demandPressureCurve: newDemandPressure,
+      sellPressureSchedule: newSellSchedule,
+      sellPressureCurve: newSellCurve,
       // Reset live vars when config changes
       currentTknBalance: newConfig.tknBalanceIn,
       currentUsdcBalance: newConfig.usdcBalanceIn,
@@ -251,6 +355,30 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     });
   },
 
+  updateSellPressureConfig: (partialConfig: Partial<SellPressureConfig>) => {
+    const { sellPressureConfig, config } = get();
+    const newConfig: SellPressureConfig = {
+      ...sellPressureConfig,
+      ...partialConfig,
+    };
+    const newSchedule = getLoyalSellSchedule(
+      config.duration,
+      TOTAL_STEPS,
+      newConfig.loyalConcentrationPct,
+    );
+    const newSellCurve = computeSellPressureCurve(
+      config,
+      newSchedule,
+      newConfig,
+    );
+
+    set({
+      sellPressureConfig: newConfig,
+      sellPressureSchedule: newSchedule,
+      sellPressureCurve: newSellCurve,
+    });
+  },
+
   resetConfig: () => {
     const { intervalId } = get();
     if (intervalId) clearInterval(intervalId);
@@ -258,6 +386,12 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     set({
       config: DEFAULT_CONFIG,
       simulationData: calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS),
+      priceHistory: new Float64Array(
+        calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS).map((d) => d.price),
+      ),
+      priceHistoryVersion: 0,
+      baseSnapshots: [],
+      baseSnapshotsVersion: 0,
       swaps: [],
       limitOrders: [],
       twapOrders: [],
@@ -272,10 +406,34 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
         TOTAL_STEPS,
         DEFAULT_DEMAND_PRESSURE_CONFIG,
       ),
+      sellPressureConfig: DEFAULT_SELL_PRESSURE_CONFIG,
+      sellPressureSchedule: getLoyalSellSchedule(
+        DEFAULT_CONFIG.duration,
+        TOTAL_STEPS,
+        DEFAULT_SELL_PRESSURE_CONFIG.loyalConcentrationPct,
+      ),
+      sellPressureCurve: computeSellPressureCurve(
+        DEFAULT_CONFIG,
+        getLoyalSellSchedule(
+          DEFAULT_CONFIG.duration,
+          TOTAL_STEPS,
+          DEFAULT_SELL_PRESSURE_CONFIG.loyalConcentrationPct,
+        ),
+        DEFAULT_SELL_PRESSURE_CONFIG,
+      ),
       intervalId: null,
       userTknBalance: 0,
       userUsdcBalance: 10000,
       simulationSpeed: 1,
+      communityTokensHeld: 0,
+      communityAvgCost: 0,
+    });
+  },
+
+  setBaseSnapshots: (snapshots: SimulationStateSnapshot[]) => {
+    set({
+      baseSnapshots: snapshots,
+      baseSnapshotsVersion: Date.now(),
     });
   },
 
@@ -286,18 +444,20 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentTknBalance,
       currentUsdcBalance,
       currentStep,
-      simulationData,
       swaps,
+      communityTokensHeld,
+      communityAvgCost,
+      baseSnapshots,
     } = get();
 
-    const stepData = simulationData[currentStep];
-    if (!stepData) return;
+    const snapshot = baseSnapshots[currentStep];
+    if (!snapshot) return;
 
     const amountOut = calculateOutGivenIn(
       currentUsdcBalance,
-      stepData.usdcWeight,
+      snapshot.usdcWeight,
       currentTknBalance,
-      stepData.tknWeight,
+      snapshot.tknWeight,
       amountUSDC,
     );
 
@@ -306,63 +466,57 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
     const newPrice = calculateSpotPrice(
       newUsdcBalance,
-      stepData.usdcWeight,
+      snapshot.usdcWeight,
       newTknBalance,
-      stepData.tknWeight,
+      snapshot.tknWeight,
     );
 
-    const newSwap: Swap = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
-      time: `${stepData.time.toFixed(1)}h`,
-      account: account || `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
-      amountIn: amountUSDC,
-      amountOut: amountOut,
-      price: newPrice,
-      timestamp: Date.now(),
-      direction: "buy",
-    };
-
-    const updatedData = [...simulationData];
-    updatedData[currentStep] = {
-      ...stepData,
-      price: newPrice,
-      tknBalance: newTknBalance,
-      usdcBalance: newUsdcBalance,
-    };
-
-    for (let i = currentStep + 1; i < TOTAL_STEPS; i++) {
-      const futureStep = updatedData[i];
-      const futurePrice = calculateSpotPrice(
-        newUsdcBalance,
-        futureStep.usdcWeight,
-        newTknBalance,
-        futureStep.tknWeight,
-      );
-      updatedData[i] = {
-        ...futureStep,
-        price: futurePrice,
-        tknBalance: newTknBalance,
-        usdcBalance: newUsdcBalance,
+    // Only record swaps for non-community accounts to avoid rendering cost
+    // from per-step buy-pressure and sell-pressure bots.
+    let nextSwaps: Swap[] = swaps;
+    if (account !== "community") {
+      const userSwap: Swap = {
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
+        time: `${snapshot.time.toFixed(1)}h`,
+        account:
+          account ||
+          `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
+        amountIn: amountUSDC,
+        amountOut: amountOut,
+        price: newPrice,
+        timestamp: Date.now(),
+        direction: "buy",
       };
+      nextSwaps = [userSwap, ...swaps];
+      if (nextSwaps.length > MAX_SWAPS) nextSwaps.length = MAX_SWAPS;
     }
 
-    // Only update if values actually changed (shallow comparison optimization)
-    const currentState = get();
-    if (
-      currentState.currentTknBalance !== newTknBalance ||
-      currentState.currentUsdcBalance !== newUsdcBalance ||
-      currentState.swaps.length !== swaps.length + 1
-    ) {
-      set({
-        swaps: [newSwap, ...swaps],
-        currentTknBalance: newTknBalance,
-        currentUsdcBalance: newUsdcBalance,
-        simulationData: updatedData,
-      });
-    } else {
-      // Still need to update simulationData even if balances didn't change
-      set({ simulationData: updatedData });
+    // Community holdings tracking (weighted-average cost basis)
+    let nextCommunityTokens = communityTokensHeld;
+    let nextCommunityAvgCost = communityAvgCost;
+    if (account === "community" && amountOut > 0) {
+      const pricePaid = amountUSDC / amountOut;
+      const newTokens = communityTokensHeld + amountOut;
+      nextCommunityAvgCost =
+        newTokens > 0
+          ? (communityAvgCost * communityTokensHeld + pricePaid * amountOut) /
+            newTokens
+          : communityAvgCost;
+      nextCommunityTokens = newTokens;
     }
+
+    // Update price history in-place (cheap) and bump a version to notify charts.
+    const { priceHistory, priceHistoryVersion } = get();
+    priceHistory[currentStep] = newPrice;
+
+    set({
+      swaps: nextSwaps,
+      currentTknBalance: newTknBalance,
+      currentUsdcBalance: newUsdcBalance,
+      priceHistoryVersion: priceHistoryVersion + 1,
+      communityTokensHeld: nextCommunityTokens,
+      communityAvgCost: nextCommunityAvgCost,
+    });
   },
 
   _processPoolSell: (amountToken: number, account?: string) => {
@@ -370,18 +524,20 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentTknBalance,
       currentUsdcBalance,
       currentStep,
-      simulationData,
       swaps,
+      communityTokensHeld,
+      communityAvgCost,
+      baseSnapshots,
     } = get();
 
-    const stepData = simulationData[currentStep];
-    if (!stepData) return;
+    const snapshot = baseSnapshots[currentStep];
+    if (!snapshot) return;
 
     const amountOut = calculateOutGivenIn(
       currentTknBalance,
-      stepData.tknWeight,
+      snapshot.tknWeight,
       currentUsdcBalance,
-      stepData.usdcWeight,
+      snapshot.usdcWeight,
       amountToken,
     );
 
@@ -390,65 +546,67 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
     const newPrice = calculateSpotPrice(
       newUsdcBalance,
-      stepData.usdcWeight,
+      snapshot.usdcWeight,
       newTknBalance,
-      stepData.tknWeight,
+      snapshot.tknWeight,
     );
 
-    const newSwap: Swap = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
-      time: `${stepData.time.toFixed(1)}h`,
-      account: account || `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
-      amountIn: amountToken,
-      amountOut: amountOut,
-      price: newPrice,
-      timestamp: Date.now(),
-      direction: "sell",
-    };
-
-    const updatedData = [...simulationData];
-    updatedData[currentStep] = {
-      ...stepData,
-      price: newPrice,
-      tknBalance: newTknBalance,
-      usdcBalance: newUsdcBalance,
-    };
-
-    for (let i = currentStep + 1; i < TOTAL_STEPS; i++) {
-      const futureStep = updatedData[i];
-      const futurePrice = calculateSpotPrice(
-        newUsdcBalance,
-        futureStep.usdcWeight,
-        newTknBalance,
-        futureStep.tknWeight,
-      );
-      updatedData[i] = {
-        ...futureStep,
-        price: futurePrice,
-        tknBalance: newTknBalance,
-        usdcBalance: newUsdcBalance,
+    let nextSwaps: Swap[] = swaps;
+    if (account !== "community") {
+      const userSwap: Swap = {
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
+        time: `${snapshot.time.toFixed(1)}h`,
+        account:
+          account ||
+          `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
+        amountIn: amountToken,
+        amountOut: amountOut,
+        price: newPrice,
+        timestamp: Date.now(),
+        direction: "sell",
       };
+      nextSwaps = [userSwap, ...swaps];
+      if (nextSwaps.length > MAX_SWAPS) nextSwaps.length = MAX_SWAPS;
     }
 
+
+    // Community holdings tracking (reduces holdings; keep avg cost unchanged)
+    let nextCommunityTokens = communityTokensHeld;
+    let nextCommunityAvgCost = communityAvgCost;
+    if (account === "community" && amountToken > 0) {
+      nextCommunityTokens = Math.max(0, communityTokensHeld - amountToken);
+      if (nextCommunityTokens === 0) nextCommunityAvgCost = 0;
+    }
+
+    const { priceHistory, priceHistoryVersion } = get();
+    priceHistory[currentStep] = newPrice;
+
     set({
-      swaps: [newSwap, ...swaps],
+      swaps: nextSwaps,
       currentTknBalance: newTknBalance,
       currentUsdcBalance: newUsdcBalance,
-      simulationData: updatedData,
+      priceHistoryVersion: priceHistoryVersion + 1,
+      communityTokensHeld: nextCommunityTokens,
+      communityAvgCost: nextCommunityAvgCost,
     });
   },
 
   processSell: (amountToken: number) => {
-    const { currentTknBalance, currentUsdcBalance, currentStep, simulationData } = get();
-    const stepData = simulationData[currentStep];
-    if (!stepData) return;
+    const {
+      currentTknBalance,
+      currentUsdcBalance,
+      currentStep,
+      baseSnapshots,
+    } = get();
+    const snapshot = baseSnapshots[currentStep];
+    if (!snapshot) return;
 
     // Calculate output before processing
     const amountOut = calculateOutGivenIn(
       currentTknBalance,
-      stepData.tknWeight,
+      snapshot.tknWeight,
       currentUsdcBalance,
-      stepData.usdcWeight,
+      snapshot.usdcWeight,
       amountToken,
     );
 
@@ -464,16 +622,21 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   },
 
   processBuy: (amountUSDC: number) => {
-    const { currentTknBalance, currentUsdcBalance, currentStep, simulationData } = get();
-    const stepData = simulationData[currentStep];
-    if (!stepData) return;
+    const {
+      currentTknBalance,
+      currentUsdcBalance,
+      currentStep,
+      baseSnapshots,
+    } = get();
+    const snapshot = baseSnapshots[currentStep];
+    if (!snapshot) return;
 
     // Calculate output before processing
     const amountOut = calculateOutGivenIn(
       currentUsdcBalance,
-      stepData.usdcWeight,
+      snapshot.usdcWeight,
       currentTknBalance,
-      stepData.tknWeight,
+      snapshot.tknWeight,
       amountUSDC,
     );
 
@@ -588,67 +751,85 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     const {
       currentStep,
       totalSteps,
-      simulationData,
-      demandCurve,
-      demandPressureCurve,
-      demandPressureConfig,
       setIsPlaying,
       limitOrders,
       twapOrders,
+      baseSnapshots,
+      priceHistory,
+      priceHistoryVersion,
+      swaps,
     } = get();
 
-    if (currentStep >= totalSteps - 1) {
+    if (!baseSnapshots || baseSnapshots.length === 0) {
+      // No precomputed path yet; wait for worker to finish.
+      return;
+    }
+
+    const maxStep = Math.min(totalSteps - 1, baseSnapshots.length - 1);
+
+    if (currentStep >= maxStep) {
       setIsPlaying(false);
       return;
     }
 
     // 1. Advance Step (only update if changed)
     const nextStep = currentStep + 1;
-    if (nextStep !== currentStep) {
-      set({ currentStep: nextStep });
-    }
+    const snapshot = baseSnapshots[nextStep];
 
-    // 2. DEMAND PRESSURE DRIVEN BOT LOGIC
-    const currentData = simulationData[nextStep];
-    const fairPrice = demandCurve[nextStep];
-    const currentPrice = currentData.price;
-    const demandPressure = demandPressureCurve[nextStep];
+    // Advance step and sync live balances/community state to snapshot.
+    if (snapshot) {
+      priceHistory[nextStep] = snapshot.price;
+      let nextSwaps = [...swaps];
 
-    // Calculate price discount (how much below fair value)
-    const priceDiscount = currentPrice < fairPrice 
-      ? (fairPrice - currentPrice) / fairPrice 
-      : 0;
-
-    // Calculate expected trading volume based on demand pressure
-    const baseVolume = calculateTradingVolume(
-      demandPressure,
-      priceDiscount,
-      demandPressureConfig,
-    );
-
-    // Determine number of swaps based on volume (Poisson-like distribution)
-    // Higher volume = more likely to have swaps, and potentially multiple swaps
-    const swapProbability = Math.min(1, baseVolume * 0.3); // Scale probability
-    const numSwaps = Math.random() < swapProbability 
-      ? Math.floor(baseVolume * 2) + 1 // At least 1 swap if probability hits
-      : 0;
-
-    // Generate swaps based on demand pressure
-    for (let i = 0; i < numSwaps; i++) {
-      // Trade size varies based on demand pressure and config
-      const sizeMultiplier = 1 + Math.random() * demandPressureConfig.tradeSizeVariation;
-      const tradeSize = demandPressureConfig.baseTradeSize * sizeMultiplier * demandPressure;
-      
-      // Only buy when price is below fair value (arbitrage opportunity)
-      if (currentPrice < fairPrice) {
-        get()._processPoolBuy(tradeSize);
-      } else if (Math.random() < 0.05) {
-        // Small chance of noise trades even when price is above fair value
-        get()._processPoolBuy(tradeSize * 0.1);
+      // Record bot buys/sells explicitly using per-step volumes from the worker.
+      if (snapshot.buyVolumeUSDC > 0 && snapshot.buyVolumeTKN > 0) {
+        nextSwaps.unshift({
+          id: `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 9)}-community-buy`,
+          time: `${snapshot.time.toFixed(1)}h`,
+          account: "community",
+          amountIn: snapshot.buyVolumeUSDC,
+          amountOut: snapshot.buyVolumeTKN,
+          price: snapshot.price,
+          timestamp: Date.now(),
+          direction: "buy",
+        });
       }
+
+      if (snapshot.sellVolumeUSDC > 0 && snapshot.sellVolumeTKN > 0) {
+        nextSwaps.unshift({
+          id: `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 9)}-community-sell`,
+          time: `${snapshot.time.toFixed(1)}h`,
+          account: "community",
+          amountIn: snapshot.sellVolumeTKN,
+          amountOut: snapshot.sellVolumeUSDC,
+          price: snapshot.price,
+          timestamp: Date.now(),
+          direction: "sell",
+        });
+      }
+
+      if (nextSwaps.length > MAX_SWAPS) {
+        nextSwaps = nextSwaps.slice(0, MAX_SWAPS);
+      }
+
+      set({
+        currentStep: nextStep,
+        currentTknBalance: snapshot.tknBalance,
+        currentUsdcBalance: snapshot.usdcBalance,
+        communityTokensHeld: snapshot.communityTokensHeld,
+        communityAvgCost: snapshot.communityAvgCost,
+        priceHistoryVersion: priceHistoryVersion + 1,
+        swaps: nextSwaps,
+      });
     }
 
-    // 3. Execute user limit orders when conditions are met
+    const currentPrice = snapshot?.price ?? 0;
+
+    // 4. Execute user limit orders when conditions are met
     if (limitOrders.length > 0) {
       const updatedOrders: LimitOrder[] = limitOrders.map((order) => {
         if (order.status !== "open") return order;
@@ -676,7 +857,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       set({ limitOrders: updatedOrders });
     }
 
-    // 4. Execute TWAP orders on schedule with price protection
+    // 5. Execute TWAP orders on schedule with price protection
     if (twapOrders.length > 0) {
       const { userUsdcBalance } = get();
 
@@ -709,7 +890,6 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
         // Determine how much to spend this part
         const idealPerPart = order.totalCollateral / order.numParts;
-        const remainingParts = order.numParts - order.partsExecuted;
         const maxThisPart = Math.min(idealPerPart, order.remainingCollateral);
 
         // Ensure user has enough balance for this slice

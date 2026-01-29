@@ -4,10 +4,11 @@ import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SwapForm } from "./SwapForm";
-import { useMemo, memo } from "react";
+import { useMemo, useEffect, memo, useTransition, useState } from "react";
 import { useDebounce } from "@/lib/useDebounce";
 import { useThrottle } from "@/lib/useThrottle";
 import { usePricePathsWorker } from "@/lib/hooks/usePricePathsWorker";
+import { useSimulationWorker } from "@/lib/hooks/useSimulationWorker";
 import { PriceChartTab } from "./tabs/PriceChartTab";
 import { SwapsTab } from "./tabs/SwapsTab";
 import { DemandChartTab } from "./tabs/DemandChartTab";
@@ -16,61 +17,137 @@ import { WeightsChartTab } from "./tabs/WeightsChartTab";
 function SimulatorMainComponent() {
   const {
     simulationData,
+    priceHistory,
+    priceHistoryVersion,
+    baseSnapshots,
+    baseSnapshotsVersion,
     swaps,
-    demandCurve,
+    demandPressureCurve,
+    sellPressureCurve,
     config,
     currentStep,
     simulationSpeed,
     demandPressureConfig,
+    sellPressureConfig,
     isPlaying,
   } = useSimulatorStore(
     useShallow((state) => ({
       simulationData: state.simulationData,
+      priceHistory: state.priceHistory,
+      priceHistoryVersion: state.priceHistoryVersion,
+      baseSnapshots: state.baseSnapshots,
+      baseSnapshotsVersion: state.baseSnapshotsVersion,
       swaps: state.swaps,
-      demandCurve: state.demandCurve,
+      demandPressureCurve: state.demandPressureCurve,
+      sellPressureCurve: state.sellPressureCurve,
       config: state.config,
       currentStep: state.currentStep,
       simulationSpeed: state.simulationSpeed,
       demandPressureConfig: state.demandPressureConfig,
+      sellPressureConfig: state.sellPressureConfig,
       isPlaying: state.isPlaying,
     })),
   );
 
-  // Throttle chart data updates during simulation to reduce rendering overhead
-  // Sample data points during simulation for better performance
-  const chartData = useMemo(() => {
-    if (!isPlaying) {
-      return simulationData;
+  // Precompute deterministic simulation path in a Web Worker.
+  const { snapshots: workerSnapshots } = useSimulationWorker(
+    config,
+    demandPressureConfig,
+    sellPressureConfig,
+    simulationData.length > 0 ? simulationData.length - 1 : 0,
+    true, // always keep base path ready; it's cheap at 300 steps
+  );
+
+  // When worker snapshots are ready, sync them into the store so tick() can use them.
+  const setBaseSnapshots = useSimulatorStore((state) => state.setBaseSnapshots);
+  useEffect(() => {
+    if (workerSnapshots && workerSnapshots.length > 0) {
+      setBaseSnapshots(workerSnapshots);
     }
-    // During simulation, sample every 5th point to reduce rendering load
-    return simulationData.filter(
-      (_, index) => index % 5 === 0 || index === simulationData.length - 1,
-    );
-  }, [simulationData, isPlaying]);
+  }, [workerSnapshots, setBaseSnapshots]);
+
+  // Use transition to defer expensive chart recalculations when toggling play/pause
+  const [isPending, startTransition] = useTransition();
+  const [effectiveIsPlaying, setEffectiveIsPlaying] = useState(isPlaying);
+
+  // Update effectiveIsPlaying with transition to avoid blocking UI
+  useEffect(() => {
+    startTransition(() => {
+      setEffectiveIsPlaying(isPlaying);
+    });
+  }, [isPlaying]);
+
+  // Pre-calculate full-resolution chart data (always available)
+  const fullChartData = useMemo(() => {
+    const out: any[] = [];
+    const source = baseSnapshots.length > 0 ? baseSnapshots : simulationData;
+    const n = source.length;
+    if (n === 0) return out;
+
+    for (let i = 0; i < n; i++) {
+      const base = source[i] as any;
+      out.push({
+        index: i,
+        ...base,
+        price: priceHistory[i] ?? base.price,
+      });
+    }
+    return out;
+  }, [simulationData, baseSnapshots, baseSnapshotsVersion, priceHistoryVersion]);
+
+  // Build chart data with sampling when playing (use effectiveIsPlaying to avoid blocking)
+  const chartData = useMemo(() => {
+    if (effectiveIsPlaying) {
+      // When playing, sample heavily
+      const sampleEvery = 10;
+      const out: any[] = [];
+      for (let i = 0; i < fullChartData.length; i += sampleEvery) {
+        out.push(fullChartData[i]);
+      }
+      // Ensure last point included
+      if (fullChartData.length > 0 && (fullChartData.length - 1) % sampleEvery !== 0) {
+        out.push(fullChartData[fullChartData.length - 1]);
+      }
+      return out;
+    }
+    // When paused, use full resolution
+    return fullChartData;
+  }, [fullChartData, effectiveIsPlaying]);
 
   // Throttle chart data updates during simulation
   // Always call the hook (Rules of Hooks), but use delay=0 when not playing to return immediately
-  const throttledChartData = useThrottle(chartData, isPlaying ? 200 : 0);
+  const throttledChartData = useThrottle(chartData, effectiveIsPlaying ? 200 : 0);
 
-  // Disable animation when speed is high to ensure smooth updates
-  const shouldAnimate = simulationSpeed <= 1;
+  // Disable line animation entirely while simulation is playing to reduce CPU.
+  const shouldAnimate = !effectiveIsPlaying;
 
   // Debounce demand pressure config to avoid recalculating on every change
   const debouncedDemandPressureConfig = useDebounce(demandPressureConfig, 500);
 
   // Use Web Worker for expensive calculations (only when not playing)
-  // The hook now uses stable comparisons internally to prevent infinite loops
+  // Delay enabling the worker slightly after pausing to avoid blocking the UI
+  const [shouldCalculatePaths, setShouldCalculatePaths] = useState(!isPlaying);
+  useEffect(() => {
+    if (!isPlaying) {
+      // Small delay after pausing before calculating paths
+      const timer = setTimeout(() => setShouldCalculatePaths(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setShouldCalculatePaths(false);
+    }
+  }, [isPlaying]);
+
   const { paths: potentialPaths } = usePricePathsWorker(
     config,
     debouncedDemandPressureConfig,
-    simulationData.length - 1,
+    simulationData.length > 0 ? simulationData.length - 1 : 0,
     [0.5, 1.0, 1.5],
-    !isPlaying, // Only calculate when simulation is paused
+    shouldCalculatePaths,
   );
 
   // Merge potential paths into chart data (only when not playing)
   const chartDataWithPaths = useMemo(() => {
-    if (isPlaying || potentialPaths.length === 0) {
+    if (effectiveIsPlaying || potentialPaths.length === 0) {
       // When playing or paths not ready, don't include potential paths to reduce computation
       return throttledChartData;
     }
@@ -80,14 +157,21 @@ function SimulatorMainComponent() {
       potentialPathMedium: potentialPaths[1]?.[i] ?? null,
       potentialPathHigh: potentialPaths[2]?.[i] ?? null,
     }));
-  }, [throttledChartData, potentialPaths, isPlaying]);
+  }, [throttledChartData, potentialPaths, effectiveIsPlaying]);
 
   const demandChartData = useMemo(() => {
-    return throttledChartData.map((d: any, i: number) => ({
-      ...d,
-      fairValue: demandCurve[i] || 0,
-    }));
-  }, [throttledChartData, demandCurve]);
+    return throttledChartData.map((d: any) => {
+      const idx = d.index ?? 0;
+      const buy = demandPressureCurve[idx] ?? 0;
+      const sell = sellPressureCurve[idx] ?? 0;
+      return {
+        ...d,
+        buyPressure: buy,
+        sellPressure: sell,
+        netPressure: buy - sell,
+      };
+    });
+  }, [throttledChartData, demandPressureCurve, sellPressureCurve]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -111,7 +195,7 @@ function SimulatorMainComponent() {
                 value="demand"
                 className="rounded-none border-b-2 border-transparent  data-[state=active]:shadow-none px-4 py-2"
               >
-                Fair price discovery
+                Demand curve
               </TabsTrigger>
               <TabsTrigger
                 value="weights"
@@ -146,9 +230,10 @@ function SimulatorMainComponent() {
             <TabsContent value="chart" className="mt-0 h-[calc(100%-2rem)]">
               <PriceChartTab
                 chartData={chartDataWithPaths}
-                isPlaying={isPlaying}
+                isPlaying={effectiveIsPlaying}
                 shouldAnimate={shouldAnimate}
                 simulationData={simulationData}
+                currentStep={currentStep}
               />
             </TabsContent>
 
@@ -165,7 +250,7 @@ function SimulatorMainComponent() {
 
             <TabsContent value="weights" className="mt-0 h-[calc(100%-2rem)]">
               <WeightsChartTab
-                chartData={simulationData}
+                chartData={chartData}
                 shouldAnimate={shouldAnimate}
               />
             </TabsContent>

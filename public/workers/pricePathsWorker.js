@@ -27,17 +27,52 @@ function calculateOutGivenIn(
   return balanceOut * (1 - power);
 }
 
-function getDemandPressureCurve(hours, steps, config) {
+function clampNumber(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function getCumulativeBuyPressureCurve(hours, steps, config) {
   const curve = [];
-  for (let i = 0; i <= steps; i++) {
-    const progress = i / steps;
-    const growthFactor = Math.pow(progress, config.growthRate / 2);
-    const intensity =
-      config.floorIntensity +
-      (config.baseIntensity - config.floorIntensity) * growthFactor;
-    curve.push(Math.max(0, Math.min(1, intensity)));
+  const safeSteps = Math.max(1, steps);
+
+  const multiplier = clampNumber(config.multiplier ?? 1, 0, 1000000);
+  const base = config.magnitudeBase;
+  const endScale = config.preset === "bearish" ? 0.35 : 1.0;
+  const endTotalUsdc = base * multiplier * endScale;
+
+  for (let i = 0; i <= safeSteps; i++) {
+    const progress = i / safeSteps;
+    let normalized;
+    if (config.preset === "bearish") {
+      normalized = Math.pow(progress, 1.8);
+    } else {
+      normalized = Math.pow(progress, 0.9);
+    }
+    curve.push(endTotalUsdc * clampNumber(normalized, 0, 1));
   }
+
+  curve[0] = 0;
+  curve[curve.length - 1] = endTotalUsdc;
+  for (let i = 1; i < curve.length; i++) {
+    curve[i] = Math.max(curve[i], curve[i - 1]);
+  }
+
   return curve;
+}
+
+function getPerStepBuyFlowFromCumulative(cumulative) {
+  if (!cumulative || cumulative.length === 0) return [];
+  const flow = [0];
+  for (let i = 1; i < cumulative.length; i++) {
+    const d = cumulative[i] - cumulative[i - 1];
+    flow.push(Math.max(0, d));
+  }
+  return flow;
+}
+
+function getDemandPressureCurve(hours, steps, config) {
+  const cumulative = getCumulativeBuyPressureCurve(hours, steps, config);
+  return getPerStepBuyFlowFromCumulative(cumulative);
 }
 
 function getDemandCurve(hours, steps) {
@@ -52,17 +87,7 @@ function getDemandCurve(hours, steps) {
   return curve;
 }
 
-function calculateTradingVolume(
-  demandPressure,
-  priceDiscount,
-  config,
-) {
-  const discountMultiplier = Math.max(
-    0.5,
-    1 + priceDiscount * config.priceDiscountMultiplier,
-  );
-  return demandPressure * discountMultiplier;
-}
+// calculateTradingVolume removed in the new model.
 
 function calculateSimulationData(config, steps) {
   const data = [];
@@ -120,7 +145,6 @@ function calculatePotentialPricePaths(
     steps,
     demandPressureConfig,
   );
-  const demandCurve = getDemandCurve(config.duration, steps);
   const baseData = calculateSimulationData(config, steps);
 
   for (const demandMultiplier of scenarios) {
@@ -129,7 +153,6 @@ function calculatePotentialPricePaths(
     let usdcBalance = config.usdcBalanceIn;
 
     for (let i = 0; i <= steps; i++) {
-      const stepData = baseData[i];
       const progress = i / steps;
 
       const currentTknWeight =
@@ -139,43 +162,25 @@ function calculatePotentialPricePaths(
         config.usdcWeightIn +
         (config.usdcWeightOut - config.usdcWeightIn) * progress;
 
-      const currentPrice = calculateSpotPrice(
+      calculateSpotPrice(
         usdcBalance,
         currentUsdcWeight,
         tknBalance,
         currentTknWeight,
       );
 
-      const baseDemandPressure = demandPressureCurve[i];
-      const fairPrice = demandCurve[i];
+      const flowUSDC = (demandPressureCurve[i] || 0) * demandMultiplier;
 
-      const adjustedDemandPressure = Math.min(
-        1,
-        baseDemandPressure * demandMultiplier,
-      );
-
-      const priceDiscount =
-        currentPrice < fairPrice ? (fairPrice - currentPrice) / fairPrice : 0;
-
-      const baseVolume = calculateTradingVolume(
-        adjustedDemandPressure,
-        priceDiscount,
-        demandPressureConfig,
-      );
-
-      const expectedBuyVolume =
-        baseVolume * demandPressureConfig.baseTradeSize * adjustedDemandPressure;
-
-      if (expectedBuyVolume > 0 && currentPrice < fairPrice) {
+      if (flowUSDC > 0) {
         const amountOut = calculateOutGivenIn(
           usdcBalance,
           currentUsdcWeight,
           tknBalance,
           currentTknWeight,
-          expectedBuyVolume,
+          flowUSDC,
         );
 
-        usdcBalance += expectedBuyVolume;
+        usdcBalance += flowUSDC;
         tknBalance -= amountOut;
       }
 

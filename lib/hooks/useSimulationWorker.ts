@@ -1,7 +1,25 @@
 import { useState, useEffect, useRef } from "react";
-import type { LBPConfig, DemandPressureConfig } from "../lbp-math";
+import type {
+  LBPConfig,
+  DemandPressureConfig,
+  SellPressureConfig,
+} from "../lbp-math";
+import type { SimulationStateSnapshot } from "../simulation-core";
 
-// Helper to create stable string representation for comparison
+interface WorkerMessage {
+  type: "run-simulation";
+  config: LBPConfig;
+  demandPressureConfig: DemandPressureConfig;
+  sellPressureConfig: SellPressureConfig;
+  steps: number;
+}
+
+interface WorkerResponse {
+  type: "success" | "error";
+  result?: SimulationStateSnapshot[];
+  error?: string;
+}
+
 function createConfigKey(config: LBPConfig): string {
   return JSON.stringify({
     tokenName: config.tokenName,
@@ -21,7 +39,7 @@ function createConfigKey(config: LBPConfig): string {
   });
 }
 
-function createDemandConfigKey(config: DemandPressureConfig): string {
+function createDemandKey(config: DemandPressureConfig): string {
   return JSON.stringify({
     preset: config.preset,
     magnitudeBase: config.magnitudeBase,
@@ -29,67 +47,62 @@ function createDemandConfigKey(config: DemandPressureConfig): string {
   });
 }
 
-interface WorkerMessage {
-  type: "calculate";
-  config: LBPConfig;
-  demandPressureConfig: DemandPressureConfig;
-  steps: number;
-  scenarios: number[];
+function createSellKey(config: SellPressureConfig): string {
+  return JSON.stringify({
+    preset: config.preset,
+    loyalSoldPct: config.loyalSoldPct,
+    loyalConcentrationPct: config.loyalConcentrationPct,
+    greedySpreadPct: config.greedySpreadPct,
+    greedySellPct: config.greedySellPct,
+  });
 }
 
-interface WorkerResponse {
-  type: "success" | "error";
-  result?: number[][];
-  error?: string;
-}
-
-export function usePricePathsWorker(
+export function useSimulationWorker(
   config: LBPConfig,
   demandPressureConfig: DemandPressureConfig,
+  sellPressureConfig: SellPressureConfig,
   steps: number,
-  scenarios: number[] = [0.5, 1.0, 1.5],
   enabled: boolean = true,
 ) {
-  const [paths, setPaths] = useState<number[][]>([]);
+  const [snapshots, setSnapshots] = useState<SimulationStateSnapshot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const workerRef = useRef<Worker | null>(null);
-  const requestIdRef = useRef<number>(0);
-  const lastConfigKeyRef = useRef<string>("");
-  const lastDemandConfigKeyRef = useRef<string>("");
-  const lastStepsRef = useRef<number>(-1);
-  const lastEnabledRef = useRef<boolean>(false);
+  const requestIdRef = useRef(0);
+  const lastConfigKeyRef = useRef("");
+  const lastDemandKeyRef = useRef("");
+  const lastSellKeyRef = useRef("");
+  const lastStepsRef = useRef(-1);
+  const lastEnabledRef = useRef(false);
 
-  // Initialize worker
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
-      // Create worker from the public folder
-      workerRef.current = new Worker("/workers/pricePathsWorker.js", {
+      workerRef.current = new Worker("/workers/simulationWorker.js", {
         type: "module",
       });
 
       workerRef.current.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const { type, result, error: errorMsg } = e.data;
         if (type === "success" && result) {
-          setPaths(result);
+          setSnapshots(result);
           setIsLoading(false);
           setError(null);
         } else if (type === "error") {
-          setError(errorMsg || "Unknown error");
+          setError(errorMsg || "Unknown simulation error");
           setIsLoading(false);
         }
       };
 
       workerRef.current.onerror = (err) => {
-        setError("Worker error occurred");
+        console.error("Simulation worker error:", err);
+        setError("Simulation worker error");
         setIsLoading(false);
-        console.error("Worker error:", err);
       };
     } catch (err) {
-      console.error("Failed to create worker:", err);
-      setError("Failed to initialize worker");
+      console.error("Failed to create simulation worker:", err);
+      setError("Failed to initialize simulation worker");
     }
 
     return () => {
@@ -100,30 +113,29 @@ export function usePricePathsWorker(
     };
   }, []);
 
-  // Calculate paths when dependencies change (using stable keys to prevent infinite loops)
   useEffect(() => {
     const configKey = createConfigKey(config);
-    const demandConfigKey = createDemandConfigKey(demandPressureConfig);
-    const scenariosKey = JSON.stringify(scenarios);
+    const demandKey = createDemandKey(demandPressureConfig);
+    const sellKey = createSellKey(sellPressureConfig);
 
-    // Only recalculate if something actually changed
     if (
       configKey === lastConfigKeyRef.current &&
-      demandConfigKey === lastDemandConfigKeyRef.current &&
+      demandKey === lastDemandKeyRef.current &&
+      sellKey === lastSellKeyRef.current &&
       steps === lastStepsRef.current &&
       enabled === lastEnabledRef.current
     ) {
-      return; // No changes, skip recalculation
+      return;
     }
 
-    // Update refs
     lastConfigKeyRef.current = configKey;
-    lastDemandConfigKeyRef.current = demandConfigKey;
+    lastDemandKeyRef.current = demandKey;
+    lastSellKeyRef.current = sellKey;
     lastStepsRef.current = steps;
     lastEnabledRef.current = enabled;
 
     if (!enabled || !workerRef.current) {
-      setPaths([]);
+      setSnapshots([]);
       setIsLoading(false);
       return;
     }
@@ -134,27 +146,27 @@ export function usePricePathsWorker(
     const currentRequestId = requestIdRef.current;
 
     const message: WorkerMessage = {
-      type: "calculate",
+      type: "run-simulation",
       config,
       demandPressureConfig,
+      sellPressureConfig,
       steps,
-      scenarios,
     };
 
     workerRef.current.postMessage(message);
 
-    // Timeout check to ensure we don't wait forever
     const timeoutId = setTimeout(() => {
       if (currentRequestId === requestIdRef.current) {
-        setError("Calculation timeout");
+        setError("Simulation timeout");
         setIsLoading(false);
       }
-    }, 30000); // 30 second timeout
+    }, 30000);
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [config, demandPressureConfig, steps, scenarios, enabled]);
+  }, [config, demandPressureConfig, sellPressureConfig, steps, enabled]);
 
-  return { paths, isLoading, error };
+  return { snapshots, isLoading, error };
 }
+

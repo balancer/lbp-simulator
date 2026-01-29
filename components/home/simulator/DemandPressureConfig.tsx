@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -17,6 +16,13 @@ import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { DEFAULT_DEMAND_PRESSURE_CONFIG } from "@/lib/lbp-math";
 import { Separator } from "@/components/ui/separator";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   LineChart,
   Line,
   XAxis,
@@ -25,15 +31,17 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, memo } from "react";
 import {
-  getDemandPressureCurve,
+  getCumulativeBuyPressureCurve,
   DemandPressureConfig as DemandPressureConfigType,
 } from "@/lib/lbp-math";
 import { useDebounce } from "@/lib/useDebounce";
 import { useShallow } from "zustand/react/shallow";
+import { GiBull } from "react-icons/gi";
+import { GiBearFace } from "react-icons/gi";
 
-export function DemandPressureConfig() {
+function DemandPressureConfigComponent() {
   const { demandPressureConfig, updateDemandPressureConfig, config } =
     useSimulatorStore(
       useShallow((state) => ({
@@ -67,10 +75,14 @@ export function DemandPressureConfig() {
 
   // Generate preview curve data using debounced config for calculations, but local for immediate preview
   const previewData = useMemo(() => {
-    const curve = getDemandPressureCurve(config.duration, 100, localConfig);
-    return curve.map((intensity, i) => ({
+    const cumulative = getCumulativeBuyPressureCurve(
+      config.duration,
+      100,
+      localConfig,
+    );
+    return cumulative.map((cumulativeUsdc, i) => ({
       time: (i / 100) * config.duration,
-      intensity: intensity * 100, // Convert to percentage for display
+      cumulativeUsdc,
     }));
   }, [localConfig, config.duration]);
 
@@ -87,14 +99,14 @@ export function DemandPressureConfig() {
           className="h-10 w-full"
           title="Configure Demand Pressure"
         >
-          Model the demmand pressure
+          Model the buy pressure
           <TrendingUp className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl h-[90vh] max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="p-6 border-b flex flex-row items-center justify-between space-y-0 shrink-0">
           <DialogTitle className="text-xl font-semibold">
-            Demand Pressure Model
+            Buy Pressure Model
           </DialogTitle>
           <Button
             variant="ghost"
@@ -133,17 +145,33 @@ export function DemandPressureConfig() {
                       fontSize={10}
                       tickFormatter={(val) => `${val.toFixed(0)}h`}
                     />
-                    <Tooltip
-                      formatter={(value: number | undefined) =>
-                        value != null ? `${value.toFixed(1)}%` : ""
+                    <YAxis
+                      stroke={
+                        typeof window !== "undefined" &&
+                        document.documentElement.classList.contains("dark")
+                          ? "#505050"
+                          : "hsl(var(--muted-foreground))"
                       }
+                      fontSize={10}
+                      tickFormatter={(val) => {
+                        const n = Number(val);
+                        if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+                        if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
+                        return `${n.toFixed(0)}`;
+                      }}
+                    />
+                    <Tooltip
+                      formatter={(value: number | undefined) => {
+                        if (value == null) return "";
+                        return `${Number(value).toLocaleString()} ${config.collateralToken}`;
+                      }}
                       labelFormatter={(label) =>
                         `Time: ${Number(label).toFixed(1)}h`
                       }
                     />
                     <Line
                       type="monotone"
-                      dataKey="intensity"
+                      dataKey="cumulativeUsdc"
                       stroke="url(#demand-pressure-gradient)"
                       strokeWidth={2}
                       dot={false}
@@ -155,160 +183,102 @@ export function DemandPressureConfig() {
 
             <Separator />
 
-            {/* Intensity Parameters */}
+            {/* Buy Pressure Curve */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                Intensity Parameters
+                Buy Pressure Curve
               </h3>
 
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label className="text-xs">Base Intensity</Label>
-                  <span className="text-sm text-muted-foreground">
-                    {(localConfig.baseIntensity * 100).toFixed(0)}%
-                  </span>
+                <Label className="text-xs">Preset</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLocalConfig((prev) => ({ ...prev, preset: "bullish" }))
+                    }
+                    className={[
+                      "rounded-lg border p-3 text-left transition-colors",
+                      "bg-blue-500/10 hover:bg-blue-500/15 border-blue-500/30",
+                      localConfig.preset === "bullish"
+                        ? "ring-2 ring-blue-500/60"
+                        : "",
+                    ].join(" ")}
+                  >
+                    <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex gap-2 items-center">
+                    <GiBull size={24} color="blue" />
+                      Bullish
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Constant high buy pressure
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLocalConfig((prev) => ({ ...prev, preset: "bearish" }))
+                    }
+                    className={[
+                      "rounded-lg border p-3 text-left transition-colors",
+                      "bg-red-500/10 hover:bg-red-500/15 border-red-500/30",
+                      localConfig.preset === "bearish"
+                        ? "ring-2 ring-red-500/60"
+                        : "",
+                    ].join(" ")}
+                  >
+                    <div className="text-xs font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
+                      <GiBearFace size={24} color="red"/>
+                      Bearish
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Ramps up slowly, lighter overall
+                    </div>
+                  </button>
                 </div>
-                <Slider
-                  value={[localConfig.baseIntensity]}
-                  onValueChange={(vals) =>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Magnitude (end cumulative buy)</Label>
+                <Select
+                  value={String(localConfig.magnitudeBase)}
+                  onValueChange={(value) =>
                     setLocalConfig((prev) => ({
                       ...prev,
-                      baseIntensity: vals[0],
+                      magnitudeBase: Number(value) as DemandPressureConfigType["magnitudeBase"],
                     }))
                   }
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  className="w-full"
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select magnitude" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10000">10k</SelectItem>
+                    <SelectItem value="100000">100k</SelectItem>
+                    <SelectItem value="1000000">1M</SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Maximum trading intensity at the end of the sale (when price
-                  finds fair value)
+                  Controls the Y-axis scale (USDC cumulative over time).
                 </p>
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label className="text-xs">Floor Intensity</Label>
-                  <span className="text-sm text-muted-foreground">
-                    {(localConfig.floorIntensity * 100).toFixed(0)}%
-                  </span>
-                </div>
-                <Slider
-                  value={[localConfig.floorIntensity]}
-                  onValueChange={(vals) =>
-                    setLocalConfig((prev) => ({
-                      ...prev,
-                      floorIntensity: vals[0],
-                    }))
-                  }
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Minimum trading intensity at the start (high price prevents
-                  front-running)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label className="text-xs">Growth Rate</Label>
-                  <span className="text-sm text-muted-foreground">
-                    {localConfig.growthRate.toFixed(2)}
-                  </span>
-                </div>
-                <Slider
-                  value={[localConfig.growthRate]}
-                  onValueChange={(vals) =>
-                    setLocalConfig((prev) => ({ ...prev, growthRate: vals[0] }))
-                  }
-                  min={0.5}
-                  max={3}
-                  step={0.1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  How fast trading intensity grows over time (square root curve
-                  steepness)
-                </p>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Trading Parameters */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                Trading Parameters
-              </h3>
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label className="text-xs">Price Discount Multiplier</Label>
-                  <span className="text-sm text-muted-foreground">
-                    {localConfig.priceDiscountMultiplier.toFixed(2)}x
-                  </span>
-                </div>
-                <Slider
-                  value={[localConfig.priceDiscountMultiplier]}
-                  onValueChange={(vals) =>
-                    setLocalConfig((prev) => ({
-                      ...prev,
-                      priceDiscountMultiplier: vals[0],
-                    }))
-                  }
-                  min={0.5}
-                  max={3}
-                  step={0.1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  How much price discounts amplify trading volume
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Base Trade Size (USDC)</Label>
+                <Label className="text-xs">Multiplier</Label>
                 <Input
                   type="number"
-                  value={localConfig.baseTradeSize}
+                  min={0}
+                  step={0.1}
+                  value={localConfig.multiplier}
                   onChange={(e) =>
                     setLocalConfig((prev) => ({
                       ...prev,
-                      baseTradeSize: Number(e.target.value),
+                      multiplier: Number(e.target.value),
                     }))
                   }
                 />
                 <p className="text-xs text-muted-foreground">
-                  Base size for bot trades in USDC
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label className="text-xs">Trade Size Variation</Label>
-                  <span className="text-sm text-muted-foreground">
-                    {localConfig.tradeSizeVariation.toFixed(1)}x
-                  </span>
-                </div>
-                <Slider
-                  value={[localConfig.tradeSizeVariation]}
-                  onValueChange={(vals) =>
-                    setLocalConfig((prev) => ({
-                      ...prev,
-                      tradeSizeVariation: vals[0],
-                    }))
-                  }
-                  min={1}
-                  max={5}
-                  step={0.1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Maximum variation multiplier for trade sizes
+                  Fine-tune the curve’s magnitude (e.g. 0.5x, 2x).
                 </p>
               </div>
             </div>
@@ -318,3 +288,5 @@ export function DemandPressureConfig() {
     </Dialog>
   );
 }
+
+export const DemandPressureConfig = memo(DemandPressureConfigComponent);

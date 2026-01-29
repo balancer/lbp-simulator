@@ -31,22 +31,46 @@ export interface SimulationStep {
   marketCap: number;
 }
 
+export type BuyPressurePreset = "bullish" | "bearish";
+
+export type BuyPressureMagnitudeBase = 10_000 | 100_000 | 1_000_000;
+
+/**
+ * Buy pressure model configuration.
+ *
+ * The curve is interpreted as **cumulative USDC buy volume over time**.
+ * We convert cumulative → per-step flow via discrete differences.
+ */
 export interface DemandPressureConfig {
-  baseIntensity: number; // Maximum trading intensity at the end (0-1)
-  floorIntensity: number; // Minimum trading intensity at the start (0-1)
-  growthRate: number; // How fast intensity grows over time (0.5-3) - affects square root curve steepness
-  priceDiscountMultiplier: number; // How much price discount amplifies volume (0.5-3)
-  baseTradeSize: number; // Base trade size in USDC
-  tradeSizeVariation: number; // Variation multiplier for trade sizes (1-5x)
+  preset: BuyPressurePreset;
+  magnitudeBase: BuyPressureMagnitudeBase; // 10k / 100k / 1M
+  multiplier: number; // fine control (e.g. 0.5x, 2x)
 }
 
 export const DEFAULT_DEMAND_PRESSURE_CONFIG: DemandPressureConfig = {
-  baseIntensity: 1.0, // High activity at the end when price finds fair value
-  floorIntensity: 0.1, // Low activity at the start (high price prevents front-running)
-  growthRate: 1.0, // Square root growth rate (1.0 = standard √x curve)
-  priceDiscountMultiplier: 2.0,
-  baseTradeSize: 10_000,
-  tradeSizeVariation: 2.0,
+  preset: "bullish",
+  magnitudeBase: 100_000,
+  multiplier: 1,
+};
+
+export type SellPressurePreset = "loyal" | "greedy";
+
+export interface SellPressureConfig {
+  preset: SellPressurePreset;
+  // Loyal community parameters
+  loyalSoldPct: number; // percentage of community-held tokens targeted for sale over campaign (0-100)
+  loyalConcentrationPct: number; // percentage of sell weight concentrated at start+end (0-100)
+  // Greedy community parameters
+  greedySpreadPct: number; // price spread over cost basis before selling (e.g. 2 = 2%)
+  greedySellPct: number; // percentage of holdings sold when threshold hit (0-100)
+}
+
+export const DEFAULT_SELL_PRESSURE_CONFIG: SellPressureConfig = {
+  preset: "loyal",
+  loyalSoldPct: 5,
+  loyalConcentrationPct: 60,
+  greedySpreadPct: 2,
+  greedySellPct: 100,
 };
 
 /**
@@ -130,50 +154,121 @@ export function getDemandCurve(
   return curve;
 }
 
+function clampNumber(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
+}
+
 /**
- * Generates a demand pressure curve (trading volume/intensity) based on time
- * Returns trading volume/intensity (0-1 scale) over time
- * Low at start (high price prevents front-running), increases over time as price drops
- * Uses square root growth: intensity = floor + (base - floor) * sqrt(progress^growthRate)
+ * Preset cumulative buy pressure curves (normalized 0→1, monotone increasing).
+ *
+ * - bullish: near-linear / gently concave → "constant high" buying.
+ * - bearish: convex → lighter early, ramps later; also lower total by default.
+ */
+export function getCumulativeBuyPressureCurve(
+  hours: number,
+  steps: number,
+  config: DemandPressureConfig,
+): number[] {
+  const curve: number[] = [];
+  const safeSteps = Math.max(1, steps);
+
+  const multiplier = clampNumber(config.multiplier ?? 1, 0, 1_000_000);
+  const base = config.magnitudeBase;
+
+  // Make bearish overall "lighter" than bullish at the same base, per product spec.
+  const endScale = config.preset === "bearish" ? 0.35 : 1.0;
+  const endTotalUsdc = base * multiplier * endScale;
+
+  for (let i = 0; i <= safeSteps; i++) {
+    const progress = i / safeSteps; // 0..1
+
+    let normalized: number;
+    if (config.preset === "bearish") {
+      // Convex: slow early, faster later
+      normalized = Math.pow(progress, 1.8);
+    } else {
+      // Gently concave: steadier throughout (slightly front-loaded)
+      normalized = Math.pow(progress, 0.9);
+    }
+
+    curve.push(endTotalUsdc * clampNumber(normalized, 0, 1));
+  }
+
+  // Ensure monotone + exact endpoints
+  curve[0] = 0;
+  curve[curve.length - 1] = endTotalUsdc;
+  for (let i = 1; i < curve.length; i++) {
+    curve[i] = Math.max(curve[i], curve[i - 1]);
+  }
+
+  return curve;
+}
+
+export function getPerStepBuyFlowFromCumulative(
+  cumulative: number[],
+): number[] {
+  if (cumulative.length === 0) return [];
+  const flow: number[] = [];
+  flow.push(0);
+  for (let i = 1; i < cumulative.length; i++) {
+    const d = cumulative[i] - cumulative[i - 1];
+    flow.push(Math.max(0, d));
+  }
+  return flow;
+}
+
+/**
+ * Back-compat: some callers expect a "pressure curve" array.
+ * Now returns **per-step USDC buy flow** derived from the configured cumulative curve.
  */
 export function getDemandPressureCurve(
   hours: number,
   steps: number,
   config: DemandPressureConfig,
 ): number[] {
-  const curve = [];
+  const cumulative = getCumulativeBuyPressureCurve(hours, steps, config);
+  return getPerStepBuyFlowFromCumulative(cumulative);
+}
 
-  for (let i = 0; i <= steps; i++) {
-    const progress = i / steps; // 0 to 1
-    // Square root growth: low at start, increases over time
-    // Apply growthRate as exponent to control curve steepness
-    // sqrt(progress^growthRate) = progress^(growthRate/2)
-    const growthFactor = Math.pow(progress, config.growthRate / 2);
-    const intensity =
-      config.floorIntensity +
-      (config.baseIntensity - config.floorIntensity) * growthFactor;
-    curve.push(Math.max(0, Math.min(1, intensity))); // Clamp 0-1
+/**
+ * Loyal community sell schedule.
+ *
+ * Returns per-step weights that sum to 1, emphasizing the
+ * beginning and end of the sale according to `concentrationPct`.
+ */
+export function getLoyalSellSchedule(
+  hours: number,
+  steps: number,
+  concentrationPct: number,
+): number[] {
+  const safeSteps = Math.max(1, steps);
+  const weights = new Array(safeSteps + 1).fill(1);
+
+  const clampedConc = clampNumber(concentrationPct, 0, 100);
+  if (clampedConc > 0) {
+    // Portion of steps on each side that get extra weight
+    const edgeFraction = clampedConc / 200; // split between start & end
+    const edgeSteps = Math.max(1, Math.floor(safeSteps * edgeFraction));
+
+    for (let i = 0; i <= safeSteps; i++) {
+      if (i < edgeSteps || i > safeSteps - edgeSteps) {
+        weights[i] *= 2; // double weight at edges
+      }
+    }
   }
-  return curve;
+
+  const total = weights.reduce((acc, w) => acc + w, 0);
+  if (total === 0) {
+    return new Array(safeSteps + 1).fill(0);
+  }
+  return weights.map((w) => w / total);
 }
 
 /**
  * Calculates expected trading volume based on demand pressure and price discount
  * Combines demand pressure intensity with price-based probability
  */
-export function calculateTradingVolume(
-  demandPressure: number,
-  priceDiscount: number,
-  config: DemandPressureConfig,
-): number {
-  // Base volume scales with demand pressure
-  // Price discount amplifies volume (more buying when price is below fair value)
-  const discountMultiplier = Math.max(
-    0.5,
-    1 + priceDiscount * config.priceDiscountMultiplier,
-  );
-  return demandPressure * discountMultiplier;
-}
+// NOTE: calculateTradingVolume removed in the new model.
 
 export function calculateSimulationData(
   config: LBPConfig,
@@ -237,13 +332,7 @@ export function calculatePotentialPricePaths(
   scenarios: number[] = [0.5, 1.0, 1.5], // Low, medium, high demand multipliers
 ): number[][] {
   const paths: number[][] = [];
-  const demandPressureCurve = getDemandPressureCurve(
-    config.duration,
-    steps,
-    demandPressureConfig,
-  );
-  const demandCurve = getDemandCurve(config.duration, steps);
-
+  const baseFlowCurve = getDemandPressureCurve(config.duration, steps, demandPressureConfig);
   // Calculate base simulation data (no trades)
   const baseData = calculateSimulationData(config, steps);
 
@@ -254,7 +343,6 @@ export function calculatePotentialPricePaths(
     let usdcBalance = config.usdcBalanceIn;
 
     for (let i = 0; i <= steps; i++) {
-      const stepData = baseData[i];
       const progress = i / steps;
 
       // Interpolate weights
@@ -266,7 +354,7 @@ export function calculatePotentialPricePaths(
         (config.usdcWeightOut - config.usdcWeightIn) * progress;
 
       // Calculate current price
-      const currentPrice = calculateSpotPrice(
+      calculateSpotPrice(
         usdcBalance,
         currentUsdcWeight,
         tknBalance,
@@ -274,46 +362,21 @@ export function calculatePotentialPricePaths(
       );
 
       // Get demand pressure for this step
-      const baseDemandPressure = demandPressureCurve[i];
-      const fairPrice = demandCurve[i];
-
-      // Apply demand multiplier to simulate different scenarios
-      const adjustedDemandPressure = Math.min(
-        1,
-        baseDemandPressure * demandMultiplier,
-      );
-
-      // Calculate price discount
-      const priceDiscount =
-        currentPrice < fairPrice ? (fairPrice - currentPrice) / fairPrice : 0;
-
-      // Calculate trading volume
-      const baseVolume = calculateTradingVolume(
-        adjustedDemandPressure,
-        priceDiscount,
-        demandPressureConfig,
-      );
-
-      // Simulate expected buy volume for this step
-      // Higher demand = more buying = price goes up
-      const expectedBuyVolume =
-        baseVolume *
-        demandPressureConfig.baseTradeSize *
-        adjustedDemandPressure;
+      const flowUSDC = (baseFlowCurve[i] || 0) * demandMultiplier;
 
       // Apply buys to simulate price impact
-      if (expectedBuyVolume > 0 && currentPrice < fairPrice) {
+      if (flowUSDC > 0) {
         // Calculate how much token would be bought
         const amountOut = calculateOutGivenIn(
           usdcBalance,
           currentUsdcWeight,
           tknBalance,
           currentTknWeight,
-          expectedBuyVolume,
+          flowUSDC,
         );
 
         // Update balances (simulating the buy)
-        usdcBalance += expectedBuyVolume;
+        usdcBalance += flowUSDC;
         tknBalance -= amountOut;
       }
 

@@ -11,13 +11,14 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 
 interface PriceChartTabProps {
   chartData: any[];
   isPlaying: boolean;
   shouldAnimate: boolean;
   simulationData: any[];
+  currentStep: number;
 }
 
 function PriceChartTabComponent({
@@ -25,15 +26,35 @@ function PriceChartTabComponent({
   isPlaying,
   shouldAnimate,
   simulationData,
+  currentStep,
 }: PriceChartTabProps) {
   const { resolvedTheme } = useTheme();
   const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
+
+  const displayData = useMemo(() => {
+    const step = currentStep ?? 0;
+
+    return chartData.map((d) => {
+      const idx = d.index ?? 0;
+
+      const show = step === 0 ? true : idx <= step;
+
+      return {
+        ...d,
+        price: show ? d.price : null,
+
+        potentialPathLow: !isPlaying ? d.potentialPathLow : null,
+        potentialPathMedium: !isPlaying ? d.potentialPathMedium : null,
+        potentialPathHigh: !isPlaying ? d.potentialPathHigh : null,
+      };
+    });
+  }, [chartData, currentStep, isPlaying]);
 
   return (
     <>
       <ResponsiveContainer width="100%" height="95%">
         <LineChart
-          data={chartData}
+          data={displayData}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           <CartesianGrid

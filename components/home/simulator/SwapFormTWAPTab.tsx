@@ -16,6 +16,8 @@ export function SwapFormTWAPTab() {
     config,
     currentStep,
     simulationData,
+    baseSnapshots,
+    priceHistory,
     userUsdcBalance,
     twapOrders,
     createTwapOrder,
@@ -25,6 +27,8 @@ export function SwapFormTWAPTab() {
       config: state.config,
       currentStep: state.currentStep,
       simulationData: state.simulationData,
+      baseSnapshots: state.baseSnapshots,
+      priceHistory: state.priceHistory,
       userUsdcBalance: state.userUsdcBalance,
       twapOrders: state.twapOrders,
       createTwapOrder: state.createTwapOrder,
@@ -37,8 +41,12 @@ export function SwapFormTWAPTab() {
   const [totalDurationHours, setTotalDurationHours] = useState<string>("1");
   const [priceProtectionPct, setPriceProtectionPct] = useState<string>("0");
 
-  const stepData = simulationData[currentStep] || simulationData[0];
-  const currentPrice = stepData?.price || 0;
+  // Get current price from live simulation data
+  const currentPrice = baseSnapshots.length > 0 && baseSnapshots[currentStep]
+    ? baseSnapshots[currentStep].price
+    : priceHistory.length > 0 && priceHistory[currentStep] > 0
+    ? priceHistory[currentStep]
+    : (simulationData[currentStep] || simulationData[0])?.price || 0;
 
   const parsed = useMemo(() => {
     const amount = parseFloat(totalAmount);
