@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,8 +19,14 @@ export const metadata: Metadata = {
   description: "Simulate a lBP sale to understand price discovery.",
   icons: {
     icon: [
-      { url: "/logo-balancer-black.svg", media: "(prefers-color-scheme: light)" },
-      { url: "/logo-balancer-white.svg", media: "(prefers-color-scheme: dark)" },
+      {
+        url: "/logo-balancer-black.svg",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/logo-balancer-white.svg",
+        media: "(prefers-color-scheme: dark)",
+      },
     ],
     shortcut: "/logo-balancer-black.svg",
     apple: "/logo-balancer-black.svg",
@@ -42,6 +49,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${newsreader.variable} antialiased font-sans text-foreground`}
       >
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            src="https://unpkg.com/react-scan/dist/auto.global.js"
+            strategy="afterInteractive"
+          />
+        )}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -49,8 +62,8 @@ export default function RootLayout({
           disableTransitionOnChange
           storageKey="vite-ui-theme"
         >
-        <SvgDefinitions />
-        <Background3D />
+          <SvgDefinitions />
+          <Background3D />
           {children}
           <Toaster />
           <PlayPauseButton />

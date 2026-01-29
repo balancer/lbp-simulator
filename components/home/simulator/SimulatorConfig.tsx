@@ -57,15 +57,13 @@ function SimulatorConfigComponent() {
   );
 
   const [isPending, startTransition] = useTransition();
-  const [shouldRenderHeavyComponents, setShouldRenderHeavyComponents] = useState(isConfigOpen);
 
-  // Handle sheet close smoothly - unmount heavy components immediately to prevent lag
+  // Simple handler for sheet open/close
   const handleSheetOpenChange = (open: boolean) => {
+    setIsConfigOpen(open);
+    
+    // Reset local state when closing to match store
     if (!open) {
-      // Immediately unmount heavy components when closing starts
-      // This prevents React from rendering them during the animation
-      setShouldRenderHeavyComponents(false);
-      // Reset local state to match store to avoid stale values
       setLocalDuration(config.duration);
       setLocalTknWeightIn(config.tknWeightIn);
       setLocalTknWeightOut(config.tknWeightOut);
@@ -73,21 +71,7 @@ function SimulatorConfigComponent() {
       setLocalTotalSupply(config.totalSupply);
       setLocalUsdcBalanceIn(config.usdcBalanceIn);
     }
-    setIsConfigOpen(open);
   };
-
-  // Render heavy components when opening (with slight delay to ensure smooth open)
-  useEffect(() => {
-    if (isConfigOpen) {
-      // Small delay to let the sheet animation start smoothly
-      const timer = setTimeout(() => {
-        setShouldRenderHeavyComponents(true);
-      }, 50);
-      return () => clearTimeout(timer);
-    } else {
-      setShouldRenderHeavyComponents(false);
-    }
-  }, [isConfigOpen]);
 
   // Local state for immediate UI updates (for sliders/inputs that trigger expensive recalculations)
   const [localDuration, setLocalDuration] = useState(config.duration);
@@ -269,13 +253,11 @@ function SimulatorConfigComponent() {
                   ))}
                 </div>
               </div>
-              {/* Only render heavy components when sheet is open and ready */}
-              {shouldRenderHeavyComponents && (
-                <div className="flex flex-col gap-2">
-                  <DemandPressureConfig />
-                  <SellPressureConfig />
-                </div>
-              )}
+              {/* Buy and sell pressure configs */}
+              <div className="flex flex-col gap-2">
+                <DemandPressureConfig />
+                <SellPressureConfig />
+              </div>
             </div>
 
             <Separator />
