@@ -8,10 +8,8 @@ export function Hero() {
   const setIsConfigOpen = useSimulatorStore((state) => state.setIsConfigOpen);
 
   const handleGetStartedClick = () => {
-    // Open the LBP settings sheet
     setIsConfigOpen(true);
 
-    // Smooth scroll to the simulator section if it exists
     if (typeof window !== "undefined") {
       const el = document.getElementById("lbp-settings");
       if (el) {
