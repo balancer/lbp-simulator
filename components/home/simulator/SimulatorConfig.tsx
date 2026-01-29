@@ -61,7 +61,7 @@ function SimulatorConfigComponent() {
   // Simple handler for sheet open/close
   const handleSheetOpenChange = (open: boolean) => {
     setIsConfigOpen(open);
-    
+
     // Reset local state when closing to match store
     if (!open) {
       setLocalDuration(config.duration);
@@ -76,10 +76,16 @@ function SimulatorConfigComponent() {
   // Local state for immediate UI updates (for sliders/inputs that trigger expensive recalculations)
   const [localDuration, setLocalDuration] = useState(config.duration);
   const [localTknWeightIn, setLocalTknWeightIn] = useState(config.tknWeightIn);
-  const [localTknWeightOut, setLocalTknWeightOut] = useState(config.tknWeightOut);
-  const [localPercentForSale, setLocalPercentForSale] = useState(config.percentForSale);
+  const [localTknWeightOut, setLocalTknWeightOut] = useState(
+    config.tknWeightOut,
+  );
+  const [localPercentForSale, setLocalPercentForSale] = useState(
+    config.percentForSale,
+  );
   const [localTotalSupply, setLocalTotalSupply] = useState(config.totalSupply);
-  const [localUsdcBalanceIn, setLocalUsdcBalanceIn] = useState(config.usdcBalanceIn);
+  const [localUsdcBalanceIn, setLocalUsdcBalanceIn] = useState(
+    config.usdcBalanceIn,
+  );
 
   // Update local state when store config changes
   useEffect(() => {
@@ -89,7 +95,14 @@ function SimulatorConfigComponent() {
     setLocalPercentForSale(config.percentForSale);
     setLocalTotalSupply(config.totalSupply);
     setLocalUsdcBalanceIn(config.usdcBalanceIn);
-  }, [config.duration, config.tknWeightIn, config.tknWeightOut, config.percentForSale, config.totalSupply, config.usdcBalanceIn]);
+  }, [
+    config.duration,
+    config.tknWeightIn,
+    config.tknWeightOut,
+    config.percentForSale,
+    config.totalSupply,
+    config.usdcBalanceIn,
+  ]);
 
   // Debounce expensive config updates
   const debouncedDuration = useDebounce(localDuration, 500);
@@ -135,7 +148,10 @@ function SimulatorConfigComponent() {
 
   useEffect(() => {
     if (!isConfigOpen) return;
-    if (debouncedPercentForSale !== config.percentForSale || debouncedTotalSupply !== config.totalSupply) {
+    if (
+      debouncedPercentForSale !== config.percentForSale ||
+      debouncedTotalSupply !== config.totalSupply
+    ) {
       startTransition(() => {
         updateConfig({
           percentForSale: debouncedPercentForSale,
@@ -143,7 +159,14 @@ function SimulatorConfigComponent() {
         });
       });
     }
-  }, [debouncedPercentForSale, debouncedTotalSupply, config.percentForSale, config.totalSupply, updateConfig, isConfigOpen]);
+  }, [
+    debouncedPercentForSale,
+    debouncedTotalSupply,
+    config.percentForSale,
+    config.totalSupply,
+    updateConfig,
+    isConfigOpen,
+  ]);
 
   useEffect(() => {
     if (!isConfigOpen) return;
@@ -152,7 +175,12 @@ function SimulatorConfigComponent() {
         updateConfig({ usdcBalanceIn: debouncedUsdcBalanceIn });
       });
     }
-  }, [debouncedUsdcBalanceIn, config.usdcBalanceIn, updateConfig, isConfigOpen]);
+  }, [
+    debouncedUsdcBalanceIn,
+    config.usdcBalanceIn,
+    updateConfig,
+    isConfigOpen,
+  ]);
 
   const handleWeightChange = (newTknWeightIn: number) => {
     setLocalTknWeightIn(newTknWeightIn);
@@ -223,35 +251,47 @@ function SimulatorConfigComponent() {
                     <Play className="h-4 w-4" />
                   )}
                 </Button>
-                <div className="flex-1 space-y-2">
-                  <Label className="text-xs">
-                    Duration: {localDuration} Hours
-                  </Label>
-                  <Slider
-                    value={[localDuration]}
-                    onValueChange={(vals) => setLocalDuration(vals[0])}
-                    max={2160}
-                    step={1}
-                    className="w-full"
+                <div className="flex items-center w-full gap-2 justify-center">
+                  <div className="flex flex-col flex-1 min-w-0 gap-1">
+                    <Label className="text-xs mb-1">
+                      Duration: {localDuration} Hours
+                    </Label>
+                    <Slider
+                      value={[localDuration]}
+                      onValueChange={(vals) => setLocalDuration(vals[0])}
+                      max={1440}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                  <Input
+                    className="w-[60px] ml-2"
+                    type="text"
+                    max={1440}
+                    value={localDuration}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (!isNaN(val)) setLocalDuration(Math.max(0, Math.min(val, 1440)));
+                    }}
                   />
                 </div>
-                <div className="flex items-center gap-1 bg-muted rounded-md p-1">
-                  {[1, 5, 10].map((speed) => (
-                    <Button
-                      key={speed}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSimulationSpeed(speed)}
-                      className={`h-7 px-3 text-xs rounded-sm ${
-                        simulationSpeed === speed
-                          ? "bg-background shadow-sm text-foreground font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {speed}x
-                    </Button>
-                  ))}
-                </div>
+              </div>
+              <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+                {[1, 5, 10].map((speed) => (
+                  <Button
+                    key={speed}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSimulationSpeed(speed)}
+                    className={`h-7 px-3 text-xs rounded-sm ${
+                      simulationSpeed === speed
+                        ? "bg-background shadow-sm text-foreground font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {speed}x
+                  </Button>
+                ))}
               </div>
               {/* Buy and sell pressure configs */}
               <div className="flex flex-col gap-2">
@@ -295,7 +335,9 @@ function SimulatorConfigComponent() {
                   <Select
                     value={config.collateralToken}
                     onValueChange={(value) =>
-                      updateConfig({ collateralToken: value as "USDC" | "ETH" | "wETH" })
+                      updateConfig({
+                        collateralToken: value as "USDC" | "ETH" | "wETH",
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -332,13 +374,15 @@ function SimulatorConfigComponent() {
                     max={90}
                     min={1}
                     step={1}
-                    onValueChange={(vals) =>
-                      setLocalPercentForSale(vals[0])
-                    }
+                    onValueChange={(vals) => setLocalPercentForSale(vals[0])}
                   />
                   <p className="text-xs text-muted-foreground text-right">
                     Tokens for Sale:{" "}
-                    {(localTotalSupply * (localPercentForSale / 100) / 1_000_000).toFixed(2)}M
+                    {(
+                      (localTotalSupply * (localPercentForSale / 100)) /
+                      1_000_000
+                    ).toFixed(2)}
+                    M
                   </p>
                 </div>
 
@@ -373,7 +417,8 @@ function SimulatorConfigComponent() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Balancer fee is always 10%. Swap fee can be set from 1% to 10%.
+                    Balancer fee is always 10%. Swap fee can be set from 1% to
+                    10%.
                   </p>
                 </div>
               </div>
