@@ -175,6 +175,7 @@ function SimulatorChartAreaComponent() {
         <WeightsChartTab
           chartData={chartData}
           shouldAnimate={shouldAnimate}
+          currentStep={currentStep}
         />
       </TabsContent>
     </>

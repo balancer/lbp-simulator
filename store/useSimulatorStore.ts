@@ -103,6 +103,7 @@ interface SimulatorState {
   updateDemandPressureConfig: (config: Partial<DemandPressureConfig>) => void;
   updateSellPressureConfig: (config: Partial<SellPressureConfig>) => void;
   resetConfig: () => void;
+  restartSimulation: () => void;
   tick: () => void;
   processBuy: (amountUSDC: number) => void;
   processSell: (amountToken: number) => void;
@@ -132,18 +133,18 @@ const DEFAULT_CONFIG: LBPConfig = {
   tokenName: "Balancer",
   tokenSymbol: "BAL",
   totalSupply: 100_000_000,
-  percentForSale: 50,
+  percentForSale: 10, // 10% of total supply
   collateralToken: "USDC",
 
   tknBalanceIn: 50_000_000, // 50% of 100M
   tknWeightIn: 90,
   usdcBalanceIn: 1_000_000, // 1M start
   usdcWeightIn: 10,
-  tknWeightOut: 10,
-  usdcWeightOut: 90,
+  tknWeightOut: 50,
+  usdcWeightOut: 50,
   startDelay: 0,
   duration: 72, // 72 hours (3 days)
-  swapFee: 1, // 1% swap fee (default)
+  swapFee: 2, // 2% swap fee (default)
   creatorFee: 5, // 5% creator fee (default)
 };
 
@@ -377,6 +378,28 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       sellPressureConfig: newConfig,
       sellPressureSchedule: newSchedule,
       sellPressureCurve: newSellCurve,
+    });
+  },
+
+  restartSimulation: () => {
+    const { intervalId, config, simulationData } = get();
+    if (intervalId) clearInterval(intervalId);
+
+    set({
+      isPlaying: false,
+      intervalId: null,
+      currentStep: 0,
+      swaps: [],
+      limitOrders: [],
+      twapOrders: [],
+      currentTknBalance: config.tknBalanceIn,
+      currentUsdcBalance: config.usdcBalanceIn,
+      userTknBalance: 0,
+      userUsdcBalance: 10000,
+      communityTokensHeld: 0,
+      communityAvgCost: 0,
+      priceHistory: new Float64Array(simulationData.map((d) => d.price)),
+      priceHistoryVersion: 0,
     });
   },
 

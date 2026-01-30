@@ -37,11 +37,18 @@ function SimulatorHeaderComponent() {
 
   const totalRaised = currentUsdcBalance - config.usdcBalanceIn;
 
+  const totalFees = totalRaised * (config.swapFee / 100)
+
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center font-bold">
-          <Image src={"logo-balancer-black.svg"} alt="Balancer Logo" width={30} height={30} />
+          <Image
+            src={"logo-balancer-black.svg"}
+            alt="Balancer Logo"
+            width={30}
+            height={30}
+          />
         </div>
         <div>
           <div className="flex items-center gap-2">
@@ -71,9 +78,30 @@ function SimulatorHeaderComponent() {
         </div>
         <div className="flex flex-col items-end">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Total Raised
+            Total fees
           </span>
           <span className="text-lg font-mono font-medium">
+            $
+            {totalFees.toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })}
+          </span>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Total Raised
+          </span>
+          <span
+            className="text-2xl font-mono font-medium"
+            style={{
+              background: "linear-gradient(90deg, #93c5fd 0%, #c4b5fd 50%, #fdba74 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              color: "transparent",
+              display: "inline-block",
+            }}
+          >
             $
             {totalRaised.toLocaleString(undefined, {
               maximumFractionDigits: 0,

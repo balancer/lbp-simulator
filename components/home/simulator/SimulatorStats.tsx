@@ -4,12 +4,23 @@ import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { StatCard } from "./StatCard";
 import { useShallow } from "zustand/react/shallow";
 import { memo } from "react";
+import { calcTVLUSD } from "@/lib/lbp-math";
 
 function SimulatorStatsComponent() {
-  const { config, currentStep, simulationData, baseSnapshots, priceHistory } = useSimulatorStore(
+  const {
+    config,
+    currentStep,
+    currentTknBalance,
+    currentUsdcBalance,
+    simulationData,
+    baseSnapshots,
+    priceHistory,
+  } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
       currentStep: state.currentStep,
+      currentTknBalance: state.currentTknBalance,
+      currentUsdcBalance: state.currentUsdcBalance,
       simulationData: state.simulationData,
       baseSnapshots: state.baseSnapshots,
       priceHistory: state.priceHistory,
@@ -32,7 +43,16 @@ function SimulatorStatsComponent() {
   const currentPrice = getCurrentPrice();
   const startPrice = simulationData[0]?.price || 0;
   const tokensForSale = config.tknBalanceIn;
-  const impliedMarketCap = currentPrice * config.totalSupply;
+  const fdv = currentPrice * config.totalSupply;
+  const impliedMarketCap = currentPrice * tokensForSale;
+
+  const stepData = baseSnapshots[currentStep] ?? simulationData[currentStep] ?? simulationData[0];
+  const tknW = stepData?.tknWeight ?? config.tknWeightIn;
+  const collW = stepData?.usdcWeight ?? config.usdcWeightIn;
+  const tvlUsd =
+    stepData && "tvlUsd" in stepData && typeof stepData.tvlUsd === "number"
+      ? stepData.tvlUsd
+      : calcTVLUSD(config, currentTknBalance, currentUsdcBalance, tknW, collW).tvlUsd;
 
   const stats = [
     {
@@ -43,9 +63,9 @@ function SimulatorStatsComponent() {
     },
     {
       label: "Implied Market Cap",
-      value: `$${(impliedMarketCap / 1_000_000).toFixed(2)}M`,
+      value: `$${((impliedMarketCap)/ 1_000_000).toFixed(2)}M`,
       description:
-        "The theoretical market capitalization calculated by multiplying the current token price by the total token supply. This gives an estimate of the project's valuation based on the current LBP price.",
+        "The market cap implied by the sale: current token price × tokens for sale. Represents the valuation of the portion of supply being sold in the LBP at the current price.",
     },
     {
       label: "Starting price",
@@ -59,10 +79,22 @@ function SimulatorStatsComponent() {
       description:
         "The current spot price of the token in the LBP, calculated based on the current pool balances and weights. This price updates in real-time as trades occur and pool weights shift.",
     },
+    {
+      label: "FDV",
+      value: `$${(fdv/1_000_000).toFixed(2)}M`,
+      description:
+        "Fully diluted valuation: total token supply × current price. The valuation if all tokens were valued at the current LBP spot price.",
+    },
+    {
+      label: "TVL",
+      value: `$${(tvlUsd / 1_000_000).toFixed(2)}M`,
+      description:
+        "Total value locked in the pool: collateral balance (e.g. USDC) plus token balance valued at current spot price in collateral.",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
       {stats.map((stat, i) => (
         <StatCard
           key={i}

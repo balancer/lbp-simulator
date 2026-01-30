@@ -5,6 +5,7 @@ import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { memo } from "react";
+import { formatNumber } from "@/lib/utils";
 
 function SaleDetailsTabComponent() {
   const { config } = useSimulatorStore(
@@ -17,13 +18,8 @@ function SaleDetailsTabComponent() {
   const tokensForSale = config.tknBalanceIn;
   const percentForSale = (tokensForSale / config.totalSupply) * 100;
 
-  // Format numbers with commas
-  const formatNumber = (num: number) => {
-    return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  };
-
-  const BALANCER_FEE = 10; // Always 10%
-  const swapFee = config.swapFee || 1;
+  const BALANCER_FEE = 50;
+  const swapFee = config.swapFee || 2;
   const remainingFee = 100 - BALANCER_FEE - swapFee;
 
   const donutData = [

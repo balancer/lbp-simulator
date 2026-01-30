@@ -10,6 +10,8 @@ export interface SimulationStateSnapshot {
   usdcBalance: number;
   tknWeight: number;
   usdcWeight: number;
+  /** TVL in USD: usdcBalance + tknBalance * price (computed in worker) */
+  tvlUsd: number;
   communityTokensHeld: number;
   communityAvgCost: number;
   // Per-step bot trade volumes (community), for logging in the Sales table
