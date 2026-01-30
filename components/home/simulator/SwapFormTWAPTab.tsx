@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -10,14 +10,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { SwapFormTWAPTabLive } from "./SwapFormTWAPTabLive";
 
-export function SwapFormTWAPTab() {
+function SwapFormTWAPTabComponent() {
   const {
     config,
-    currentStep,
-    simulationData,
-    baseSnapshots,
-    priceHistory,
     userUsdcBalance,
     twapOrders,
     createTwapOrder,
@@ -25,10 +22,6 @@ export function SwapFormTWAPTab() {
   } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
-      currentStep: state.currentStep,
-      simulationData: state.simulationData,
-      baseSnapshots: state.baseSnapshots,
-      priceHistory: state.priceHistory,
       userUsdcBalance: state.userUsdcBalance,
       twapOrders: state.twapOrders,
       createTwapOrder: state.createTwapOrder,
@@ -38,64 +31,35 @@ export function SwapFormTWAPTab() {
 
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [numParts, setNumParts] = useState<string>("3");
-  const [totalDurationHours, setTotalDurationHours] = useState<string>("1");
+  const [totalDurationDays, setTotalDurationDays] = useState<string>("1");
   const [priceProtectionPct, setPriceProtectionPct] = useState<string>("0");
-
-  // Get current price from live simulation data
-  const currentPrice = baseSnapshots.length > 0 && baseSnapshots[currentStep]
-    ? baseSnapshots[currentStep].price
-    : priceHistory.length > 0 && priceHistory[currentStep] > 0
-    ? priceHistory[currentStep]
-    : (simulationData[currentStep] || simulationData[0])?.price || 0;
 
   const parsed = useMemo(() => {
     const amount = parseFloat(totalAmount);
     const parts = Math.max(1, Math.floor(parseFloat(numParts) || 0));
-    const duration = Math.max(0.01, parseFloat(totalDurationHours) || 0);
+    const durationDays = Math.max(0.04, parseFloat(totalDurationDays) || 0); // min ~1h as days
+    const duration = durationDays * 24; // hours
     const protection = Math.max(
       0,
       Math.min(50, parseFloat(priceProtectionPct) || 0),
     );
-
     const spendPerPart = amount > 0 && parts > 0 ? amount / parts : 0;
-    const estTokensPerPart =
-      spendPerPart > 0 && currentPrice > 0 ? spendPerPart / currentPrice : 0;
     const partDurationHours = duration / parts;
-
     return {
       amount,
       parts,
       duration,
       protection,
       spendPerPart,
-      estTokensPerPart,
       partDurationHours,
     };
-  }, [totalAmount, numParts, totalDurationHours, priceProtectionPct, currentPrice]);
-
-  const isValid =
-    parsed.amount > 0 &&
-    parsed.parts >= 1 &&
-    parsed.duration > 0 &&
-    currentPrice > 0;
-
-  const hasInsufficientBalance = isValid && parsed.amount > userUsdcBalance;
+  }, [totalAmount, numParts, totalDurationDays, priceProtectionPct]);
 
   const handleMax = () => {
     setTotalAmount(userUsdcBalance.toString());
   };
 
-  const handleCreate = () => {
-    if (!isValid || hasInsufficientBalance) return;
-
-    createTwapOrder({
-      type: "buy",
-      totalCollateral: parsed.amount,
-      numParts: parsed.parts,
-      totalDurationHours: parsed.duration,
-      priceProtectionPct: parsed.protection,
-    });
-
+  const handleCreateSuccess = () => {
     setTotalAmount("");
     setPriceProtectionPct("0");
   };
@@ -112,6 +76,11 @@ export function SwapFormTWAPTab() {
     }
     const days = hours / 24;
     return `${days.toFixed(1)}d`;
+  };
+
+  const createTwapOrderAndReset = (order: Parameters<typeof createTwapOrder>[0]) => {
+    createTwapOrder(order);
+    handleCreateSuccess();
   };
 
   return (
@@ -174,10 +143,16 @@ export function SwapFormTWAPTab() {
             className="w-20 h-8 text-sm font-medium border-0 p-0 focus-visible:ring-0 bg-transparent dark:bg-transparent shadow-none"
           />
           <span className="text-sm font-medium text-muted-foreground">%</span>
-          <span className="ml-auto text-xs text-muted-foreground">
-            Current price: {currentPrice.toFixed(4)} {config.collateralToken} /{" "}
-            {config.tokenSymbol}
-          </span>
+          <SwapFormTWAPTabLive
+            part="currentPrice"
+            amount={parsed.amount}
+            parts={parsed.parts}
+            duration={parsed.duration}
+            protection={parsed.protection}
+            spendPerPart={parsed.spendPerPart}
+            config={config}
+            createTwapOrder={createTwapOrderAndReset}
+          />
         </div>
       </div>
 
@@ -200,15 +175,16 @@ export function SwapFormTWAPTab() {
         </div>
         <div className="space-y-1.5">
           <span className="text-xs text-muted-foreground">
-            Total duration (hours)
+            Total duration (days)
           </span>
           <div className="p-3 border border-border rounded-lg bg-background">
             <Input
               type="number"
-              min={0.1}
-              max={config.duration}
-              value={totalDurationHours}
-              onChange={(e) => setTotalDurationHours(e.target.value)}
+              min={0.04}
+              max={config.duration / 24}
+              step={0.5}
+              value={totalDurationDays}
+              onChange={(e) => setTotalDurationDays(e.target.value)}
               className="h-8 text-sm font-medium border-0 p-0 focus-visible:ring-0 bg-transparent dark:bg-transparent shadow-none"
             />
           </div>
@@ -234,34 +210,39 @@ export function SwapFormTWAPTab() {
             {config.collateralToken}
           </div>
         </div>
-        <div className="space-y-1 p-3 bg-muted/30 rounded-lg col-span-2">
-          <div className="font-medium text-foreground text-xs">
-            Est. buy per part
-          </div>
-          <div>
-            {parsed.estTokensPerPart.toLocaleString(undefined, {
-              maximumFractionDigits: 4,
-            })}{" "}
-            {config.tokenSymbol} @ ~
-            {currentPrice.toFixed(4)} {config.collateralToken}
-          </div>
-        </div>
+        <SwapFormTWAPTabLive
+          part="estBuyPerPart"
+          amount={parsed.amount}
+          parts={parsed.parts}
+          duration={parsed.duration}
+          protection={parsed.protection}
+          spendPerPart={parsed.spendPerPart}
+          config={config}
+          createTwapOrder={createTwapOrderAndReset}
+        />
       </div>
 
-      {hasInsufficientBalance && (
-        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive">
-          Insufficient balance to schedule this TWAP.
-        </div>
-      )}
+      <SwapFormTWAPTabLive
+        part="error"
+        amount={parsed.amount}
+        parts={parsed.parts}
+        duration={parsed.duration}
+        protection={parsed.protection}
+        spendPerPart={parsed.spendPerPart}
+        config={config}
+        createTwapOrder={createTwapOrderAndReset}
+      />
 
-      <Button
-        onClick={handleCreate}
-        disabled={!isValid || hasInsufficientBalance}
-        className="w-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
-        size="lg"
-      >
-        Start TWAP program
-      </Button>
+      <SwapFormTWAPTabLive
+        part="button"
+        amount={parsed.amount}
+        parts={parsed.parts}
+        duration={parsed.duration}
+        protection={parsed.protection}
+        spendPerPart={parsed.spendPerPart}
+        config={config}
+        createTwapOrder={createTwapOrderAndReset}
+      />
 
       {/* Open TWAP programs */}
       {openTwapOrders.length > 0 && (
@@ -317,3 +298,5 @@ export function SwapFormTWAPTab() {
     </div>
   );
 }
+
+export const SwapFormTWAPTab = memo(SwapFormTWAPTabComponent);

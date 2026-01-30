@@ -122,14 +122,15 @@ interface SimulatorState {
   }) => void;
   cancelTwapOrder: (id: string) => void;
   setBaseSnapshots: (snapshots: SimulationStateSnapshot[]) => void;
+  setCurrentStep: (step: number) => void;
   // Internal functions for bot trades (don't affect user wallet)
   _processPoolBuy: (amountUSDC: number, account?: string) => void;
   _processPoolSell: (amountToken: number, account?: string) => void;
 }
 
 const DEFAULT_CONFIG: LBPConfig = {
-  tokenName: "ACME Protocol",
-  tokenSymbol: "ACME",
+  tokenName: "Balancer",
+  tokenSymbol: "BAL",
   totalSupply: 100_000_000,
   percentForSale: 50,
   collateralToken: "USDC",
@@ -246,8 +247,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   // Simulation speed (default 1x)
   simulationSpeed: 1,
 
-  // UI State
-  isConfigOpen: false,
+  // UI State (sidebar open by default)
+  isConfigOpen: true,
 
   updateConfig: (partialConfig) => {
     const currentConfig = get().config;
@@ -435,6 +436,11 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       baseSnapshots: snapshots,
       baseSnapshotsVersion: Date.now(),
     });
+  },
+
+  setCurrentStep: (step: number) => {
+    const clamped = Math.max(0, Math.min(Math.floor(step), get().totalSteps - 1));
+    set({ currentStep: clamped });
   },
 
   // Internal functions for pool-only trades (used by bots, doesn't affect user wallet)

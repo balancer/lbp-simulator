@@ -34,6 +34,7 @@ const EthLogo = (props: React.SVGProps<SVGSVGElement>) => (
 
 const TOKEN_LOGOS: Record<string, string> = {
   USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=040",
+  USDT: "https://cryptologos.cc/logos/tether-usdt-logo.svg?v=002"
 };
 
 export function TokenLogo({ token, size = 24, className = "" }: TokenLogoProps) {
@@ -57,7 +58,7 @@ export function TokenLogo({ token, size = 24, className = "" }: TokenLogoProps) 
   if (logoUrl) {
     return (
       <div
-        className={`rounded-full overflow-hidden flex items-center justify-center bg-background ${className}`}
+        className={`rounded-full overflow-hidden flex items-center justify-center  ${className}`}
         style={{ width: size, height: size }}
       >
         <Image

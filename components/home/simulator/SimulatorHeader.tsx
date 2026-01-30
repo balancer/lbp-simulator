@@ -5,34 +5,34 @@ import { Clock } from "lucide-react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useMemo, memo } from "react";
 import { useShallow } from "zustand/react/shallow";
+import Image from "next/image";
 
 function SimulatorHeaderComponent() {
-  const { config, currentUsdcBalance, currentStep, simulationData } = useSimulatorStore(
-    useShallow((state) => ({
-      config: state.config,
-      currentUsdcBalance: state.currentUsdcBalance,
-      currentStep: state.currentStep,
-      simulationData: state.simulationData,
-    })),
-  );
+  const { config, currentUsdcBalance, currentStep, simulationData } =
+    useSimulatorStore(
+      useShallow((state) => ({
+        config: state.config,
+        currentUsdcBalance: state.currentUsdcBalance,
+        currentStep: state.currentStep,
+        simulationData: state.simulationData,
+      })),
+    );
 
   const timeRemaining = useMemo(() => {
-    // config.duration is in Hours
-    if (!simulationData || simulationData.length === 0) return "00:00:00";
-    const endStep = simulationData[simulationData.length - 1];
+    if (!simulationData || simulationData.length === 0) return "0d 0h";
     const currentStepData = simulationData[currentStep] || simulationData[0];
-
     const totalDurationHours = config.duration;
     const currentHour = currentStepData.time;
     const remainingHours = Math.max(0, totalDurationHours - currentHour);
 
-    // Convert hours to HH:MM:SS
-    const totalSeconds = remainingHours * 60 * 60;
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = Math.floor(totalSeconds % 60);
-
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    if (remainingHours >= 24) {
+      const days = Math.floor(remainingHours / 24);
+      const hours = Math.floor(remainingHours % 24);
+      return `${days}d ${hours}h`;
+    }
+    const h = Math.floor(remainingHours);
+    const m = Math.floor((remainingHours % 1) * 60);
+    return `${h}h ${m}m`;
   }, [config.duration, currentStep, simulationData]);
 
   const totalRaised = currentUsdcBalance - config.usdcBalanceIn;
@@ -40,8 +40,8 @@ function SimulatorHeaderComponent() {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-          {config.tokenSymbol.slice(0, 1)}
+        <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center font-bold">
+          <Image src={"logo-balancer-black.svg"} alt="Balancer Logo" width={30} height={30} />
         </div>
         <div>
           <div className="flex items-center gap-2">

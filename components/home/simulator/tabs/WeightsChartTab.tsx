@@ -77,7 +77,7 @@ function WeightsChartTabComponent({ chartData, shouldAnimate }: WeightsChartTabP
             }}
             formatter={(value: any, name: any) => [
               `${Number(value).toFixed(2)}%`,
-              name === "tknWeight" ? "Token Weight" : "USDC Weight",
+              name === "tknWeight" ? "Token" : "USDC",
             ]}
           />
           <Line
@@ -107,11 +107,11 @@ function WeightsChartTabComponent({ chartData, shouldAnimate }: WeightsChartTabP
       <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200"></div>
-          <span>Token Weight</span>
+          <span>Token</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200"></div>
-          <span>USDC Weight</span>
+          <span>USDC</span>
         </div>
       </div>
     </>

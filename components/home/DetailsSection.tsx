@@ -2,7 +2,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HowItWorksTab } from "./details/HowItWorksTab";
-import { ProjectDetailsTab } from "./details/ProjectDetailsTab";
 import SaleDetailsTabComponent from "./details/SaleDetailsTab";
 
 export function DetailsSection() {
@@ -23,22 +22,13 @@ export function DetailsSection() {
             >
               How the LBP Works
             </TabsTrigger>
-            <TabsTrigger
-              value="project"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-3 text-sm sm:text-base whitespace-nowrap"
-            >
-              Project Details
-            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details">
-            <SaleDetailsTabComponent />
-          </TabsContent>
           <TabsContent value="how-it-works">
             <HowItWorksTab />
           </TabsContent>
-          <TabsContent value="project">
-            <ProjectDetailsTab />
+          <TabsContent value="details">
+            <SaleDetailsTabComponent />
           </TabsContent>
         </Tabs>
       </div>

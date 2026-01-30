@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, memo } from "react";
+import { useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -9,93 +9,28 @@ import { calculateOutGivenIn } from "@/lib/lbp-math";
 import { ArrowUpDown, Wallet } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { TokenLogo } from "@/components/ui/TokenLogo";
+import { SwapFormSwapTabLive } from "./SwapFormSwapTabLive";
+import Image from "next/image";
 
-type SwapDirection = "buy" | "sell"; // buy = Collateral -> Token, sell = Token -> Collateral
+type SwapDirection = "buy" | "sell";
 
 function SwapFormSwapTabComponent() {
-  const {
-    config,
-    currentStep,
-    simulationData,
-    baseSnapshots,
-    priceHistory,
-    currentTknBalance,
-    currentUsdcBalance,
-    processBuy,
-    processSell,
-    userTknBalance,
-    userUsdcBalance,
-  } = useSimulatorStore(
-    useShallow((state) => ({
-      config: state.config,
-      currentStep: state.currentStep,
-      simulationData: state.simulationData,
-      baseSnapshots: state.baseSnapshots,
-      priceHistory: state.priceHistory,
-      currentTknBalance: state.currentTknBalance,
-      currentUsdcBalance: state.currentUsdcBalance,
-      processBuy: state.processBuy,
-      processSell: state.processSell,
-      userTknBalance: state.userTknBalance,
-      userUsdcBalance: state.userUsdcBalance,
-    })),
-  );
+  const { config, processBuy, processSell, userTknBalance, userUsdcBalance } =
+    useSimulatorStore(
+      useShallow((state) => ({
+        config: state.config,
+        processBuy: state.processBuy,
+        processSell: state.processSell,
+        userTknBalance: state.userTknBalance,
+        userUsdcBalance: state.userUsdcBalance,
+      })),
+    );
 
   const [direction, setDirection] = useState<SwapDirection>("buy");
   const [inputAmount, setInputAmount] = useState<string>("");
 
-  // Get current step data for calculations (weights from snapshot, price from live data)
-  const stepData = baseSnapshots.length > 0 && baseSnapshots[currentStep]
-    ? baseSnapshots[currentStep]
-    : simulationData[currentStep] || simulationData[0];
-  
-  // Get current price from live simulation data
-  const currentPrice = baseSnapshots.length > 0 && baseSnapshots[currentStep]
-    ? baseSnapshots[currentStep].price
-    : priceHistory.length > 0 && priceHistory[currentStep] > 0
-    ? priceHistory[currentStep]
-    : stepData?.price || 0;
-
-  // Calculate output amount based on input
-  const outputAmount = useMemo(() => {
-    if (!inputAmount || !stepData || parseFloat(inputAmount) <= 0) return 0;
-
-    const amount = parseFloat(inputAmount);
-    if (direction === "buy") {
-      // Buying token with collateral
-      return calculateOutGivenIn(
-        currentUsdcBalance,
-        stepData.usdcWeight,
-        currentTknBalance,
-        stepData.tknWeight,
-        amount,
-      );
-    } else {
-      // Selling token for collateral
-      return calculateOutGivenIn(
-        currentTknBalance,
-        stepData.tknWeight,
-        currentUsdcBalance,
-        stepData.usdcWeight,
-        amount,
-      );
-    }
-  }, [inputAmount, direction, stepData, currentTknBalance, currentUsdcBalance]);
-
-  // Calculate USD values
-  const inputUsdValue = useMemo(() => {
-    if (!inputAmount || parseFloat(inputAmount) <= 0) return 0;
-    const amount = parseFloat(inputAmount);
-    return direction === "buy" ? amount : amount * currentPrice;
-  }, [inputAmount, direction, currentPrice]);
-
-  const outputUsdValue = useMemo(() => {
-    if (outputAmount <= 0) return 0;
-    return direction === "buy" ? outputAmount * currentPrice : outputAmount;
-  }, [outputAmount, direction, currentPrice]);
-
   const handleSwap = () => {
-    setDirection(direction === "buy" ? "sell" : "buy");
+    setDirection((d) => (d === "buy" ? "sell" : "buy"));
     setInputAmount("");
   };
 
@@ -111,6 +46,20 @@ function SwapFormSwapTabComponent() {
     if (!inputAmount || parseFloat(inputAmount) <= 0) return;
 
     const amount = parseFloat(inputAmount);
+    const state = useSimulatorStore.getState();
+    const {
+      currentStep,
+      baseSnapshots,
+      simulationData,
+      currentTknBalance,
+      currentUsdcBalance,
+    } = state;
+
+    const stepData =
+      baseSnapshots.length > 0 && baseSnapshots[currentStep]
+        ? baseSnapshots[currentStep]
+        : simulationData[currentStep] || simulationData[0];
+
     if (direction === "buy") {
       if (amount > userUsdcBalance) {
         alert(
@@ -118,19 +67,16 @@ function SwapFormSwapTabComponent() {
         );
         return;
       }
-
-      // Calculate output before processing (for toast)
-      const amountOut = calculateOutGivenIn(
-        currentUsdcBalance,
-        stepData.usdcWeight,
-        currentTknBalance,
-        stepData.tknWeight,
-        amount,
-      );
-
+      const amountOut = stepData
+        ? calculateOutGivenIn(
+            currentUsdcBalance,
+            stepData.usdcWeight,
+            currentTknBalance,
+            stepData.tknWeight,
+            amount,
+          )
+        : 0;
       processBuy(amount);
-
-      // Show toast notification
       toast({
         title: `Bought ${config.tokenSymbol}`,
         description: `You bought ${amountOut.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${config.tokenSymbol} for ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${config.collateralToken}`,
@@ -143,19 +89,16 @@ function SwapFormSwapTabComponent() {
         );
         return;
       }
-
-      // Calculate output before processing (for toast)
-      const amountOut = calculateOutGivenIn(
-        currentTknBalance,
-        stepData.tknWeight,
-        currentUsdcBalance,
-        stepData.usdcWeight,
-        amount,
-      );
-
+      const amountOut = stepData
+        ? calculateOutGivenIn(
+            currentTknBalance,
+            stepData.tknWeight,
+            currentUsdcBalance,
+            stepData.usdcWeight,
+            amount,
+          )
+        : 0;
       processSell(amount);
-
-      // Show toast notification
       toast({
         title: `Sold ${config.tokenSymbol}`,
         description: `You sold ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${config.tokenSymbol} for ${amountOut.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${config.collateralToken}`,
@@ -171,8 +114,10 @@ function SwapFormSwapTabComponent() {
       (direction === "sell" && parseFloat(inputAmount) > userTknBalance)
     : false;
 
-  const inputToken = direction === "buy" ? config.collateralToken : config.tokenSymbol;
-  const outputToken = direction === "buy" ? config.tokenSymbol : config.collateralToken;
+  const inputToken =
+    direction === "buy" ? config.collateralToken : config.tokenSymbol;
+  const outputToken =
+    direction === "buy" ? config.tokenSymbol : config.collateralToken;
   const inputBalance = direction === "buy" ? userUsdcBalance : userTknBalance;
   const outputBalance = direction === "buy" ? userTknBalance : userUsdcBalance;
 
@@ -207,12 +152,12 @@ function SwapFormSwapTabComponent() {
               onChange={(e) => setInputAmount(e.target.value)}
               className="text-2xl font-semibold border-0 p-0 h-auto focus-visible:ring-0 bg-transparent dark:bg-transparent shadow-none"
             />
-            <div className="text-sm text-muted-foreground mt-1">
-              $
-              {inputUsdValue.toLocaleString(undefined, {
-                maximumFractionDigits: 2,
-              })}
-            </div>
+            <SwapFormSwapTabLive
+              inputAmount={inputAmount}
+              direction={direction}
+              config={config}
+              part="inputUsd"
+            />
           </div>
           <Button
             variant="outline"
@@ -256,39 +201,37 @@ function SwapFormSwapTabComponent() {
         </div>
         <div className="flex items-center gap-2 p-4 border border-border rounded-lg bg-background">
           <div className="flex-1">
-            <div className="text-2xl font-semibold">
-              {outputAmount > 0
-                ? outputAmount.toLocaleString(undefined, {
-                    maximumFractionDigits: 6,
-                  })
-                : "0.00"}
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              $
-              {outputUsdValue.toLocaleString(undefined, {
-                maximumFractionDigits: 2,
-              })}
-            </div>
+            <SwapFormSwapTabLive
+              inputAmount={inputAmount}
+              direction={direction}
+              config={config}
+              part="output"
+            />
           </div>
           <Button
             variant="outline"
             className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0"
           >
-            <TokenLogo token={outputToken} size={24} />
+            <div className="h-6 w-6 bg-white rounded-full flex items-center justify-center font-bold">
+              <Image
+                src={"logo-balancer-black.svg"}
+                alt="Balancer Logo"
+                width={16}
+                height={16}
+              />
+            </div>
             <span className="font-medium">{outputToken}</span>
           </Button>
         </div>
       </div>
 
-      {/* Price Info */}
-      <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-        <div className="flex justify-between">
-          <span>Price:</span>
-          <span className="font-medium text-foreground">
-            ${currentPrice.toFixed(4)} {config.tokenSymbol}/{config.collateralToken}
-          </span>
-        </div>
-      </div>
+      {/* Price Info - live component so only this line re-renders every step */}
+      <SwapFormSwapTabLive
+        inputAmount={inputAmount}
+        direction={direction}
+        config={config}
+        part="price"
+      />
 
       {/* Error Message */}
       {hasInsufficientBalance && (
@@ -317,4 +260,3 @@ function SwapFormSwapTabComponent() {
 }
 
 export const SwapFormSwapTab = memo(SwapFormSwapTabComponent);
-

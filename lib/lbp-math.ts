@@ -1,4 +1,4 @@
-export type CollateralToken = "USDC" | "ETH" | "wETH";
+export type CollateralToken = "USDC" | "USDT" | "ETH" | "wETH";
 
 export interface LBPConfig {
   tokenName: string;

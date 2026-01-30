@@ -18,7 +18,10 @@ interface PriceChartTabProps {
   isPlaying: boolean;
   shouldAnimate: boolean;
   simulationData: any[];
+  /** Step up to which to reveal the line (use displayStep when provided for smooth animation) */
   currentStep: number;
+  /** Fixed Y domain [min, max] from full series to avoid axis jumps. Optional: falls back to "auto". */
+  priceDomain?: [number, number];
 }
 
 function PriceChartTabComponent({
@@ -27,6 +30,7 @@ function PriceChartTabComponent({
   shouldAnimate,
   simulationData,
   currentStep,
+  priceDomain,
 }: PriceChartTabProps) {
   const { resolvedTheme } = useTheme();
   const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
@@ -50,6 +54,10 @@ function PriceChartTabComponent({
     });
   }, [chartData, currentStep, isPlaying]);
 
+  const yAxisDomain = priceDomain
+    ? [priceDomain[0], priceDomain[1]]
+    : (["auto", "auto"] as const);
+
   return (
     <>
       <ResponsiveContainer width="100%" height="95%">
@@ -70,7 +78,7 @@ function PriceChartTabComponent({
             tickLine={false}
           />
           <YAxis
-            domain={["auto", "auto"]}
+            domain={yAxisDomain}
             stroke={axisLabelColor}
             fontSize={12}
             tickFormatter={(val) => `$${val.toFixed(2)}`}

@@ -63,8 +63,11 @@ export default function RootLayout({
           storageKey="vite-ui-theme"
         >
           <SvgDefinitions />
-          <Background3D />
-          {children}
+          <Background3D/>
+          {/* Content as fixed overlay so sidebar/layout changes don't affect or lag the background */}
+          <div className="fixed inset-0 z-0 overflow-y-auto overflow-x-hidden">
+            {children}
+          </div>
           <Toaster />
           <PlayPauseButton />
         </ThemeProvider>

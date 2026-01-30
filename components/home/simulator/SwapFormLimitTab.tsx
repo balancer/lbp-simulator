@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-export function SwapFormLimitTab() {
+function SwapFormLimitTabComponent() {
   const {
     config,
     userUsdcBalance,
@@ -240,3 +240,4 @@ export function SwapFormLimitTab() {
   );
 }
 
+export const SwapFormLimitTab = memo(SwapFormLimitTabComponent);

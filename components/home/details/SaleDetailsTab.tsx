@@ -64,7 +64,11 @@ function SaleDetailsTabComponent() {
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Duration</span>
-              <span className="font-medium">{config.duration} hours</span>
+              <span className="font-medium">
+                {config.duration >= 24
+                  ? `${(config.duration / 24).toFixed(1)} days`
+                  : `${config.duration} hours`}
+              </span>
             </div>
             <div className="flex justify-between border-b pb-2">
               <span className="text-muted-foreground">Token Name</span>
