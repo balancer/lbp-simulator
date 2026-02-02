@@ -14,6 +14,7 @@ import {
   getLoyalSellSchedule,
 } from "@/lib/lbp-math";
 import type { SimulationStateSnapshot } from "@/lib/simulation-core";
+import { getEthereumPrice } from "@/lib/requests";
 
 export interface Swap {
   id: string; // Unique identifier for React keys
@@ -88,6 +89,11 @@ interface SimulatorState {
   // User Wallet State
   userTknBalance: number;
   userUsdcBalance: number;
+
+  // Collateral USD price (for ETH/wETH; 1 for stables). Fetched when collateral is ETH/wETH.
+  ethPriceUsd: number | null;
+  setEthPriceUsd: (price: number | null) => void;
+  fetchEthPrice: () => Promise<void>;
 
   // Simulation Speed
   simulationSpeed: number; // Speed multiplier (1x, 10x, 25x, 50x)
@@ -239,7 +245,18 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
   // User wallet balances - player starts with 10k USDC and 0 tokens
   userTknBalance: 0,
-  userUsdcBalance: 10000,
+  userUsdcBalance: 1000000,
+
+  ethPriceUsd: null,
+  setEthPriceUsd: (price) => set({ ethPriceUsd: price }),
+  fetchEthPrice: async () => {
+    try {
+      const p = await getEthereumPrice();
+      set({ ethPriceUsd: p });
+    } catch {
+      set({ ethPriceUsd: null });
+    }
+  },
 
   // Community holdings (for sell pressure)
   communityTokensHeld: 0,
@@ -303,6 +320,9 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentStep: 0,
       swaps: [],
     });
+    if (newConfig.collateralToken === "ETH" || newConfig.collateralToken === "wETH") {
+      get().fetchEthPrice();
+    }
   },
 
   setIsPlaying: (isPlaying) => {

@@ -32,6 +32,7 @@ function SimulatorChartAreaComponent() {
     demandPressureConfig,
     sellPressureConfig,
     isPlaying,
+    ethPriceUsd,
   } = useSimulatorStore(
     useShallow((state) => ({
       simulationData: state.simulationData,
@@ -48,8 +49,14 @@ function SimulatorChartAreaComponent() {
       demandPressureConfig: state.demandPressureConfig,
       sellPressureConfig: state.sellPressureConfig,
       isPlaying: state.isPlaying,
+      ethPriceUsd: state.ethPriceUsd,
     })),
   );
+
+  const collateralUsd =
+    config.collateralToken === "ETH" || config.collateralToken === "wETH"
+      ? (ethPriceUsd ?? 1)
+      : 1;
 
   const [effectiveIsPlaying, setEffectiveIsPlaying] = useState(isPlaying);
   const [, startTransition] = useTransition();
@@ -67,14 +74,21 @@ function SimulatorChartAreaComponent() {
     if (n === 0) return out;
     for (let i = 0; i < n; i++) {
       const base = source[i] as any;
+      const priceInCollateral = priceHistory[i] ?? base.price;
       out.push({
         index: i,
         ...base,
-        price: priceHistory[i] ?? base.price,
+        price: priceInCollateral * collateralUsd,
       });
     }
     return out;
-  }, [simulationData, baseSnapshots, baseSnapshotsVersion, priceHistoryVersion]);
+  }, [
+    simulationData,
+    baseSnapshots,
+    baseSnapshotsVersion,
+    priceHistoryVersion,
+    collateralUsd,
+  ]);
 
   const priceDomain = useMemo((): [number, number] | undefined => {
     if (fullChartData.length === 0) return undefined;
@@ -129,13 +143,18 @@ function SimulatorChartAreaComponent() {
     if (effectiveIsPlaying || potentialPaths.length === 0) {
       return fullChartData;
     }
-    return fullChartData.map((data: any, i: number) => ({
-      ...data,
-      potentialPathLow: potentialPaths[0]?.[i] ?? null,
-      potentialPathMedium: potentialPaths[1]?.[i] ?? null,
-      potentialPathHigh: potentialPaths[2]?.[i] ?? null,
-    }));
-  }, [fullChartData, potentialPaths, effectiveIsPlaying]);
+    return fullChartData.map((data: any, i: number) => {
+      const low = potentialPaths[0]?.[i];
+      const med = potentialPaths[1]?.[i];
+      const high = potentialPaths[2]?.[i];
+      return {
+        ...data,
+        potentialPathLow: typeof low === "number" ? low * collateralUsd : null,
+        potentialPathMedium: typeof med === "number" ? med * collateralUsd : null,
+        potentialPathHigh: typeof high === "number" ? high * collateralUsd : null,
+      };
+    });
+  }, [fullChartData, potentialPaths, effectiveIsPlaying, collateralUsd]);
 
   const demandChartData = useMemo(() => {
     return throttledChartData.map((d: any) => {

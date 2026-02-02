@@ -3,8 +3,14 @@
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { StatCard } from "./StatCard";
 import { useShallow } from "zustand/react/shallow";
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { calcTVLUSD } from "@/lib/lbp-math";
+
+function isEthOrWeth(
+  token: string,
+): token is "ETH" | "wETH" {
+  return token === "ETH" || token === "wETH";
+}
 
 function SimulatorStatsComponent() {
   const {
@@ -15,6 +21,8 @@ function SimulatorStatsComponent() {
     simulationData,
     baseSnapshots,
     priceHistory,
+    ethPriceUsd,
+    fetchEthPrice,
   } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
@@ -24,8 +32,19 @@ function SimulatorStatsComponent() {
       simulationData: state.simulationData,
       baseSnapshots: state.baseSnapshots,
       priceHistory: state.priceHistory,
+      ethPriceUsd: state.ethPriceUsd,
+      fetchEthPrice: state.fetchEthPrice,
     })),
   );
+
+  const collateralUsd =
+    isEthOrWeth(config.collateralToken) ? (ethPriceUsd ?? 1) : 1;
+
+  useEffect(() => {
+    if (isEthOrWeth(config.collateralToken) && ethPriceUsd === null) {
+      fetchEthPrice();
+    }
+  }, [config.collateralToken, ethPriceUsd, fetchEthPrice]);
 
   // Get current price from live simulation data (baseSnapshots or priceHistory)
   // Fall back to static simulationData if worker hasn't computed yet
@@ -43,16 +62,22 @@ function SimulatorStatsComponent() {
   const currentPrice = getCurrentPrice();
   const startPrice = simulationData[0]?.price || 0;
   const tokensForSale = config.tknBalanceIn;
-  const fdv = currentPrice * config.totalSupply;
-  const impliedMarketCap = currentPrice * tokensForSale;
+  const tokenPriceUsd = currentPrice * collateralUsd;
+  const fdv = tokenPriceUsd * config.totalSupply;
+  const impliedMarketCap = tokenPriceUsd * tokensForSale;
 
   const stepData = baseSnapshots[currentStep] ?? simulationData[currentStep] ?? simulationData[0];
   const tknW = stepData?.tknWeight ?? config.tknWeightIn;
   const collW = stepData?.usdcWeight ?? config.usdcWeightIn;
   const tvlUsd =
-    stepData && "tvlUsd" in stepData && typeof stepData.tvlUsd === "number"
+    stepData &&
+    "tvlUsd" in stepData &&
+    typeof stepData.tvlUsd === "number" &&
+    !isEthOrWeth(config.collateralToken)
       ? stepData.tvlUsd
-      : calcTVLUSD(config, currentTknBalance, currentUsdcBalance, tknW, collW).tvlUsd;
+      : calcTVLUSD(config, currentTknBalance, currentUsdcBalance, tknW, collW, {
+          collateralUsd,
+        }).tvlUsd;
 
   const stats = [
     {
@@ -69,15 +94,15 @@ function SimulatorStatsComponent() {
     },
     {
       label: "Starting price",
-      value: `$${startPrice.toFixed(4)}`,
+      value: `$${(startPrice * collateralUsd).toFixed(4)}`,
       description:
-        "The initial price of the token when the LBP begins. LBPs typically start with a high price to prevent front-running and allow fair price discovery as the pool weights shift over time.",
+        "The initial price of the token when the LBP begins (in USD). LBPs typically start with a high price to prevent front-running and allow fair price discovery as the pool weights shift over time.",
     },
     {
       label: "Current price",
-      value: `$${currentPrice.toFixed(4)}`,
+      value: `$${tokenPriceUsd.toFixed(4)}`,
       description:
-        "The current spot price of the token in the LBP, calculated based on the current pool balances and weights. This price updates in real-time as trades occur and pool weights shift.",
+        "The current spot price of the token in the LBP in USD, calculated based on the current pool balances and weights. This price updates in real-time as trades occur and pool weights shift.",
     },
     {
       label: "FDV",
