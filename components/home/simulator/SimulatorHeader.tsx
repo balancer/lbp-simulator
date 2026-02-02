@@ -8,15 +8,23 @@ import { useShallow } from "zustand/react/shallow";
 import Image from "next/image";
 
 function SimulatorHeaderComponent() {
-  const { config, currentUsdcBalance, currentStep, simulationData } =
-    useSimulatorStore(
-      useShallow((state) => ({
-        config: state.config,
-        currentUsdcBalance: state.currentUsdcBalance,
-        currentStep: state.currentStep,
-        simulationData: state.simulationData,
-      })),
-    );
+  const {
+    config,
+    currentUsdcBalance,
+    currentStep,
+    simulationData,
+    ethPriceUsd,
+    userRaisedCollateral,
+  } = useSimulatorStore(
+    useShallow((state) => ({
+      config: state.config,
+      currentUsdcBalance: state.currentUsdcBalance,
+      currentStep: state.currentStep,
+      simulationData: state.simulationData,
+      ethPriceUsd: state.ethPriceUsd,
+      userRaisedCollateral: state.userRaisedCollateral,
+    })),
+  );
 
   const timeRemaining = useMemo(() => {
     if (!simulationData || simulationData.length === 0) return "0d 0h";
@@ -35,9 +43,16 @@ function SimulatorHeaderComponent() {
     return `${h}h ${m}m`;
   }, [config.duration, currentStep, simulationData]);
 
-  const totalRaised = currentUsdcBalance - config.usdcBalanceIn;
+  // Net collateral from buys minus sells (in collateral units): pool change from bots + user actions (swap, limit, TWAP)
+  const collateralUsd =
+    config.collateralToken === "ETH" || config.collateralToken === "wETH"
+      ? (ethPriceUsd ?? 1)
+      : 1;
+  const totalRaisedCollateral =
+    (currentUsdcBalance - config.usdcBalanceIn) + userRaisedCollateral;
+  const totalRaised = totalRaisedCollateral * collateralUsd;
 
-  const totalFees = totalRaised * (config.swapFee / 100)
+  const totalFees = totalRaised * (config.swapFee / 100);
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -94,7 +109,8 @@ function SimulatorHeaderComponent() {
           <span
             className="text-2xl font-mono font-medium"
             style={{
-              background: "linear-gradient(90deg, #93c5fd 0%, #c4b5fd 50%, #fdba74 100%)",
+              background:
+                "linear-gradient(90deg, #93c5fd 0%, #c4b5fd 50%, #fdba74 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",

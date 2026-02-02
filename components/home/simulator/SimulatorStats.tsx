@@ -94,13 +94,13 @@ function SimulatorStatsComponent() {
     },
     {
       label: "Starting price",
-      value: `$${(startPrice * collateralUsd).toFixed(4)}`,
+      value: `$${(startPrice * collateralUsd).toFixed(2)}`,
       description:
         "The initial price of the token when the LBP begins (in USD). LBPs typically start with a high price to prevent front-running and allow fair price discovery as the pool weights shift over time.",
     },
     {
       label: "Current price",
-      value: `$${tokenPriceUsd.toFixed(4)}`,
+      value: `$${tokenPriceUsd.toFixed(2)}`,
       description:
         "The current spot price of the token in the LBP in USD, calculated based on the current pool balances and weights. This price updates in real-time as trades occur and pool weights shift.",
     },

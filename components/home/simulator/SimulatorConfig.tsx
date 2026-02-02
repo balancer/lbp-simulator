@@ -326,7 +326,7 @@ function SimulatorConfigComponent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Initial Liquidity (USDC)</Label>
+                  <Label>Initial Liquidity (Collateral token)</Label>
                   <Input
                     type="text"
                     inputMode="numeric"

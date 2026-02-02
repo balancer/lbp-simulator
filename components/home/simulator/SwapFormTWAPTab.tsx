@@ -84,8 +84,8 @@ function SwapFormTWAPTabComponent() {
     handleCreateSuccess();
 
     toast({
-      title: `TWAO ${config.tokenSymbol}`,
-      description: `You schedule a limit order, ${config.collateralToken} for $${triggerPrice}`,
+      title: `TWAP ${config.tokenSymbol}`,
+      description: `You schedule TWAP, ${config.collateralToken} spread across ${totalDurationDays} days`,
       duration: 5000,
     });
   };
