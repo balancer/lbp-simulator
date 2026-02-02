@@ -138,9 +138,13 @@ export function Simulator() {
           <Tooltip>
             <TooltipTrigger asChild>
               <SidebarTrigger
-                className="flex shrink-0"
+                className="flex shrink-0 relative"
                 aria-label="Toggle config panel"
-              />
+              >
+                <span className="text-sm text-muted-foreground">
+                  Configure your LBP
+                </span>
+              </SidebarTrigger>
             </TooltipTrigger>
             <TooltipContent>
               <p>
@@ -152,9 +156,6 @@ export function Simulator() {
               </p>
             </TooltipContent>
           </Tooltip>
-          <span className="text-sm text-muted-foreground">
-            Configure your LBP
-          </span>
         </div>
 
         <SimulatorContent />
