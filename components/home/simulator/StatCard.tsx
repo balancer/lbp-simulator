@@ -15,14 +15,13 @@ interface StatCardProps {
   children: ReactNode;
 }
 
-/** Card shell is memoized so only the value (children) re-renders when store updates. */
 export const StatCard = memo(function StatCard({
   label,
   description,
   children,
 }: StatCardProps) {
   return (
-    <Card className="shadow-sm border-border/60">
+    <Card className="shadow-sm border-border/60 h-[90%]">
       <CardContent className="p-4 flex flex-col gap-1">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">

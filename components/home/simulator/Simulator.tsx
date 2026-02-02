@@ -15,6 +15,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
 const CONFIG_MAX_HEIGHT = "70vh";
 
@@ -128,16 +134,29 @@ export function Simulator() {
         onOpenChange={onOpenChange}
         className="w-full flex flex-col"
       >
-        {/* Trigger bar: always visible, z-10 so it stays above content on mobile */}
         <div className="relative z-10 flex items-center gap-2 border-b border-border/60 bg-card px-2 py-2 rounded-t-2xl">
-          <SidebarTrigger
-            className="flex shrink-0"
-            aria-label="Toggle config panel"
-          />
-          <span className="text-sm text-muted-foreground">Config</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarTrigger
+                className="flex shrink-0"
+                aria-label="Toggle config panel"
+              />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                Use{" "}
+                <KbdGroup>
+                  <Kbd>⌘ + b</Kbd>
+                </KbdGroup>{" "}
+                to open the configuration panel
+              </p>
+            </TooltipContent>
+          </Tooltip>
+          <span className="text-sm text-muted-foreground">
+            Configure your LBP
+          </span>
         </div>
 
-        {/* Simulator: config overlays header+stats when open; chart always visible */}
         <SimulatorContent />
       </SidebarProvider>
     </section>

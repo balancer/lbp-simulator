@@ -20,11 +20,11 @@ function SaleDetailsTabComponent() {
 
   const BALANCER_FEE = 50;
   const swapFee = config.swapFee || 2;
-  const remainingFee = 100 - BALANCER_FEE - swapFee;
+  const remainingFee = 100 - BALANCER_FEE - 25;
 
   const donutData = [
-    { name: "Balancer Fee", value: BALANCER_FEE },
-    { name: "Swap Fee", value: swapFee },
+    { name: "Balancer DAO", value: BALANCER_FEE },
+    { name: "Project fee", value: 25 },
     { name: "Remaining", value: remainingFee },
   ];
 
@@ -105,7 +105,7 @@ function SaleDetailsTabComponent() {
                 />
                 <Legend
                   verticalAlign="bottom"
-                  height={36}
+                  height={16}
                   formatter={(value) => value}
                 />
               </PieChart>

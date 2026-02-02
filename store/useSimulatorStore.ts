@@ -271,7 +271,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   simulationSpeed: 1,
 
   // UI State (sidebar open by default)
-  isConfigOpen: true,
+  isConfigOpen: false,
 
   updateConfig: (partialConfig) => {
     const currentConfig = get().config;

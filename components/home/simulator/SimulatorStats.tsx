@@ -157,7 +157,7 @@ function SimulatorStatsComponent() {
   }, [config.collateralToken, ethPriceUsd, fetchEthPrice]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-2  gap-4 mb-6">
+    <div className="grid grid-cols-1 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-2 gap-4 mb-6">
       {STAT_META.map((meta, i) => (
         <StatCard
           key={meta.label}
