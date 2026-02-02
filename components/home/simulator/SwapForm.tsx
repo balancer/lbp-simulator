@@ -8,7 +8,7 @@ import { SwapFormTWAPTab } from "./SwapFormTWAPTab";
 
 export function SwapForm() {
   return (
-    <Card className="h-[600px] border-border/60 shadow-sm">
+    <Card className="h-[600px] w-full border-border/60 shadow-sm">
       <Tabs defaultValue="swap" className="w-full h-full flex flex-col">
         <CardHeader className="pb-4">
           <TabsList variant="line">
@@ -17,7 +17,7 @@ export function SwapForm() {
             <TabsTrigger value="twap">TWAP</TabsTrigger>
           </TabsList>
         </CardHeader>
-        <CardContent className="space-y-4 flex-1">
+        <CardContent className="space-y-4">
           <TabsContent value="swap" className="mt-0 h-full">
             <SwapFormSwapTab />
           </TabsContent>

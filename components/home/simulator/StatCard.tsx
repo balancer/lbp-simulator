@@ -7,14 +7,20 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Info } from "lucide-react";
+import { memo, type ReactNode } from "react";
 
 interface StatCardProps {
   label: string;
-  value: string;
   description: string;
+  children: ReactNode;
 }
 
-export function StatCard({ label, value, description }: StatCardProps) {
+/** Card shell is memoized so only the value (children) re-renders when store updates. */
+export const StatCard = memo(function StatCard({
+  label,
+  description,
+  children,
+}: StatCardProps) {
   return (
     <Card className="shadow-sm border-border/60">
       <CardContent className="p-4 flex flex-col gap-1">
@@ -41,9 +47,9 @@ export function StatCard({ label, value, description }: StatCardProps) {
           </HoverCard>
         </div>
         <span className="text-lg md:text-xl font-semibold tracking-tight">
-          {value}
+          {children}
         </span>
       </CardContent>
     </Card>
   );
-}
+});

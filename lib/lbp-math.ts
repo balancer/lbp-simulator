@@ -16,7 +16,7 @@ export interface LBPConfig {
   usdcWeightOut: number; // Final USDC weight (e.g. 90)
   startDelay: number; // Delay before start (in blocks/time)
   duration: number; // Duration of LBP (in hours)
-  swapFee?: number; // Swap fee (e.g., 0.01 for 1%)
+  swapFee: number; // Swap fee (e.g., 0.01 for 1%)
   creatorFee: number; // Creator fee percentage (1-10%)
 }
 
@@ -72,6 +72,58 @@ export const DEFAULT_SELL_PRESSURE_CONFIG: SellPressureConfig = {
   greedySpreadPct: 2,
   greedySellPct: 100,
 };
+
+/**
+ * Normalizes weight to fraction (0–1). Accepts either percentage (e.g. 90) or fraction (e.g. 0.9).
+ */
+function toWeightFraction(w: number): number {
+  return w > 1 ? w / 100 : w;
+}
+
+export type Prices = {
+  collateralUsd?: number; // e.g. ETH price in USD when collateral is not a stable
+};
+
+/**
+ * Spot price of token in collateral (collateral per token).
+ * Price = (BalanceCollateral / WeightCollateral) / (BalanceTKN / WeightTKN)
+ */
+export function calcSpotPriceTokenInCollateral(
+  _cfg: LBPConfig,
+  tknBal: number,
+  collBal: number,
+  tknW: number,
+  collW: number,
+): number {
+  if (tknBal === 0 || tknW === 0) return 0;
+  const wt = toWeightFraction(tknW);
+  const wc = toWeightFraction(collW);
+  return collBal / wc / (tknBal / wt);
+}
+
+/**
+ * TVL in USD for the pool: collateral value + token value (token valued at spot in collateral, then in USD).
+ */
+export function calcTVLUSD(
+  cfg: LBPConfig,
+  tknBal: number = cfg.tknBalanceIn,
+  collBal: number = cfg.usdcBalanceIn,
+  tknW: number = cfg.tknWeightIn,
+  collW: number = cfg.usdcWeightIn,
+  prices: Prices = {},
+): { tvlUsd: number; tokenPriceUsd: number; tokenPriceInCollateral: number } {
+  const tokenPriceInCollateral = calcSpotPriceTokenInCollateral(
+    cfg,
+    tknBal,
+    collBal,
+    tknW,
+    collW,
+  );
+  const collateralUsd = prices.collateralUsd ?? 1;
+  const tokenPriceUsd = tokenPriceInCollateral * collateralUsd;
+  const tvlUsd = collBal * collateralUsd + tknBal * tokenPriceUsd;
+  return { tvlUsd, tokenPriceUsd, tokenPriceInCollateral };
+}
 
 /**
  * Calculates Spot Price based on Balancer formula

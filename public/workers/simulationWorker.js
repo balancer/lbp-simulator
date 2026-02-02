@@ -296,6 +296,7 @@ function runDeterministicSimulation(config, demandConfig, sellConfig, steps) {
       }
     }
 
+    const tvlUsd = usdcBalance + tknBalance * price;
     snapshots.push({
       index: i,
       time,
@@ -305,6 +306,7 @@ function runDeterministicSimulation(config, demandConfig, sellConfig, steps) {
       usdcBalance,
       tknWeight: currentTknWeight,
       usdcWeight: currentUsdcWeight,
+      tvlUsd,
       communityTokensHeld,
       communityAvgCost,
       buyVolumeUSDC: stepBuyUSDC,

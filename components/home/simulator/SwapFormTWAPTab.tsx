@@ -11,6 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { SwapFormTWAPTabLive } from "./SwapFormTWAPTabLive";
+import { toast } from "@/components/ui/toast";
 
 function SwapFormTWAPTabComponent() {
   const {
@@ -81,6 +82,12 @@ function SwapFormTWAPTabComponent() {
   const createTwapOrderAndReset = (order: Parameters<typeof createTwapOrder>[0]) => {
     createTwapOrder(order);
     handleCreateSuccess();
+
+    toast({
+      title: `TWAP ${config.tokenSymbol}`,
+      description: `You schedule TWAP, ${config.collateralToken} spread across ${totalDurationDays} days`,
+      duration: 5000,
+    });
   };
 
   return (
@@ -123,7 +130,7 @@ function SwapFormTWAPTabComponent() {
       </div>
 
       {/* Price protection */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
             Price protection
@@ -154,7 +161,7 @@ function SwapFormTWAPTabComponent() {
             createTwapOrder={createTwapOrderAndReset}
           />
         </div>
-      </div>
+      </div> */}
 
       {/* Schedule settings */}
       <div className="grid grid-cols-2 gap-3">

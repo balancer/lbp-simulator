@@ -14,6 +14,7 @@ import {
   getLoyalSellSchedule,
 } from "@/lib/lbp-math";
 import type { SimulationStateSnapshot } from "@/lib/simulation-core";
+import { getEthereumPrice } from "@/lib/requests";
 
 export interface Swap {
   id: string; // Unique identifier for React keys
@@ -89,6 +90,14 @@ interface SimulatorState {
   userTknBalance: number;
   userUsdcBalance: number;
 
+  /** Net collateral from user actions (swap buy, swap sell, limit order, TWAP) in collateral units. Added on buy, subtracted on sell. */
+  userRaisedCollateral: number;
+
+  // Collateral USD price (for ETH/wETH; 1 for stables). Fetched when collateral is ETH/wETH.
+  ethPriceUsd: number | null;
+  setEthPriceUsd: (price: number | null) => void;
+  fetchEthPrice: () => Promise<void>;
+
   // Simulation Speed
   simulationSpeed: number; // Speed multiplier (1x, 10x, 25x, 50x)
 
@@ -103,6 +112,7 @@ interface SimulatorState {
   updateDemandPressureConfig: (config: Partial<DemandPressureConfig>) => void;
   updateSellPressureConfig: (config: Partial<SellPressureConfig>) => void;
   resetConfig: () => void;
+  restartSimulation: () => void;
   tick: () => void;
   processBuy: (amountUSDC: number) => void;
   processSell: (amountToken: number) => void;
@@ -132,18 +142,18 @@ const DEFAULT_CONFIG: LBPConfig = {
   tokenName: "Balancer",
   tokenSymbol: "BAL",
   totalSupply: 100_000_000,
-  percentForSale: 50,
+  percentForSale: 10, // 10% of total supply
   collateralToken: "USDC",
 
   tknBalanceIn: 50_000_000, // 50% of 100M
   tknWeightIn: 90,
   usdcBalanceIn: 1_000_000, // 1M start
   usdcWeightIn: 10,
-  tknWeightOut: 10,
-  usdcWeightOut: 90,
+  tknWeightOut: 50,
+  usdcWeightOut: 50,
   startDelay: 0,
   duration: 72, // 72 hours (3 days)
-  swapFee: 1, // 1% swap fee (default)
+  swapFee: 2, // 2% swap fee (default)
   creatorFee: 5, // 5% creator fee (default)
 };
 
@@ -238,7 +248,20 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
   // User wallet balances - player starts with 10k USDC and 0 tokens
   userTknBalance: 0,
-  userUsdcBalance: 10000,
+  userUsdcBalance: 1000000,
+
+  userRaisedCollateral: 0,
+
+  ethPriceUsd: null,
+  setEthPriceUsd: (price) => set({ ethPriceUsd: price }),
+  fetchEthPrice: async () => {
+    try {
+      const p = await getEthereumPrice();
+      set({ ethPriceUsd: p });
+    } catch {
+      set({ ethPriceUsd: null });
+    }
+  },
 
   // Community holdings (for sell pressure)
   communityTokensHeld: 0,
@@ -301,7 +324,11 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentUsdcBalance: newConfig.usdcBalanceIn,
       currentStep: 0,
       swaps: [],
+      userRaisedCollateral: 0,
     });
+    if (newConfig.collateralToken === "ETH" || newConfig.collateralToken === "wETH") {
+      get().fetchEthPrice();
+    }
   },
 
   setIsPlaying: (isPlaying) => {
@@ -380,6 +407,29 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     });
   },
 
+  restartSimulation: () => {
+    const { intervalId, config, simulationData } = get();
+    if (intervalId) clearInterval(intervalId);
+
+    set({
+      isPlaying: false,
+      intervalId: null,
+      currentStep: 0,
+      swaps: [],
+      limitOrders: [],
+      twapOrders: [],
+      currentTknBalance: config.tknBalanceIn,
+      currentUsdcBalance: config.usdcBalanceIn,
+      userTknBalance: 0,
+      userUsdcBalance: 1000000,
+      userRaisedCollateral: 0,
+      communityTokensHeld: 0,
+      communityAvgCost: 0,
+      priceHistory: new Float64Array(simulationData.map((d) => d.price)),
+      priceHistoryVersion: 0,
+    });
+  },
+
   resetConfig: () => {
     const { intervalId } = get();
     if (intervalId) clearInterval(intervalId);
@@ -425,6 +475,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       intervalId: null,
       userTknBalance: 0,
       userUsdcBalance: 10000,
+      userRaisedCollateral: 0,
       simulationSpeed: 1,
       communityTokensHeld: 0,
       communityAvgCost: 0,
@@ -603,6 +654,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentUsdcBalance,
       currentStep,
       baseSnapshots,
+      userRaisedCollateral,
     } = get();
     const snapshot = baseSnapshots[currentStep];
     if (!snapshot) return;
@@ -619,11 +671,12 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     // Process pool trade (updates pool balances and records bid)
     get()._processPoolSell(amountToken, `0x${Math.floor(Math.random() * 16777215).toString(16)}...`);
 
-    // Update user wallet: subtract token, add USDC
+    // Update user wallet: subtract token, add USDC; subtract collateral out from total raised
     const { userTknBalance, userUsdcBalance } = get();
     set({
       userTknBalance: Math.max(0, userTknBalance - amountToken),
       userUsdcBalance: Math.max(0, userUsdcBalance + amountOut),
+      userRaisedCollateral: userRaisedCollateral - amountOut,
     });
   },
 
@@ -633,6 +686,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentUsdcBalance,
       currentStep,
       baseSnapshots,
+      userRaisedCollateral,
     } = get();
     const snapshot = baseSnapshots[currentStep];
     if (!snapshot) return;
@@ -649,11 +703,12 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     // Process pool trade (updates pool balances and records bid)
     get()._processPoolBuy(amountUSDC, `0x${Math.floor(Math.random() * 16777215).toString(16)}...`);
 
-    // Update user wallet: subtract USDC, add token
+    // Update user wallet: subtract USDC, add token; add collateral in to total raised
     const { userTknBalance, userUsdcBalance } = get();
     set({
       userTknBalance: Math.max(0, userTknBalance + amountOut),
       userUsdcBalance: Math.max(0, userUsdcBalance - amountUSDC),
+      userRaisedCollateral: userRaisedCollateral + amountUSDC,
     });
   },
 

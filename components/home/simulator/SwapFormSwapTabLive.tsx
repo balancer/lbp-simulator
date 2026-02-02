@@ -30,6 +30,7 @@ function SwapFormSwapTabLiveComponent({
     priceHistory,
     currentTknBalance,
     currentUsdcBalance,
+    ethPriceUsd,
   } = useSimulatorStore(
     useShallow((state) => ({
       currentStep: state.currentStep,
@@ -38,8 +39,14 @@ function SwapFormSwapTabLiveComponent({
       priceHistory: state.priceHistory,
       currentTknBalance: state.currentTknBalance,
       currentUsdcBalance: state.currentUsdcBalance,
+      ethPriceUsd: state.ethPriceUsd,
     })),
   );
+
+  const collateralUsd =
+    config.collateralToken === "ETH" || config.collateralToken === "wETH"
+      ? (ethPriceUsd ?? 1)
+      : 1;
 
   const stepData = baseSnapshots.length > 0 && baseSnapshots[currentStep]
     ? baseSnapshots[currentStep]
@@ -75,13 +82,15 @@ function SwapFormSwapTabLiveComponent({
   const inputUsdValue = useMemo(() => {
     if (!inputAmount || parseFloat(inputAmount) <= 0) return 0;
     const amount = parseFloat(inputAmount);
-    return direction === "buy" ? amount : amount * currentPrice;
-  }, [inputAmount, direction, currentPrice]);
+    if (direction === "buy") return amount * collateralUsd;
+    return amount * currentPrice * collateralUsd;
+  }, [inputAmount, direction, currentPrice, collateralUsd]);
 
   const outputUsdValue = useMemo(() => {
     if (outputAmount <= 0) return 0;
-    return direction === "buy" ? outputAmount * currentPrice : outputAmount;
-  }, [outputAmount, direction, currentPrice]);
+    if (direction === "buy") return outputAmount * currentPrice * collateralUsd;
+    return outputAmount * collateralUsd;
+  }, [outputAmount, direction, currentPrice, collateralUsd]);
 
   if (part === "inputUsd") {
     return (
@@ -107,12 +116,13 @@ function SwapFormSwapTabLiveComponent({
   }
 
   // part === "price"
+  const priceUsd = currentPrice * collateralUsd;
   return (
     <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
       <div className="flex justify-between">
         <span>Price:</span>
         <span className="font-medium text-foreground">
-          ${currentPrice.toFixed(4)} {config.tokenSymbol}/{config.collateralToken}
+          ${priceUsd.toFixed(4)} {config.tokenSymbol}/{config.collateralToken}
         </span>
       </div>
     </div>

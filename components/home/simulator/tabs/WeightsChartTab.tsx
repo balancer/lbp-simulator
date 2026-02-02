@@ -9,17 +9,26 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 
 interface WeightsChartTabProps {
   chartData: any[];
   shouldAnimate: boolean;
+  /** Current simulation step; used to draw reference line for "now" */
+  currentStep: number;
 }
 
-function WeightsChartTabComponent({ chartData, shouldAnimate }: WeightsChartTabProps) {
+function WeightsChartTabComponent({ chartData, shouldAnimate, currentStep }: WeightsChartTabProps) {
   const { resolvedTheme } = useTheme();
   const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
+
+  const referenceTimeLabel = useMemo(() => {
+    if (chartData.length === 0 || currentStep < 0) return null;
+    const point = chartData.filter((d) => (d.index ?? 0) <= currentStep).pop();
+    return point?.timeLabel ?? null;
+  }, [chartData, currentStep]);
 
   return (
     <>
@@ -63,6 +72,14 @@ function WeightsChartTabComponent({ chartData, shouldAnimate }: WeightsChartTabP
             tickLine={false}
             tick={{ fill: axisLabelColor }}
           />
+          {referenceTimeLabel != null && (
+            <ReferenceLine
+              x={referenceTimeLabel}
+              stroke="#9E9E9E"
+              strokeWidth={2}
+              strokeDasharray="4 4"
+            />
+          )}
           <Tooltip
             contentStyle={{
               borderRadius: "8px",

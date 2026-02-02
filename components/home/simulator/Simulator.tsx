@@ -20,21 +20,27 @@ const CONFIG_MAX_HEIGHT = "70vh";
 
 /** Config overlay: sits on top of header + stats when open; animates open/close. */
 const ConfigOverlay = memo(function ConfigOverlay() {
-  const { open, setOpen } = useSidebar();
+  const { open, setOpen, openMobile, setOpenMobile, isMobile } = useSidebar();
+  const isOpen = isMobile ? openMobile : open;
+  const closePanel = useCallback(() => {
+    setOpen(false);
+    if (isMobile) setOpenMobile(false);
+  }, [setOpen, setOpenMobile, isMobile]);
+
   return (
     <>
-      {open && (
+      {isOpen && (
         <button
           type="button"
-          className="absolute inset-0 z-[9] cursor-default bg-red"
-          onClick={() => setOpen(false)}
+          className="absolute inset-0 z-[9] cursor-default bg-transparent"
+          onClick={closePanel}
           aria-label="Close config"
         />
       )}
       <div
         className={cn(
           "absolute top-0 left-0 right-0 z-10 overflow-hidden rounded-t-xl border-b border-border/60 bg-card shadow-lg transition-[max-height,opacity] duration-300 ease-out",
-          open
+          isOpen
             ? "max-h-[var(--config-overlay-max)] opacity-100"
             : "max-h-0 opacity-0 pointer-events-none border-transparent",
         )}
@@ -52,13 +58,19 @@ const ConfigOverlay = memo(function ConfigOverlay() {
 });
 
 const SimulatorContent = memo(function SimulatorContent() {
-  const { setOpen, open } = useSidebar();
+  const { setOpen, open, openMobile, setOpenMobile, isMobile } = useSidebar();
+  const isOpen = isMobile ? openMobile : open;
+
+  const closePanel = useCallback(() => {
+    if (isOpen) {
+      setOpen(false);
+      if (isMobile) setOpenMobile(false);
+    }
+  }, [isOpen, setOpen, setOpenMobile, isMobile]);
 
   return (
     <div
-      onClick={() => {
-        if (open) setOpen(false);
-      }}
+      onClick={closePanel}
       className="
     min-w-0 flex-1
     rounded-b-2xl
@@ -109,16 +121,19 @@ export function Simulator() {
   return (
     <section
       id="lbp-settings"
-      className="flex w-full flex-col container mx-auto max-w-[1800px] px-4 md:px-6 pb-20 gap-0 min-h-0"
+      className="flex w-full flex-col container mx-auto px-4 md:px-6 pb-20 gap-0 min-h-0"
     >
       <SidebarProvider
         open={isConfigOpen}
         onOpenChange={onOpenChange}
         className="w-full flex flex-col"
       >
-        {/* Trigger bar: always visible */}
-        <div className="flex items-center gap-2 border-b border-border/60 bg-card px-2 py-2 rounded-t-2xl">
-          <SidebarTrigger className="flex" aria-label="Toggle config panel" />
+        {/* Trigger bar: always visible, z-10 so it stays above content on mobile */}
+        <div className="relative z-10 flex items-center gap-2 border-b border-border/60 bg-card px-2 py-2 rounded-t-2xl">
+          <SidebarTrigger
+            className="flex shrink-0"
+            aria-label="Toggle config panel"
+          />
           <span className="text-sm text-muted-foreground">Config</span>
         </div>
 

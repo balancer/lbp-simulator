@@ -34,6 +34,7 @@ import { useDebounce } from "@/lib/useDebounce";
 import { LBPConfig } from "@/lib/lbp-math";
 import { useShallow } from "zustand/shallow";
 import { TokenLogo } from "@/components/ui/TokenLogo";
+import { formatNumber } from "@/lib/utils";
 
 function SimulatorConfigComponent() {
   const { setOpen, toggleSidebar } = useSidebar();
@@ -43,6 +44,7 @@ function SimulatorConfigComponent() {
     isPlaying,
     setIsPlaying,
     resetConfig,
+    restartSimulation,
     simulationSpeed,
     setSimulationSpeed,
   } = useSimulatorStore(
@@ -52,6 +54,7 @@ function SimulatorConfigComponent() {
       isPlaying: state.isPlaying,
       setIsPlaying: state.setIsPlaying,
       resetConfig: state.resetConfig,
+      restartSimulation: state.restartSimulation,
       simulationSpeed: state.simulationSpeed,
       setSimulationSpeed: state.setSimulationSpeed,
     })),
@@ -65,6 +68,7 @@ function SimulatorConfigComponent() {
     setLocalTknWeightOut(config.tknWeightOut);
     setLocalPercentForSale(config.percentForSale);
     setLocalTotalSupply(config.totalSupply);
+    setTotalSupplyInput(formatNumber(config.totalSupply));
     setLocalUsdcBalanceIn(config.usdcBalanceIn);
     setOpen(false);
   }, [config, setOpen]);
@@ -79,6 +83,9 @@ function SimulatorConfigComponent() {
     config.percentForSale,
   );
   const [localTotalSupply, setLocalTotalSupply] = useState(config.totalSupply);
+  const [totalSupplyInput, setTotalSupplyInput] = useState(() =>
+    formatNumber(config.totalSupply),
+  );
   const [localUsdcBalanceIn, setLocalUsdcBalanceIn] = useState(
     config.usdcBalanceIn,
   );
@@ -90,6 +97,7 @@ function SimulatorConfigComponent() {
     setLocalTknWeightOut(config.tknWeightOut);
     setLocalPercentForSale(config.percentForSale);
     setLocalTotalSupply(config.totalSupply);
+    setTotalSupplyInput(formatNumber(config.totalSupply));
     setLocalUsdcBalanceIn(config.usdcBalanceIn);
   }, [
     config.duration,
@@ -180,7 +188,7 @@ function SimulatorConfigComponent() {
       <SidebarContent className="rounded-xl border border-border/60 dark:bg-[#0F0F0F] shadow-xl">
         <ScrollArea className="flex-1 min-h-0 h-full">
           <div className="p-4 mt-2 pb-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* Column 1: Timeline + pressure configs */}
               <div className="space-y-4 min-w-0">
                 <div className="flex items-center justify-between">
@@ -239,7 +247,7 @@ function SimulatorConfigComponent() {
                         const days = parseFloat(e.target.value);
                         if (!isNaN(days))
                           setLocalDuration(
-                            Math.max(24, Math.min(days * 24, 1440))
+                            Math.max(24, Math.min(days * 24, 1440)),
                           );
                       }}
                     />
@@ -273,35 +281,23 @@ function SimulatorConfigComponent() {
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                   Tokenomics
                 </h3>
-                {/* <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Project Name</Label>
-                  <Input
-                    value={config.tokenName}
-                    onChange={(e) =>
-                      updateConfig({ tokenName: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Token Symbol</Label>
-                  <Input
-                    value={config.tokenSymbol}
-                    onChange={(e) =>
-                      updateConfig({ tokenSymbol: e.target.value })
-                    }
-                  />
-                </div>
-              </div> */}
-
                 <div className="space-y-2">
                   <Label>Total Supply</Label>
                   <Input
-                    type="number"
-                    value={localTotalSupply}
-                    onChange={(e) =>
-                      setLocalTotalSupply(Number(e.target.value))
-                    }
+                    type="text"
+                    inputMode="numeric"
+                    value={totalSupplyInput}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/,/g, "");
+                      setTotalSupplyInput(e.target.value);
+                      const num = raw === "" ? 0 : Number(raw);
+                      if (!Number.isNaN(num) && num >= 0) {
+                        setLocalTotalSupply(num);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTotalSupplyInput(formatNumber(localTotalSupply));
+                    }}
                   />
                 </div>
 
@@ -330,13 +326,22 @@ function SimulatorConfigComponent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Initial Liquidity (USDC)</Label>
+                  <Label>Initial Liquidity (Collateral token)</Label>
                   <Input
-                    type="number"
-                    value={localUsdcBalanceIn}
-                    onChange={(e) =>
-                      setLocalUsdcBalanceIn(Number(e.target.value))
+                    type="text"
+                    inputMode="numeric"
+                    value={
+                      localUsdcBalanceIn === 0
+                        ? ""
+                        : formatNumber(localUsdcBalanceIn)
                     }
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/,/g, "");
+                      setLocalUsdcBalanceIn(raw === "" ? 0 : Number(raw));
+                    }}
+                    onBlur={() => {
+                      setLocalUsdcBalanceIn((prev) => Number(prev) || 0);
+                    }}
                   />
                 </div>
               </div>
@@ -393,7 +398,11 @@ function SimulatorConfigComponent() {
                       value={config.collateralToken}
                       onValueChange={(value) =>
                         updateConfig({
-                          collateralToken: value as "USDC" | "USDT" | "ETH" | "wETH",
+                          collateralToken: value as
+                            | "USDC"
+                            | "USDT"
+                            | "ETH"
+                            | "wETH",
                         })
                       }
                     >
@@ -427,16 +436,14 @@ function SimulatorConfigComponent() {
                         <SelectValue placeholder="Select swap fee" />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((fee) => (
+                        {[1, 2, 3, 4, 5].map((fee) => (
                           <SelectItem key={fee} value={String(fee)}>
                             {fee}%
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Balancer 10%. Swap fee 1–10%.
-                    </p>
+                    <p className="text-xs text-muted-foreground"></p>
                   </div>
                 </div>
               </div>

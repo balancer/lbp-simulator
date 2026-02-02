@@ -1,22 +1,43 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, RotateCcw } from "lucide-react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
 
 const SPEED_OPTIONS = [1, 5, 10] as const;
 
 export function PlayPauseButton() {
-  const { isPlaying, setIsPlaying, simulationSpeed, setSimulationSpeed } =
-    useSimulatorStore(
-      useShallow((state) => ({
-        isPlaying: state.isPlaying,
-        setIsPlaying: state.setIsPlaying,
-        simulationSpeed: state.simulationSpeed,
-        setSimulationSpeed: state.setSimulationSpeed,
-      })),
-    );
+  const {
+    isPlaying,
+    setIsPlaying,
+    currentStep,
+    totalSteps,
+    simulationSpeed,
+    setSimulationSpeed,
+    restartSimulation,
+  } = useSimulatorStore(
+    useShallow((state) => ({
+      isPlaying: state.isPlaying,
+      setIsPlaying: state.setIsPlaying,
+      currentStep: state.currentStep,
+      totalSteps: state.totalSteps,
+      simulationSpeed: state.simulationSpeed,
+      setSimulationSpeed: state.setSimulationSpeed,
+      restartSimulation: state.restartSimulation,
+    })),
+  );
+
+  const isFinished = totalSteps > 0 && currentStep >= totalSteps - 1;
+
+  const handleMainButtonClick = () => {
+    if (isFinished) {
+      restartSimulation();
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(!isPlaying);
+    }
+  };
 
   const handleSpeedClick = () => {
     const currentIndex = SPEED_OPTIONS.indexOf(
@@ -44,12 +65,20 @@ export function PlayPauseButton() {
           />
         )}
         <Button
-          onClick={() => setIsPlaying(!isPlaying)}
+          onClick={handleMainButtonClick}
           size="icon"
           className="relative h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold"
-          aria-label={isPlaying ? "Pause simulation" : "Play simulation"}
+          aria-label={
+            isFinished
+              ? "Restart simulation"
+              : isPlaying
+                ? "Pause simulation"
+                : "Play simulation"
+          }
         >
-          {isPlaying ? (
+          {isFinished ? (
+            <RotateCcw className="h-6 w-6" />
+          ) : isPlaying ? (
             <Pause className="h-6 w-6" />
           ) : (
             <Play className="h-6 w-6 ml-1" />
@@ -57,16 +86,27 @@ export function PlayPauseButton() {
         </Button>
       </div>
 
-      {/* Speed button */}
-      <Button
-        onClick={handleSpeedClick}
-        variant="outline"
-        size="sm"
-        className="h-8 w-14 rounded-full bg-background/80 backdrop-blur-sm border-border/60 shadow-md hover:bg-background text-sm font-medium"
-        aria-label={`Simulation speed: ${simulationSpeed}x`}
-      >
-        {simulationSpeed}x
-      </Button>
+      {/* Restart & Speed buttons */}
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={restartSimulation}
+          variant="outline"
+          size="sm"
+          className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm border-border/60 shadow-md hover:bg-background p-0"
+          aria-label="Restart simulation"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+        <Button
+          onClick={handleSpeedClick}
+          variant="outline"
+          size="sm"
+          className="h-8 w-14 rounded-full bg-background/80 backdrop-blur-sm border-border/60 shadow-md hover:bg-background text-sm font-medium"
+          aria-label={`Simulation speed: ${simulationSpeed}x`}
+        >
+          {simulationSpeed}x
+        </Button>
+      </div>
     </div>
   );
 }

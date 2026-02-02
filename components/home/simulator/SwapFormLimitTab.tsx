@@ -10,6 +10,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { toast } from "@/components/ui/toast";
 
 function SwapFormLimitTabComponent() {
   const {
@@ -64,6 +65,12 @@ function SwapFormLimitTabComponent() {
 
     setTriggerPrice("");
     setCollateralAmount("");
+
+    toast({
+      title: `Schedule ${config.tokenSymbol}`,
+      description: `You schedule a limit order, ${config.collateralToken} for $${triggerPrice}`,
+      duration: 5000,
+    });
   };
 
   const openOrders = limitOrders.filter((o) => o.status === "open");
@@ -188,7 +195,7 @@ function SwapFormLimitTabComponent() {
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="space-y-2 max-h-40 overflow-y-auto mt-1.5">
+            <div className="space-y-2 max-h-30 overflow-y-auto mt-1.5">
               {openOrders.map((order) => (
                 <div
                   key={order.id}
