@@ -188,7 +188,7 @@ function SimulatorConfigComponent() {
       <SidebarContent className="rounded-xl border border-border/60 dark:bg-[#0F0F0F] shadow-xl">
         <ScrollArea className="flex-1 min-h-0 h-full">
           <div className="p-4 mt-2 pb-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* Column 1: Timeline + pressure configs */}
               <div className="space-y-4 min-w-0">
                 <div className="flex items-center justify-between">
@@ -247,7 +247,7 @@ function SimulatorConfigComponent() {
                         const days = parseFloat(e.target.value);
                         if (!isNaN(days))
                           setLocalDuration(
-                            Math.max(24, Math.min(days * 24, 1440))
+                            Math.max(24, Math.min(days * 24, 1440)),
                           );
                       }}
                     />
@@ -330,7 +330,11 @@ function SimulatorConfigComponent() {
                   <Input
                     type="text"
                     inputMode="numeric"
-                    value={localUsdcBalanceIn === 0 ? "" : formatNumber(localUsdcBalanceIn)}
+                    value={
+                      localUsdcBalanceIn === 0
+                        ? ""
+                        : formatNumber(localUsdcBalanceIn)
+                    }
                     onChange={(e) => {
                       const raw = e.target.value.replace(/,/g, "");
                       setLocalUsdcBalanceIn(raw === "" ? 0 : Number(raw));
@@ -394,7 +398,11 @@ function SimulatorConfigComponent() {
                       value={config.collateralToken}
                       onValueChange={(value) =>
                         updateConfig({
-                          collateralToken: value as "USDC" | "USDT" | "ETH" | "wETH",
+                          collateralToken: value as
+                            | "USDC"
+                            | "USDT"
+                            | "ETH"
+                            | "wETH",
                         })
                       }
                     >
@@ -435,8 +443,7 @@ function SimulatorConfigComponent() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                    </p>
+                    <p className="text-xs text-muted-foreground"></p>
                   </div>
                 </div>
               </div>
