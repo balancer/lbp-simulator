@@ -127,7 +127,7 @@ export function Simulator() {
   return (
     <section
       id="lbp-settings"
-      className="flex w-full flex-col container mx-auto px-4 md:px-6 pb-20 gap-0 min-h-0"
+      className="flex w-full flex-col container mx-auto px-4 md:px-6 pb-20 gap-0 min-h-0 mt-10"
     >
       <SidebarProvider
         open={isConfigOpen}
