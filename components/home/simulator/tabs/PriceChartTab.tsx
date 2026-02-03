@@ -100,7 +100,13 @@ function PriceChartTabComponent({
             }}
             formatter={(value: any, name?: string) => {
               if (value == null) return "";
-              const label = name || "Price";
+              const labels: Record<string, string> = {
+                price: "Spot price",
+                potentialPathLow: "Low path",
+                potentialPathMedium: "Medium path",
+                potentialPathHigh: "High path",
+              };
+              const label = name ? labels[name] || name : "Price";
               return [`$${Number(value).toFixed(4)}`, label];
             }}
           />
@@ -114,7 +120,7 @@ function PriceChartTabComponent({
             formatter={(value) => {
               const labels: Record<string, string> = {
                 price: "Spot price",
-                potentialPathLow: "Potential path (low demand)",
+                potentialPathLow: "Potential path (zero demand)",
                 potentialPathMedium: "Potential path (medium demand)",
                 potentialPathHigh: "Potential path (high demand)",
               };
