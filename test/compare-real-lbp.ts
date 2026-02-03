@@ -404,3 +404,33 @@ export const APWINE_LBP: RealLBPData = {
  * printComparisonResults(result);
  * ```
  */
+
+/** Run when this file is executed directly (e.g. npx tsx test/compare-real-lbp.ts) */
+async function main(): Promise<void> {
+  const demandConfig = {
+    preset: "bullish" as const,
+    magnitudeBase: 1_000_000 as const,
+    multiplier: 3,
+  };
+  const sellConfig = {
+    preset: "loyal" as const,
+    loyalSoldPct: 3,
+    loyalConcentrationPct: 50,
+    greedySpreadPct: 2,
+    greedySellPct: 100,
+  };
+
+  console.log("Running PERP LBP comparison...\n");
+  const result = await compareWithRealLBP(APWINE_LBP, demandConfig, sellConfig);
+  printComparisonResults(result);
+}
+
+const isMain =
+  typeof process !== "undefined" &&
+  process.argv[1]?.includes("compare-real-lbp");
+if (isMain) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

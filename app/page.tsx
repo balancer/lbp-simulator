@@ -10,7 +10,7 @@ export default function Home() {
     <div className="relative min-h-screen w-full flex flex-col font-sans z-0">
       <Header />
       <main className="flex-1 w-full md:px-20 sm:px-10 px-0">
-        <Hero />
+        {/* <Hero /> */}
         <Simulator/>
         <DetailsSection />
       </main>
