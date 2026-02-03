@@ -135,7 +135,7 @@ export function calculateSpotPrice(
   tknBalance: number,
   tknWeight: number,
 ): number {
-  if (tknBalance === 0 || tknWeight === 0) return 0;
+  if (tknBalance === 0 || tknWeight === 0 || usdcWeight === 0) return 0;
   const numer = usdcBalance / usdcWeight;
   const denom = tknBalance / tknWeight;
   return numer / denom;
@@ -144,6 +144,8 @@ export function calculateSpotPrice(
 /**
  * Calculate the Amount of Token Received for a given Amount of Collateral Spent
  * Formula: Ao = Bo * (1 - (Bi / (Bi + Ai)) ^ (wi / wo))
+ * When swapFee is provided, the formula uses amountInAfterFee = amountIn * (1 - swapFee)
+ * so the pool receives only the amount after fee (Balancer convention).
  */
 export function calculateOutGivenIn(
   balanceIn: number,
@@ -151,10 +153,12 @@ export function calculateOutGivenIn(
   balanceOut: number,
   weightOut: number,
   amountIn: number,
+  swapFee?: number,
 ): number {
+  const effectiveIn =
+    swapFee != null && swapFee > 0 ? amountIn * (1 - swapFee) : amountIn;
   const weightRatio = weightIn / weightOut;
-  const adjustedIn = amountIn;
-  const base = balanceIn / (balanceIn + adjustedIn);
+  const base = balanceIn / (balanceIn + effectiveIn);
   const power = Math.pow(base, weightRatio);
   return balanceOut * (1 - power);
 }
@@ -385,15 +389,25 @@ export function calculatePotentialPricePaths(
   config: LBPConfig,
   demandPressureConfig: DemandPressureConfig,
   steps: number,
-  scenarios: number[] = [0.5, 1.0, 1.5], // Low, medium, high demand multipliers
+  scenarios: number[] = [0, 0.8, 1.5], // Low, medium, high demand multipliers
 ): number[][] {
   const paths: number[][] = [];
-  const baseFlowCurve = getDemandPressureCurve(config.duration, steps, demandPressureConfig);
+  const baseFlowCurve = getDemandPressureCurve(
+    config.duration,
+    steps,
+    demandPressureConfig,
+  );
   // Calculate base simulation data (no trades)
   const baseData = calculateSimulationData(config, steps);
 
   // For each scenario, simulate price evolution
   for (const demandMultiplier of scenarios) {
+    // Worst-case path (potential path low): zero buy pressure, only weight changes
+    if (demandMultiplier === 0) {
+      paths.push(baseData.map((step) => step.price));
+      continue;
+    }
+
     const path: number[] = [];
     let tknBalance = config.tknBalanceIn;
     let usdcBalance = config.usdcBalanceIn;

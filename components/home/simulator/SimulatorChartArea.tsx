@@ -33,6 +33,10 @@ function SimulatorChartAreaComponent() {
     sellPressureConfig,
     isPlaying,
     ethPriceUsd,
+    currentTknBalance,
+    currentUsdcBalance,
+    communityTokensHeld,
+    communityAvgCost,
   } = useSimulatorStore(
     useShallow((state) => ({
       simulationData: state.simulationData,
@@ -50,12 +54,16 @@ function SimulatorChartAreaComponent() {
       sellPressureConfig: state.sellPressureConfig,
       isPlaying: state.isPlaying,
       ethPriceUsd: state.ethPriceUsd,
+      currentTknBalance: state.currentTknBalance,
+      currentUsdcBalance: state.currentUsdcBalance,
+      communityTokensHeld: state.communityTokensHeld,
+      communityAvgCost: state.communityAvgCost,
     })),
   );
 
   const collateralUsd =
     config.collateralToken === "ETH" || config.collateralToken === "wETH"
-      ? (ethPriceUsd ?? 1)
+      ? ethPriceUsd ?? 1
       : 1;
 
   const [effectiveIsPlaying, setEffectiveIsPlaying] = useState(isPlaying);
@@ -110,7 +118,10 @@ function SimulatorChartAreaComponent() {
       for (let i = 0; i < fullChartData.length; i += sampleEvery) {
         out.push(fullChartData[i]);
       }
-      if (fullChartData.length > 0 && (fullChartData.length - 1) % sampleEvery !== 0) {
+      if (
+        fullChartData.length > 0 &&
+        (fullChartData.length - 1) % sampleEvery !== 0
+      ) {
         out.push(fullChartData[fullChartData.length - 1]);
       }
       return out;
@@ -118,7 +129,10 @@ function SimulatorChartAreaComponent() {
     return fullChartData;
   }, [fullChartData, effectiveIsPlaying]);
 
-  const throttledChartData = useThrottle(chartData, effectiveIsPlaying ? 200 : 0);
+  const throttledChartData = useThrottle(
+    chartData,
+    effectiveIsPlaying ? 200 : 0,
+  );
   const shouldAnimate = !effectiveIsPlaying;
 
   const debouncedDemandPressureConfig = useDebounce(demandPressureConfig, 500);
@@ -131,30 +145,78 @@ function SimulatorChartAreaComponent() {
     setShouldCalculatePaths(false);
   }, [isPlaying]);
 
+  // Build the current-step state for the worker so that potential
+  // paths start exactly from the live pool balances at the pause point.
+  const currentSnapshot =
+    baseSnapshots.length > 0
+      ? baseSnapshots[Math.min(currentStep, baseSnapshots.length - 1)]
+      : null;
+
+  const startState =
+    currentSnapshot !== null
+      ? {
+          tknBalance: currentTknBalance,
+          usdcBalance: currentUsdcBalance,
+          tknWeight: currentSnapshot.tknWeight,
+          usdcWeight: currentSnapshot.usdcWeight,
+          communityTokensHeld,
+          communityAvgCost,
+        }
+      : null;
+
   const { paths: potentialPaths } = usePricePathsWorker(
     config,
     debouncedDemandPressureConfig,
+    sellPressureConfig,
     simulationData.length > 0 ? simulationData.length - 1 : 0,
-    [0.5, 1.0, 1.5],
+    [0, 1, 2],
     shouldCalculatePaths,
+    currentStep,
+    startState,
   );
 
   const fullChartDataWithPaths = useMemo(() => {
     if (effectiveIsPlaying || potentialPaths.length === 0) {
       return fullChartData;
     }
+
+    const startIndex = currentStep;
+
     return fullChartData.map((data: any, i: number) => {
-      const low = potentialPaths[0]?.[i];
-      const med = potentialPaths[1]?.[i];
-      const high = potentialPaths[2]?.[i];
+      const localIdx = i - startIndex;
+      let low = localIdx >= 0 ? potentialPaths[0]?.[localIdx] : null;
+      let med = localIdx >= 0 ? potentialPaths[1]?.[localIdx] : null;
+      let high = localIdx >= 0 ? potentialPaths[2]?.[localIdx] : null;
+
+      // Ensure that all three potential paths are visually connected
+      // to the current price at the pause point. The worker does not
+      // incorporate past sell pressure, so its first value at the
+      // current step may differ slightly from the main simulated price.
+      // For the junction, we anchor all three potential paths to the
+      // current spot price so the solid and dashed lines meet.
+      if (localIdx === 0) {
+        const priceInCollateral = data.price / collateralUsd;
+        low = priceInCollateral;
+        med = priceInCollateral;
+        high = priceInCollateral;
+      }
+
       return {
         ...data,
         potentialPathLow: typeof low === "number" ? low * collateralUsd : null,
-        potentialPathMedium: typeof med === "number" ? med * collateralUsd : null,
-        potentialPathHigh: typeof high === "number" ? high * collateralUsd : null,
+        potentialPathMedium:
+          typeof med === "number" ? med * collateralUsd : null,
+        potentialPathHigh:
+          typeof high === "number" ? high * collateralUsd : null,
       };
     });
-  }, [fullChartData, potentialPaths, effectiveIsPlaying, collateralUsd]);
+  }, [
+    fullChartData,
+    potentialPaths,
+    effectiveIsPlaying,
+    collateralUsd,
+    currentStep,
+  ]);
 
   const demandChartData = useMemo(() => {
     return throttledChartData.map((d: any) => {

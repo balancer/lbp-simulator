@@ -35,6 +35,7 @@ import { LBPConfig } from "@/lib/lbp-math";
 import { useShallow } from "zustand/shallow";
 import { TokenLogo } from "@/components/ui/TokenLogo";
 import { formatNumber } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 function SimulatorConfigComponent() {
   const { setOpen, toggleSidebar } = useSidebar();
@@ -47,6 +48,7 @@ function SimulatorConfigComponent() {
     restartSimulation,
     simulationSpeed,
     setSimulationSpeed,
+    updateSellPressureConfig,
   } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
@@ -57,6 +59,7 @@ function SimulatorConfigComponent() {
       restartSimulation: state.restartSimulation,
       simulationSpeed: state.simulationSpeed,
       setSimulationSpeed: state.setSimulationSpeed,
+      updateSellPressureConfig: state.updateSellPressureConfig,
     })),
   );
 
@@ -88,6 +91,9 @@ function SimulatorConfigComponent() {
   );
   const [localUsdcBalanceIn, setLocalUsdcBalanceIn] = useState(
     config.usdcBalanceIn,
+  );
+  const [pressureMode, setPressureMode] = useState<"buy-and-sell" | "buy-only">(
+    "buy-and-sell",
   );
 
   // Update local state when store config changes
@@ -237,7 +243,7 @@ function SimulatorConfigComponent() {
                       />
                     </div>
                     <Input
-                      className="w-14 shrink-0"
+                      className="w-16 shrink-0"
                       type="number"
                       min={1}
                       max={60}
@@ -270,9 +276,48 @@ function SimulatorConfigComponent() {
                     </Button>
                   ))}
                 </div>
+                <div className="flex gap-2 items-center justify-center">
+                  <RadioGroup
+                    value={pressureMode}
+                    onValueChange={(value: "buy-and-sell" | "buy-only") => {
+                      setPressureMode(value);
+                      if (value === "buy-only") {
+                        updateSellPressureConfig({ loyalSoldPct: 0 });
+                      }
+                    }}
+                    className="flex"
+                  >
+                    <div className="flex items-center gap-3 justify-between">
+                      <RadioGroupItem value="buy-and-sell" id="buy-and-sell" />
+                      <Label htmlFor="buy-and-sell">Buy & sell</Label>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value="buy-only" id="buy-only" />
+                      <Label htmlFor="buy-only">Buy only</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
                 <div className="flex flex-col gap-2">
                   <DemandPressureConfig />
-                  <SellPressureConfig />
+                  <div
+                    className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                      pressureMode === "buy-and-sell"
+                        ? "grid-rows-[1fr]"
+                        : "grid-rows-[0fr]"
+                    }`}
+                  >
+                    <div className="min-h-0 overflow-hidden">
+                      <div
+                        className={`transition-opacity duration-300 ease-out ${
+                          pressureMode === "buy-and-sell"
+                            ? "opacity-100"
+                            : "opacity-0 pointer-events-none"
+                        }`}
+                      >
+                        <SellPressureConfig />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

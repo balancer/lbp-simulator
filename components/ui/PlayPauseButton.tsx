@@ -11,8 +11,6 @@ export function PlayPauseButton() {
   const {
     isPlaying,
     setIsPlaying,
-    currentStep,
-    totalSteps,
     simulationSpeed,
     setSimulationSpeed,
     restartSimulation,
@@ -20,15 +18,17 @@ export function PlayPauseButton() {
     useShallow((state) => ({
       isPlaying: state.isPlaying,
       setIsPlaying: state.setIsPlaying,
-      currentStep: state.currentStep,
-      totalSteps: state.totalSteps,
       simulationSpeed: state.simulationSpeed,
       setSimulationSpeed: state.setSimulationSpeed,
       restartSimulation: state.restartSimulation,
     })),
   );
 
-  const isFinished = totalSteps > 0 && currentStep >= totalSteps - 1;
+  // Only re-compute / re-render when the finished status actually changes,
+  // not on every single step while the simulation is running.
+  const isFinished = useSimulatorStore((state) => {
+    return state.totalSteps > 0 && state.currentStep >= state.totalSteps - 1;
+  });
 
   const handleMainButtonClick = () => {
     if (isFinished) {
@@ -72,8 +72,8 @@ export function PlayPauseButton() {
             isFinished
               ? "Restart simulation"
               : isPlaying
-                ? "Pause simulation"
-                : "Play simulation"
+              ? "Pause simulation"
+              : "Play simulation"
           }
         >
           {isFinished ? (

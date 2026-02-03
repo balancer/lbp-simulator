@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import type { LBPConfig, DemandPressureConfig } from "../lbp-math";
+import type {
+  LBPConfig,
+  DemandPressureConfig,
+  SellPressureConfig,
+} from "../lbp-math";
 
 // Helper to create stable string representation for comparison
 function createConfigKey(config: LBPConfig): string {
@@ -29,12 +33,34 @@ function createDemandConfigKey(config: DemandPressureConfig): string {
   });
 }
 
+function createSellConfigKey(config: SellPressureConfig): string {
+  return JSON.stringify({
+    preset: config.preset,
+    loyalSoldPct: config.loyalSoldPct,
+    loyalConcentrationPct: config.loyalConcentrationPct,
+    greedySpreadPct: config.greedySpreadPct,
+    greedySellPct: config.greedySellPct,
+  });
+}
+
+interface StartState {
+  tknBalance: number;
+  usdcBalance: number;
+  tknWeight: number;
+  usdcWeight: number;
+  communityTokensHeld: number;
+  communityAvgCost: number;
+}
+
 interface WorkerMessage {
   type: "calculate";
   config: LBPConfig;
   demandPressureConfig: DemandPressureConfig;
+  sellPressureConfig: SellPressureConfig;
   steps: number;
   scenarios: number[];
+  currentStep: number;
+  currentStepState: StartState | null;
 }
 
 interface WorkerResponse {
@@ -46,9 +72,12 @@ interface WorkerResponse {
 export function usePricePathsWorker(
   config: LBPConfig,
   demandPressureConfig: DemandPressureConfig,
+  sellPressureConfig: SellPressureConfig,
   steps: number,
-  scenarios: number[] = [0.5, 1.0, 1.5],
+  scenarios: number[] = [0, 1, 2],
   enabled: boolean = true,
+  currentStep: number = 0,
+  currentStepState: StartState | null = null,
 ) {
   const [paths, setPaths] = useState<number[][]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,8 +86,11 @@ export function usePricePathsWorker(
   const requestIdRef = useRef<number>(0);
   const lastConfigKeyRef = useRef<string>("");
   const lastDemandConfigKeyRef = useRef<string>("");
+  const lastSellConfigKeyRef = useRef<string>("");
   const lastStepsRef = useRef<number>(-1);
   const lastEnabledRef = useRef<boolean>(false);
+  const currentStepRef = useRef<number>(0);
+  const lastStartStateKeyRef = useRef<string>("");
 
   // Initialize worker
   useEffect(() => {
@@ -104,14 +136,20 @@ export function usePricePathsWorker(
   useEffect(() => {
     const configKey = createConfigKey(config);
     const demandConfigKey = createDemandConfigKey(demandPressureConfig);
-    const scenariosKey = JSON.stringify(scenarios);
+    const sellConfigKey = createSellConfigKey(sellPressureConfig);
+    const startStateKey = currentStepState
+      ? JSON.stringify(currentStepState)
+      : "";
 
     // Only recalculate if something actually changed
     if (
       configKey === lastConfigKeyRef.current &&
       demandConfigKey === lastDemandConfigKeyRef.current &&
+      sellConfigKey === lastSellConfigKeyRef.current &&
       steps === lastStepsRef.current &&
-      enabled === lastEnabledRef.current
+      enabled === lastEnabledRef.current &&
+      currentStep === currentStepRef.current &&
+      startStateKey === lastStartStateKeyRef.current
     ) {
       return; // No changes, skip recalculation
     }
@@ -119,8 +157,11 @@ export function usePricePathsWorker(
     // Update refs
     lastConfigKeyRef.current = configKey;
     lastDemandConfigKeyRef.current = demandConfigKey;
+    lastSellConfigKeyRef.current = sellConfigKey;
     lastStepsRef.current = steps;
     lastEnabledRef.current = enabled;
+    currentStepRef.current = currentStep;
+    lastStartStateKeyRef.current = startStateKey;
 
     if (!enabled || !workerRef.current) {
       setPaths([]);
@@ -137,8 +178,11 @@ export function usePricePathsWorker(
       type: "calculate",
       config,
       demandPressureConfig,
+      sellPressureConfig,
       steps,
       scenarios,
+      currentStep,
+      currentStepState,
     };
 
     workerRef.current.postMessage(message);
@@ -154,7 +198,16 @@ export function usePricePathsWorker(
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [config, demandPressureConfig, steps, scenarios, enabled]);
+  }, [
+    config,
+    demandPressureConfig,
+    sellPressureConfig,
+    steps,
+    scenarios,
+    enabled,
+    currentStep,
+    currentStepState,
+  ]);
 
   return { paths, isLoading, error };
 }
