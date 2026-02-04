@@ -4,7 +4,6 @@ import React, { memo, useCallback, startTransition } from "react";
 
 import { SimulatorHeader } from "./SimulatorHeader";
 import { SimulatorStats } from "./SimulatorStats";
-import { SimulatorMain } from "./SimulatorMain";
 import { SimulatorConfig } from "./SimulatorConfig";
 import { SwapForm } from "./SwapForm";
 
@@ -21,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { SimulatorMain } from "./SimulatorMain";
 
 const CONFIG_MAX_HEIGHT = "70vh";
 
@@ -38,7 +38,7 @@ const ConfigOverlay = memo(function ConfigOverlay() {
       {isOpen && (
         <button
           type="button"
-          className="absolute inset-0 z-[9] cursor-default bg-transparent"
+          className="absolute inset-0 z-9 cursor-default bg-transparent"
           onClick={closePanel}
           aria-label="Close config"
         />
@@ -47,7 +47,7 @@ const ConfigOverlay = memo(function ConfigOverlay() {
         className={cn(
           "absolute top-0 left-0 right-0 z-10 overflow-hidden rounded-t-xl border-b border-border/60 bg-card shadow-lg transition-[max-height,opacity] duration-300 ease-out",
           isOpen
-            ? "max-h-[var(--config-overlay-max)] opacity-100"
+            ? "max-h-(--config-overlay-max) opacity-100"
             : "max-h-0 opacity-0 pointer-events-none border-transparent",
         )}
         style={
@@ -81,7 +81,7 @@ const SimulatorContent = memo(function SimulatorContent() {
     min-w-0 flex-1
     rounded-b-2xl
     border border-border/60 border-t-0
-    bg-card shadow-xl
+    bg-card
     shadow-xl
     p-4 sm:p-6 md:p-8
     overflow-hidden

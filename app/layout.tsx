@@ -38,6 +38,7 @@ import { Background3D } from "@/components/ui/Background3D";
 import { Toaster } from "@/components/ui/toast";
 import { PlayPauseButton } from "@/components/ui/PlayPauseButton";
 import { SvgDefinitions } from "@/components/ui/SvgDefinitions";
+import { Header } from "@/components/layout/Header";
 
 export default function RootLayout({
   children,
@@ -63,9 +64,13 @@ export default function RootLayout({
           storageKey="vite-ui-theme"
         >
           <SvgDefinitions />
-          <Background3D/>
-          <div className="fixed inset-0 z-0 overflow-y-auto overflow-x-hidden">
-            {children}
+          <Background3D />
+          <div
+            id="app-scroll"
+            className="fixed inset-0 z-0 overflow-y-auto overflow-x-hidden flex flex-col"
+          >
+            <Header />
+            <div className="flex-1 flex flex-col min-h-0">{children}</div>
           </div>
           <Toaster />
           <PlayPauseButton />
