@@ -92,6 +92,9 @@ interface SimulatorState {
 
   /** Net collateral from user actions (swap buy, swap sell, limit order, TWAP) in collateral units. Added on buy, subtracted on sell. */
   userRaisedCollateral: number;
+  /** Net pool deltas from user actions (relative to bot-only path). */
+  userPoolDeltaUsdc: number;
+  userPoolDeltaTkn: number;
 
   // Collateral USD price (for ETH/wETH; 1 for stables). Fetched when collateral is ETH/wETH.
   ethPriceUsd: number | null;
@@ -251,6 +254,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   userUsdcBalance: 1000000,
 
   userRaisedCollateral: 0,
+  userPoolDeltaUsdc: 0,
+  userPoolDeltaTkn: 0,
 
   ethPriceUsd: null,
   setEthPriceUsd: (price) => set({ ethPriceUsd: price }),
@@ -325,6 +330,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentStep: 0,
       swaps: [],
       userRaisedCollateral: 0,
+      userPoolDeltaUsdc: 0,
+      userPoolDeltaTkn: 0,
     });
     if (newConfig.collateralToken === "ETH" || newConfig.collateralToken === "wETH") {
       get().fetchEthPrice();
@@ -423,6 +430,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       userTknBalance: 0,
       userUsdcBalance: 1000000,
       userRaisedCollateral: 0,
+      userPoolDeltaUsdc: 0,
+      userPoolDeltaTkn: 0,
       communityTokensHeld: 0,
       communityAvgCost: 0,
       priceHistory: new Float64Array(simulationData.map((d) => d.price)),
@@ -476,6 +485,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       userTknBalance: 0,
       userUsdcBalance: 10000,
       userRaisedCollateral: 0,
+      userPoolDeltaUsdc: 0,
+      userPoolDeltaTkn: 0,
       simulationSpeed: 1,
       communityTokensHeld: 0,
       communityAvgCost: 0,
@@ -655,6 +666,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentStep,
       baseSnapshots,
       userRaisedCollateral,
+      userPoolDeltaUsdc,
+      userPoolDeltaTkn,
     } = get();
     const snapshot = baseSnapshots[currentStep];
     if (!snapshot) return;
@@ -677,6 +690,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       userTknBalance: Math.max(0, userTknBalance - amountToken),
       userUsdcBalance: Math.max(0, userUsdcBalance + amountOut),
       userRaisedCollateral: userRaisedCollateral - amountOut,
+      userPoolDeltaUsdc: userPoolDeltaUsdc - amountOut,
+      userPoolDeltaTkn: userPoolDeltaTkn + amountToken,
     });
   },
 
@@ -687,6 +702,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       currentStep,
       baseSnapshots,
       userRaisedCollateral,
+      userPoolDeltaUsdc,
+      userPoolDeltaTkn,
     } = get();
     const snapshot = baseSnapshots[currentStep];
     if (!snapshot) return;
@@ -709,6 +726,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       userTknBalance: Math.max(0, userTknBalance + amountOut),
       userUsdcBalance: Math.max(0, userUsdcBalance - amountUSDC),
       userRaisedCollateral: userRaisedCollateral + amountUSDC,
+      userPoolDeltaUsdc: userPoolDeltaUsdc + amountUSDC,
+      userPoolDeltaTkn: userPoolDeltaTkn - amountOut,
     });
   },
 
@@ -819,6 +838,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       priceHistory,
       priceHistoryVersion,
       swaps,
+      userPoolDeltaUsdc,
+      userPoolDeltaTkn,
     } = get();
 
     if (!baseSnapshots || baseSnapshots.length === 0) {
@@ -839,7 +860,15 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
     // Advance step and sync live balances/community state to snapshot.
     if (snapshot) {
-      priceHistory[nextStep] = snapshot.price;
+      const adjustedUsdc = snapshot.usdcBalance + userPoolDeltaUsdc;
+      const adjustedTkn = snapshot.tknBalance + userPoolDeltaTkn;
+      const adjustedPrice = calculateSpotPrice(
+        adjustedUsdc,
+        snapshot.usdcWeight,
+        adjustedTkn,
+        snapshot.tknWeight,
+      );
+      priceHistory[nextStep] = adjustedPrice;
       let nextSwaps = [...swaps];
 
       // Record bot buys/sells explicitly using per-step volumes from the worker.
@@ -879,8 +908,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
       set({
         currentStep: nextStep,
-        currentTknBalance: snapshot.tknBalance,
-        currentUsdcBalance: snapshot.usdcBalance,
+        currentTknBalance: adjustedTkn,
+        currentUsdcBalance: adjustedUsdc,
         communityTokensHeld: snapshot.communityTokensHeld,
         communityAvgCost: snapshot.communityAvgCost,
         priceHistoryVersion: priceHistoryVersion + 1,

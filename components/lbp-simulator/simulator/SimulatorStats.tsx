@@ -20,13 +20,16 @@ function getDerived(state: StoreState) {
     ? (state.ethPriceUsd ?? 1)
     : 1;
   let currentPrice = 0;
-  if (state.baseSnapshots.length > 0 && state.baseSnapshots[state.currentStep]) {
-    currentPrice = state.baseSnapshots[state.currentStep].price;
-  } else if (
+  if (
     state.priceHistory.length > 0 &&
     state.priceHistory[state.currentStep] > 0
   ) {
     currentPrice = state.priceHistory[state.currentStep];
+  } else if (
+    state.baseSnapshots.length > 0 &&
+    state.baseSnapshots[state.currentStep]
+  ) {
+    currentPrice = state.baseSnapshots[state.currentStep].price;
   } else {
     const staticData =
       state.simulationData[state.currentStep] || state.simulationData[0];

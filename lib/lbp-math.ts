@@ -404,8 +404,8 @@ export function calculatePotentialPricePaths(
     safeSteps,
     sellPressureConfig.loyalConcentrationPct,
   );
-  const swapFeeFraction =
-    config.swapFee > 1 ? config.swapFee / 100 : config.swapFee ?? 0;
+  const rawSwapFee = config.swapFee ?? 0;
+  const swapFeeFraction = rawSwapFee > 1 ? rawSwapFee / 100 : rawSwapFee;
 
   // For each scenario, simulate price evolution (from step 0)
   for (const demandMultiplier of scenarios) {

@@ -52,11 +52,12 @@ function SwapFormSwapTabLiveComponent({
     ? baseSnapshots[currentStep]
     : simulationData[currentStep] || simulationData[0];
 
-  const currentPrice = baseSnapshots.length > 0 && baseSnapshots[currentStep]
-    ? baseSnapshots[currentStep].price
-    : priceHistory.length > 0 && priceHistory[currentStep] > 0
-    ? priceHistory[currentStep]
-    : stepData?.price || 0;
+  const currentPrice =
+    priceHistory.length > 0 && priceHistory[currentStep] > 0
+      ? priceHistory[currentStep]
+      : baseSnapshots.length > 0 && baseSnapshots[currentStep]
+      ? baseSnapshots[currentStep].price
+      : stepData?.price || 0;
 
   const outputAmount = useMemo(() => {
     if (!inputAmount || !stepData || parseFloat(inputAmount) <= 0) return 0;
