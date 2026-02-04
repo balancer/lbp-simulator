@@ -49,11 +49,11 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
 
   const animateDeck = useCallback(
     (focusIndex: number) => {
-      wrapperRefs.current.forEach((wrapper, index) => {
-        const card = cardRefs.current[index];
+      wrapperRefs.current.forEach((wrapper, position) => {
+        const card = cardRefs.current[position];
         if (!wrapper || !card) return;
-        const layout = CARD_LAYOUT[index];
-        const isFocused = focusIndex === index;
+        const layout = CARD_LAYOUT[position];
+        const isFocused = focusIndex === position;
         const scale = isFocused ? 1.1 : 1;
 
         animate(wrapper, {
@@ -77,9 +77,9 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
   );
 
   useEffect(() => {
-    wrapperRefs.current.forEach((wrapper, index) => {
+    wrapperRefs.current.forEach((wrapper, position) => {
       if (!wrapper) return;
-      const layout = CARD_LAYOUT[index];
+      const layout = CARD_LAYOUT[position];
       wrapper.style.transform = `translateX(${layout.offsetX}px) translateY(0px) rotate(${layout.rotate}deg) scale(1)`;
       wrapper.style.opacity = "1";
     });
@@ -88,7 +88,7 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
       card.style.boxShadow = "0 18px 35px rgba(15, 23, 42, 0.2)";
     });
 
-    animateDeck(activeIndex);
+    animateDeck(0);
   }, [activeIndex, animateDeck]);
 
   useEffect(() => {
@@ -123,77 +123,85 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
       </div>
       <div className="flex flex-col items-start w-full gap-10 flex-1 justify-start max-w-full">
         <div className="relative w-full flex items-center justify-center min-h-[420px] md:min-h-[480px]">
-          {SLIDES.map((slide, index) => (
-            <div
-              key={slide.id}
-              ref={(node) => {
-                wrapperRefs.current[index] = node;
-              }}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-              style={{
-                zIndex:
-                  activeIndex === index
-                    ? 40
-                    : hoverIndex === index
-                      ? 35
-                    : index === 1
-                      ? 30
-                      : CARD_LAYOUT[index].baseZ,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  onSelect(index);
-                }}
-                onMouseEnter={() => {
-                  setHoverIndex(index);
-                  const wrapper = wrapperRefs.current[index];
-                  if (!wrapper) return;
-                  if (index === activeIndex) return;
-                  animate(wrapper, {
-                    translateY: { to: -120 },
-                    duration: 220,
-                    easing: "easeOutQuad",
-                  });
-                }}
-                onMouseLeave={() => {
-                  setHoverIndex((current) =>
-                    current === index ? null : current,
-                  );
-                  const wrapper = wrapperRefs.current[index];
-                  if (!wrapper) return;
-                  animate(wrapper, {
-                    translateY: { to: index === activeIndex ? -18 : 0 },
-                    duration: 220,
-                    easing: "easeOutQuad",
-                  });
-                }}
-                className="border-0 bg-transparent p-0 text-left cursor-pointer focus:outline-none"
-              >
-                <Card
+          {(() => {
+            const remaining = SLIDES.map((_, idx) => idx).filter(
+              (idx) => idx !== activeIndex,
+            );
+            const positions = [activeIndex, remaining[0], remaining[1]];
+
+            return positions.map((slideIndex, position) => {
+              const slide = SLIDES[slideIndex];
+              return (
+                <div
+                  key={`${slide.id}-${position}`}
                   ref={(node) => {
-                    cardRefs.current[index] = node;
+                    wrapperRefs.current[position] = node;
                   }}
-                  className={cn(
-                    "h-[42vh] min-h-[320px] w-[260px] md:w-[320px] flex flex-col border border-border/60 bg-background backdrop-blur",
-                    activeIndex === index &&
-                      "border-primary/40 h-[46vh] min-h-[360px] w-[300px] md:w-[360px] bg-background",
-                  )}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                  style={{
+                    zIndex:
+                      position === 0
+                        ? 40
+                        : hoverIndex === position
+                          ? 35
+                          : CARD_LAYOUT[position].baseZ,
+                  }}
                 >
-                  <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
-                    <CardTitle className="text-base md:text-lg font-semibold">
-                      {slide.title}
-                    </CardTitle>
-                    <slide.Icon className="h-5 w-5 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent className="pt-0 text-sm text-muted-foreground flex-1">
-                    {slide.description}
-                  </CardContent>
-                </Card>
-              </button>
-            </div>
-          ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelect(slideIndex);
+                    }}
+                    onMouseEnter={() => {
+                      setHoverIndex(position);
+                      const wrapper = wrapperRefs.current[position];
+                      if (!wrapper) return;
+                      if (position === 0) return;
+                      animate(wrapper, {
+                        translateY: { to: -120 },
+                        duration: 220,
+                        easing: "easeOutQuad",
+                      });
+                    }}
+                    onMouseLeave={() => {
+                      setHoverIndex((current) =>
+                        current === position ? null : current,
+                      );
+                      const wrapper = wrapperRefs.current[position];
+                      if (!wrapper) return;
+                      animate(wrapper, {
+                        translateY: { to: position === 0 ? -18 : 0 },
+                        duration: 220,
+                        easing: "easeOutQuad",
+                      });
+                    }}
+                    className="border-0 bg-transparent p-0 text-left cursor-pointer focus:outline-none"
+                  >
+                    <Card
+                      ref={(node) => {
+                        cardRefs.current[position] = node;
+                      }}
+                      className={cn(
+                        "h-[42vh] min-h-[320px] w-[260px] md:w-[320px] flex flex-col border border-border/60 bg-background backdrop-blur",
+                        position === 0 &&
+                          "border-primary/40 h-[46vh] min-h-[360px] w-[300px] md:w-[360px] bg-background",
+                      )}
+                    >
+                      <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
+                        <CardTitle className="text-base md:text-lg font-semibold">
+                          {slide.title}
+                        </CardTitle>
+                        <slide.Icon className="h-5 w-5 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent className="pt-0 text-sm text-muted-foreground flex-1">
+                        {slide.description}
+                      </CardContent>
+                    </Card>
+                  </button>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     </section>
