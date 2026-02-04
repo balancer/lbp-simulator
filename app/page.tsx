@@ -10,7 +10,7 @@ import { KPI } from "@/components/layout/KPI";
 import { CommomQuestions } from "@/components/layout/CommomQuestions";
 
 export default function Home() {
-  const [activeUseCase, setActiveUseCase] = useState(1);
+  const [activeUseCase, setActiveUseCase] = useState(0);
 
   return (
     <div className="relative min-h-screen w-full flex flex-col font-sans z-0">
