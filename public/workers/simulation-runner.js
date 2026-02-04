@@ -30,6 +30,11 @@ function clampNumber(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
+function normalizeSwapFee(swapFee) {
+  if (!swapFee) return 0;
+  return swapFee > 1 ? swapFee / 100 : swapFee;
+}
+
 function getCumulativeBuyPressureCurve(hours, steps, config) {
   const curve = [];
   const safeSteps = Math.max(1, steps);
@@ -102,6 +107,109 @@ function getLoyalSellSchedule(hours, steps, concentrationPct) {
   return weights.map((w) => w / total);
 }
 
+// Apply sell pressure for one step (mirrors deterministic simulation logic).
+function applySellPressure(
+  sellConfig,
+  loyalSchedule,
+  i,
+  config,
+  tknBalance,
+  usdcBalance,
+  currentTknWeight,
+  currentUsdcWeight,
+  communityTokensHeld,
+  communityAvgCost,
+  priceAfterBuys,
+  swapFeeFraction,
+) {
+  let tknBal = tknBalance;
+  let usdcBal = usdcBalance;
+  let communityHeld = communityTokensHeld;
+  let communityCost = communityAvgCost;
+  let price = priceAfterBuys;
+
+  if (sellConfig.preset === "loyal") {
+    const weight = loyalSchedule[i] || 0;
+    if (weight > 0 && communityHeld > 0 && sellConfig.loyalSoldPct > 0) {
+      const totalTargetSellTokens =
+        config.tknBalanceIn * (sellConfig.loyalSoldPct / 100);
+      const stepTargetTokens = totalTargetSellTokens * weight;
+      const sellFraction = Math.min(0.1, Math.max(0.001, weight * 100));
+      const amountToken = Math.min(
+        communityHeld * sellFraction,
+        stepTargetTokens * 5,
+      );
+      if (amountToken > 0 && amountToken >= 1) {
+        const amountOut = calculateOutGivenIn(
+          tknBal,
+          currentTknWeight,
+          usdcBal,
+          currentUsdcWeight,
+          amountToken,
+          swapFeeFraction,
+        );
+        // Pool receives full input; fee only affects price impact.
+        tknBal += amountToken;
+        usdcBal -= amountOut;
+        communityHeld = Math.max(0, communityHeld - amountToken);
+        if (communityHeld === 0) communityCost = 0;
+        price = calculateSpotPrice(
+          usdcBal,
+          currentUsdcWeight,
+          tknBal,
+          currentTknWeight,
+        );
+      }
+    }
+  } else if (sellConfig.preset === "greedy" && communityHeld > 0) {
+    let shouldSell = false;
+    let sellFraction = 0;
+    if (communityCost > 0) {
+      const threshold = communityCost * (1 + sellConfig.greedySpreadPct / 100);
+      if (price >= threshold) {
+        shouldSell = true;
+        sellFraction = Math.min(1, sellConfig.greedySellPct / 100);
+      }
+    }
+    if (!shouldSell && communityHeld > config.tknBalanceIn * 0.02) {
+      shouldSell = true;
+      sellFraction = Math.min(0.05, sellConfig.greedySellPct / 100);
+    }
+    if (shouldSell && sellFraction > 0) {
+      const amountToken = communityHeld * sellFraction;
+      if (amountToken > 0 && amountToken >= 1) {
+        const amountOut = calculateOutGivenIn(
+          tknBal,
+          currentTknWeight,
+          usdcBal,
+          currentUsdcWeight,
+          amountToken,
+          swapFeeFraction,
+        );
+        // Pool receives full input; fee only affects price impact.
+        tknBal += amountToken;
+        usdcBal -= amountOut;
+        communityHeld = Math.max(0, communityHeld - amountToken);
+        if (communityHeld === 0) communityCost = 0;
+        price = calculateSpotPrice(
+          usdcBal,
+          currentUsdcWeight,
+          tknBal,
+          currentTknWeight,
+        );
+      }
+    }
+  }
+
+  return {
+    tknBalance: tknBal,
+    usdcBalance: usdcBal,
+    communityTokensHeld: communityHeld,
+    communityAvgCost: communityCost,
+    price,
+  };
+}
+
 /**
  * Run deterministic LBP simulation with buy & sell pressure.
  * No user orders here – just bots/community.
@@ -125,6 +233,9 @@ export function runDeterministicSimulation(
     duration,
     swapFee = 0,
   } = config;
+
+  // UI provides swapFee as percent (e.g., 2 for 2%). Math expects fraction.
+  const swapFeeFraction = normalizeSwapFee(swapFee);
 
   let tknBalance = tknBalanceIn;
   let usdcBalance = usdcBalanceIn;
@@ -167,11 +278,11 @@ export function runDeterministicSimulation(
         tknBalance,
         currentTknWeight,
         flowUSDC,
-        swapFee,
+        swapFeeFraction,
       );
 
-      const amountInAfterFee = flowUSDC * (1 - (swapFee ?? 0));
-      usdcBalance += amountInAfterFee;
+      // Balancer convention: fee reduces price impact, but pool receives full input.
+      usdcBalance += flowUSDC;
       tknBalance -= amountOut;
 
       if (amountOut > 0) {
@@ -183,7 +294,7 @@ export function runDeterministicSimulation(
               newTokens
             : communityAvgCost;
         communityTokensHeld = newTokens;
-        stepBuyUSDC += amountInAfterFee;
+        stepBuyUSDC += flowUSDC;
         stepBuyTKN += amountOut;
       }
     }
@@ -230,10 +341,10 @@ export function runDeterministicSimulation(
             usdcBalance,
             currentUsdcWeight,
             amountToken,
-            swapFee,
+            swapFeeFraction,
           );
-          const amountInAfterFee = amountToken * (1 - (swapFee ?? 0));
-          tknBalance += amountInAfterFee;
+          // Pool receives full input; fee only affects price impact.
+          tknBalance += amountToken;
           usdcBalance -= amountOut;
 
           communityTokensHeld = Math.max(0, communityTokensHeld - amountToken);
@@ -283,10 +394,10 @@ export function runDeterministicSimulation(
               usdcBalance,
               currentUsdcWeight,
               amountToken,
-              swapFee,
+              swapFeeFraction,
             );
-            const amountInAfterFee = amountToken * (1 - (swapFee ?? 0));
-            tknBalance += amountInAfterFee;
+            // Pool receives full input; fee only affects price impact.
+            tknBalance += amountToken;
             usdcBalance -= amountOut;
 
             communityTokensHeld = Math.max(
@@ -310,6 +421,7 @@ export function runDeterministicSimulation(
     }
 
     const tvlUsd = usdcBalance + tknBalance * price;
+
     snapshots.push({
       index: i,
       time,
@@ -330,4 +442,161 @@ export function runDeterministicSimulation(
   }
 
   return snapshots;
+}
+
+/**
+ * Compute potential price paths from a given current step/state.
+ * Scenarios are multipliers applied to remaining buy flow.
+ */
+export function calculatePotentialPricePaths(
+  config,
+  demandPressureConfig,
+  sellPressureConfig,
+  steps,
+  scenarios,
+  currentStep,
+  currentStepState,
+) {
+  const paths = [];
+  const totalSteps = Math.max(0, steps | 0);
+  const startStep = Math.max(0, Math.min(totalSteps, currentStep | 0));
+
+  if (startStep > totalSteps) {
+    return paths;
+  }
+
+  const swapFeeFraction = normalizeSwapFee(config.swapFee);
+
+  const demandPressureCurve = getDemandPressureCurve(
+    config.duration,
+    totalSteps,
+    demandPressureConfig,
+  );
+
+  const loyalSchedule = getLoyalSellSchedule(
+    config.duration,
+    totalSteps,
+    sellPressureConfig.loyalConcentrationPct ?? 60,
+  );
+
+  // Starting balances and community state at the pause point.
+  const startTknBalance =
+    currentStepState && typeof currentStepState.tknBalance === "number"
+      ? currentStepState.tknBalance
+      : config.tknBalanceIn;
+  const startUsdcBalance =
+    currentStepState && typeof currentStepState.usdcBalance === "number"
+      ? currentStepState.usdcBalance
+      : config.usdcBalanceIn;
+  let communityTokensHeld =
+    currentStepState && typeof currentStepState.communityTokensHeld === "number"
+      ? currentStepState.communityTokensHeld
+      : 0;
+  let communityAvgCost =
+    currentStepState && typeof currentStepState.communityAvgCost === "number"
+      ? currentStepState.communityAvgCost
+      : 0;
+
+  const remainingSteps = Math.max(1, totalSteps - startStep);
+
+  for (const scenarioFactor of scenarios) {
+    const path = [];
+
+    let tknBalance = startTknBalance;
+    let usdcBalance = startUsdcBalance;
+    let commHeld = communityTokensHeld;
+    let commCost = communityAvgCost;
+
+    // First point: current step price (no extra flow at junction).
+    const initialProgress = startStep / totalSteps;
+    const initialTknWeight =
+      config.tknWeightIn +
+      (config.tknWeightOut - config.tknWeightIn) * initialProgress;
+    const initialUsdcWeight =
+      config.usdcWeightIn +
+      (config.usdcWeightOut - config.usdcWeightIn) * initialProgress;
+    const initialPrice = calculateSpotPrice(
+      usdcBalance,
+      initialUsdcWeight,
+      tknBalance,
+      initialTknWeight,
+    );
+    path.push(initialPrice);
+
+    for (let i = startStep + 1; i <= totalSteps; i++) {
+      const progress = i / totalSteps;
+      const currentTknWeight =
+        config.tknWeightIn +
+        (config.tknWeightOut - config.tknWeightIn) * progress;
+      const currentUsdcWeight =
+        config.usdcWeightIn +
+        (config.usdcWeightOut - config.usdcWeightIn) * progress;
+
+      const flowUSDCBase = demandPressureCurve[i] || 0;
+      const localIdx = i - startStep;
+      const transitionProgress = Math.min(
+        1,
+        Math.max(0, localIdx / remainingSteps),
+      );
+      const effectiveFactor = 1 + (scenarioFactor - 1) * transitionProgress;
+      const flowUSDC = flowUSDCBase * effectiveFactor;
+
+      // --- BUY PRESSURE ---
+      if (flowUSDC > 0) {
+        const amountOut = calculateOutGivenIn(
+          usdcBalance,
+          currentUsdcWeight,
+          tknBalance,
+          currentTknWeight,
+          flowUSDC,
+          swapFeeFraction,
+        );
+        // Pool receives full input; fee only affects price impact.
+        usdcBalance += flowUSDC;
+        tknBalance -= amountOut;
+        if (amountOut > 0) {
+          const pricePaid = flowUSDC / amountOut;
+          const newTokens = commHeld + amountOut;
+          commCost =
+            newTokens > 0
+              ? (commCost * commHeld + pricePaid * amountOut) / newTokens
+              : commCost;
+          commHeld = newTokens;
+        }
+      }
+
+      const priceAfterBuys = calculateSpotPrice(
+        usdcBalance,
+        currentUsdcWeight,
+        tknBalance,
+        currentTknWeight,
+      );
+
+      // --- SELL PRESSURE (same as deterministic simulation) ---
+      const afterSell = applySellPressure(
+        sellPressureConfig,
+        loyalSchedule,
+        i,
+        config,
+        tknBalance,
+        usdcBalance,
+        currentTknWeight,
+        currentUsdcWeight,
+        commHeld,
+        commCost,
+        priceAfterBuys,
+        swapFeeFraction,
+      );
+      tknBalance = afterSell.tknBalance;
+      usdcBalance = afterSell.usdcBalance;
+      commHeld = afterSell.communityTokensHeld;
+      commCost = afterSell.communityAvgCost;
+
+      path.push(afterSell.price);
+    }
+
+    paths.push(path);
+  }
+
+  return paths;
 }

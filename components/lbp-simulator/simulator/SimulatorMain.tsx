@@ -12,19 +12,15 @@ import { SimulatorChartArea } from "./SimulatorChartArea";
  * SwapForm is rendered as a sibling in Simulator so it never re-renders when this re-renders.
  */
 function SimulatorMainComponent() {
-  const {
-    config,
-    simulationData,
-    demandPressureConfig,
-    sellPressureConfig,
-  } = useSimulatorStore(
-    useShallow((state) => ({
-      config: state.config,
-      simulationData: state.simulationData,
-      demandPressureConfig: state.demandPressureConfig,
-      sellPressureConfig: state.sellPressureConfig,
-    })),
-  );
+  const { config, simulationData, demandPressureConfig, sellPressureConfig } =
+    useSimulatorStore(
+      useShallow((state) => ({
+        config: state.config,
+        simulationData: state.simulationData,
+        demandPressureConfig: state.demandPressureConfig,
+        sellPressureConfig: state.sellPressureConfig,
+      })),
+    );
 
   const { snapshots: workerSnapshots } = useSimulationWorker(
     config,
@@ -88,9 +84,9 @@ function SimulatorMainComponent() {
             />
           </svg>
           <p className="text-xs text-emerald-800 dark:text-emerald-200">
-            <span className="font-semibold">Dynamic price:</span> Decays
-            with time, rises with demand. Dotted lines show potential price
-            paths based on different demand scenarios.
+            <span className="font-semibold">Dynamic price:</span> Decays with
+            time, rises with demand. Dotted lines show potential price paths
+            based on different demand scenarios.
           </p>
         </div>
         <SimulatorChartArea />

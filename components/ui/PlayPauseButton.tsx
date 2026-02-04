@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
 import { Play, Pause, RotateCcw } from "lucide-react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
@@ -8,6 +9,7 @@ import { useShallow } from "zustand/react/shallow";
 const SPEED_OPTIONS = [1, 5, 10] as const;
 
 export function PlayPauseButton() {
+  const pathname = usePathname();
   const {
     isPlaying,
     setIsPlaying,
@@ -46,6 +48,10 @@ export function PlayPauseButton() {
     const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
     setSimulationSpeed(SPEED_OPTIONS[nextIndex]);
   };
+
+  if (!pathname?.startsWith("/lbp-simulator")) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-2">

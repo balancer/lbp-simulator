@@ -15,6 +15,7 @@ function SimulatorHeaderComponent() {
     simulationData,
     ethPriceUsd,
     userRaisedCollateral,
+    baseSnapshots,
   } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
@@ -23,6 +24,7 @@ function SimulatorHeaderComponent() {
       simulationData: state.simulationData,
       ethPriceUsd: state.ethPriceUsd,
       userRaisedCollateral: state.userRaisedCollateral,
+      baseSnapshots: state.baseSnapshots,
     })),
   );
 
@@ -43,15 +45,33 @@ function SimulatorHeaderComponent() {
     return `${h}h ${m}m`;
   }, [config.duration, currentStep, simulationData]);
 
-  // Net collateral from buys minus sells (in collateral units): pool change from bots + user actions (swap, limit, TWAP)
+  // Total raised: net collateral that has entered the pool (bots + user),
+  // derived from pool USDC balance plus user-raised collateral.
   const collateralUsd =
     config.collateralToken === "ETH" || config.collateralToken === "wETH"
-      ? (ethPriceUsd ?? 1)
+      ? ethPriceUsd ?? 1
       : 1;
-  const totalRaisedCollateral =
-    (currentUsdcBalance - config.usdcBalanceIn) + userRaisedCollateral;
+
+  // Use worker snapshots if available, otherwise fall back to live balance.
+  const currentSnapshot =
+    baseSnapshots.length > 0
+      ? baseSnapshots[Math.min(currentStep, baseSnapshots.length - 1)]
+      : null;
+
+  // Net collateral from bots: change in pool USDC balance vs initial.
+  const botNetCollateral =
+    (currentSnapshot?.usdcBalance ?? currentUsdcBalance) - config.usdcBalanceIn;
+
+  // Combine bot net collateral with user net collateral, but never show negatives
+  // in the UI (clamp at 0 so "Total Raised" doesn't go below zero).
+  const totalRaisedCollateral = Math.max(
+    0,
+    botNetCollateral + userRaisedCollateral,
+  );
+
   const totalRaised = totalRaisedCollateral * collateralUsd;
 
+  // Fees: approximate as a percentage of net raised.
   const totalFees = totalRaised * (config.swapFee / 100);
 
   return (
