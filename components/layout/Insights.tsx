@@ -3,6 +3,18 @@
 import { useEffect, useMemo, useRef } from "react";
 import { animate } from "animejs";
 import { cn } from "@/lib/utils";
+import {
+  ShieldCheck,
+  Clock,
+  TrendingDown,
+  RefreshCcw,
+  Magnet,
+  Coins,
+  Settings2,
+  ArrowDownRight,
+  Search,
+  LucideIcon,
+} from "lucide-react";
 
 type InsightsProps = {
   activeIndex: number;
@@ -11,70 +23,76 @@ type InsightsProps = {
 type InsightItem = {
   subtitle: string;
   paragraph: string;
-  visual: "reverse-curve" | "slippage" | "arbitrage" | "default-bars";
+  Icon: LucideIcon;
 };
 
 const INSIGHTS = [
   {
-    title: "Buy Back Strategy",
+    title: "Buy Back: treasury accumulation",
     items: [
       {
-        subtitle: "Use a reverse LBP",
+        subtitle: "Invert the Mechanics",
         paragraph:
-          "By inverting the weighting curve, LBP tends to pay more and more for a token.",
-        visual: "reverse-curve",
+          "Reverse the standard logic by starting with high collateral weight (e.g., 90% DAI) to generate natural upward price pressure.",
+        Icon: RefreshCcw,
       },
       {
-        subtitle: "Buy with secure slippage",
+        subtitle: "Passive Accumulation",
         paragraph:
-          "The gradual price increase based on weights ensures purchases that will not deplete the token's value.",
-        visual: "slippage",
+          "Operate as an automated limit order where arbitrageurs are incentivized to fill your treasury organically as weights adjust.",
+        Icon: Magnet,
       },
       {
-        subtitle: "Let the arbitrators do the rest",
+        subtitle: "Preserve Capital",
         paragraph:
-          "Arbitrageurs naturally correct price drift to keep the curve fair.",
-        visual: "arbitrage",
+          "Execute institutional-scale volume with a marginal premium (as low as +0.15%), significantly cheaper than instant market buys.",
+        Icon: Coins,
       },
     ],
   },
   {
-    title: "Token Launch Strategy",
+    title: "Token Launch: a fair launch",
     items: [
       {
-        subtitle: "Start high",
-        paragraph: "Use a higher initial token weight for clean discovery.",
-        visual: "default-bars",
+        subtitle: "Defend the Floor",
+        paragraph:
+          "Start with a high project weight (e.g., 95%+) to create a valuation buffer that absorbs early volatility and deters snipers.",
+        Icon: ShieldCheck,
       },
       {
-        subtitle: "Stabilize demand",
-        paragraph: "Shift weights gradually as demand settles.",
-        visual: "default-bars",
+        subtitle: "Time it Right",
+        paragraph:
+          "Set a duration between 48 and 72 hours to maximize capital efficiency while minimizing algorithmic value extraction.",
+        Icon: Clock,
       },
       {
-        subtitle: "Communicate rules",
-        paragraph: "Make the schedule and parameters visible to buyers.",
-        visual: "default-bars",
+        subtitle: "Smooth the Curve",
+        paragraph:
+          "Keep the weight slope below 0.6 to ensure the price decay acts as a discovery mechanism rather than a structural dump.",
+        Icon: TrendingDown,
       },
     ],
   },
   {
-    title: "Divestment Strategy",
+    title: "Divestment: a controlled exit",
     items: [
       {
-        subtitle: "Predictable release",
-        paragraph: "Schedule divestment intervals that the market expects.",
-        visual: "default-bars",
+        subtitle: "Programmed Release",
+        paragraph:
+          "Use controlled selling pressure to divest large positions over time, avoiding the 'green candles' of immediate market impact.",
+        Icon: Settings2,
       },
       {
-        subtitle: "Market-driven price",
-        paragraph: "Let demand set the clearing price each interval.",
-        visual: "default-bars",
+        subtitle: "Minimize Slippage",
+        paragraph:
+          "Spread the sell pressure to allow market liquidity to replenish, avoiding the high costs of low-depth pools.",
+        Icon: ArrowDownRight,
       },
       {
-        subtitle: "Stakeholder clarity",
-        paragraph: "Keep reporting transparent through each phase.",
-        visual: "default-bars",
+        subtitle: "Discover Fair Value",
+        paragraph:
+          "Allow the weight decay to find the true market clearing price rather than forcing a sale at a discount.",
+        Icon: Search,
       },
     ],
   },
@@ -85,106 +103,6 @@ export function Insights({ activeIndex }: InsightsProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
 
   const data = useMemo(() => INSIGHTS[activeIndex], [activeIndex]);
-
-  const renderVisual = (item: InsightItem, index: number) => {
-    if (item.visual === "reverse-curve") {
-      return (
-        <div className="h-[80px] w-full rounded-xl border border-border/50 bg-background/70 p-3">
-          <svg viewBox="0 0 160 80" className="h-full w-full">
-            <path
-              d="M10 70 C 45 55, 100 40, 150 10"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              className="text-foreground/60"
-            />
-            <circle cx="150" cy="10" r="4" className="fill-foreground/70" />
-          </svg>
-        </div>
-      );
-    }
-
-    if (item.visual === "slippage") {
-      return (
-        <div className="h-[80px] w-full rounded-xl border border-border/50 bg-background/70 p-3">
-          <svg viewBox="0 0 160 80" className="h-full w-full">
-            <path
-              d="M10 60 L 150 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              className="text-foreground/70"
-            />
-            <path
-              d="M10 55 L 150 35"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-foreground/35"
-            />
-            <rect
-              x="30"
-              y="34"
-              width="100"
-              height="20"
-              rx="6"
-              className="fill-foreground/10"
-            />
-          </svg>
-        </div>
-      );
-    }
-
-    if (item.visual === "arbitrage") {
-      return (
-        <div className="h-[80px] w-full rounded-xl border border-border/50 bg-background/70 p-3">
-          <svg viewBox="0 0 160 80" className="h-full w-full">
-            <path
-              d="M10 50 L 150 50"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-foreground/25"
-            />
-            <path
-              d="M10 30 L 80 30 L 110 50 L 150 50"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              className="text-foreground/70"
-            />
-            <path
-              d="M110 50 L 120 40 L 120 48 L 130 48"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-foreground/50"
-            />
-          </svg>
-        </div>
-      );
-    }
-
-    return (
-      <div className="h-[80px] w-full rounded-xl border border-border/50 bg-background/70 p-3">
-        <div className="grid h-full grid-cols-6 items-end gap-1">
-          {[
-            "h-[85%]",
-            "h-[70%]",
-            "h-[55%]",
-            "h-[65%]",
-            "h-[45%]",
-            "h-[35%]",
-          ].map((height, barIndex) => (
-            <div
-              key={`${index}-bar-${barIndex}`}
-              className={cn("w-full rounded-md bg-foreground/25", height)}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   useEffect(() => {
     rowsRef.current.forEach((row, index) => {
@@ -249,8 +167,10 @@ export function Insights({ activeIndex }: InsightsProps) {
                   {item.paragraph}
                 </div>
               </div>
-              <div className="w-full md:w-[180px]">
-                {renderVisual(item as InsightItem, index)}
+              <div className="w-full md:w-[120px] flex justify-end">
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-xl bg-muted/20 flex items-center justify-center border border-border/40">
+                  <item.Icon className="h-8 w-8 md:h-10 md:w-10 text-white stroke-[1.5]" />
+                </div>
               </div>
             </div>
           </div>

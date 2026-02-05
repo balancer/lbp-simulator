@@ -12,6 +12,7 @@ const SLIDES = [
     title: "Buy Back",
     description:
       "Programmatic buy-backs with transparent price discovery and predictable liquidity.",
+    benefits: ["Market Stability", "Fair Pricing", "Transparent Execution"],
     Icon: RefreshCcw,
   },
   {
@@ -19,6 +20,7 @@ const SLIDES = [
     title: "Token Launches",
     description:
       "Fair price discovery for new tokens. Let the market find the right price through an LBP.",
+    benefits: ["No Bot Sniping", "Deep Initial Liquidity", "Community Driven"],
     Icon: Rocket,
   },
   {
@@ -26,6 +28,7 @@ const SLIDES = [
     title: "Divestment",
     description:
       "Gradual, market-driven divestment with configurable weights and transparent execution.",
+    benefits: ["Minimal Price Impact", "Controlled Flow", "Verified Discovery"],
     Icon: TrendingDown,
   },
 ];
@@ -36,6 +39,14 @@ const CARD_LAYOUT = [
   { offsetX: 160, rotate: 4, baseOpacity: 1, baseZ: 12 },
 ];
 
+const getVisualPosition = (slideIndex: number, activeIndex: number) => {
+  if (slideIndex === activeIndex) return 0;
+  const remaining = SLIDES.map((_, idx) => idx).filter(
+    (idx) => idx !== activeIndex,
+  );
+  return remaining.indexOf(slideIndex) + 1;
+};
+
 type UseCasesProps = {
   activeIndex: number;
   onSelect: (index: number) => void;
@@ -45,24 +56,31 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
   const wrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const sectionRef = useRef<HTMLElement | null>(null);
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [hoverSlideIndex, setHoverSlideIndex] = useState<number | null>(null);
 
   const animateDeck = useCallback(
-    (focusIndex: number) => {
-      wrapperRefs.current.forEach((wrapper, position) => {
-        const card = cardRefs.current[position];
+    (currentActiveIndex: number) => {
+      SLIDES.forEach((_, slideIndex) => {
+        const wrapper = wrapperRefs.current[slideIndex];
+        const card = cardRefs.current[slideIndex];
         if (!wrapper || !card) return;
+
+        const position = getVisualPosition(slideIndex, currentActiveIndex);
         const layout = CARD_LAYOUT[position];
-        const isFocused = focusIndex === position;
+        const isFocused = position === 0;
         const scale = isFocused ? 1.1 : 1;
 
         animate(wrapper, {
           translateX: layout.offsetX,
+          translateY: isFocused ? -18 : 0,
           rotate: layout.rotate,
           scale,
           duration: 420,
           easing: "easeOutQuad",
         });
+
+        // Set z-index immediately to prevent overlap issues during transition
+        wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
 
         animate(card, {
           boxShadow: isFocused
@@ -77,18 +95,27 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
   );
 
   useEffect(() => {
-    wrapperRefs.current.forEach((wrapper, position) => {
-      if (!wrapper) return;
-      const layout = CARD_LAYOUT[position];
-      wrapper.style.transform = `translateX(${layout.offsetX}px) translateY(0px) rotate(${layout.rotate}deg) scale(1)`;
-      wrapper.style.opacity = "1";
-    });
-    cardRefs.current.forEach((card) => {
-      if (!card) return;
-      card.style.boxShadow = "0 18px 35px rgba(15, 23, 42, 0.2)";
-    });
+    // Initialize styles for all slides
+    SLIDES.forEach((_, slideIndex) => {
+      const wrapper = wrapperRefs.current[slideIndex];
+      const card = cardRefs.current[slideIndex];
+      if (!wrapper || !card) return;
 
-    animateDeck(0);
+      const position = getVisualPosition(slideIndex, activeIndex);
+      const layout = CARD_LAYOUT[position];
+      const isFocused = position === 0;
+
+      wrapper.style.transform = `translateX(${layout.offsetX}px) translateY(${isFocused ? -18 : 0}px) rotate(${layout.rotate}deg) scale(${isFocused ? 1.1 : 1})`;
+      wrapper.style.opacity = "1";
+      wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
+      card.style.boxShadow = isFocused
+        ? "0 24px 60px rgba(230, 200, 163, 0.35)"
+        : "0 18px 35px rgba(15, 23, 42, 0.2)";
+    });
+  }, []);
+
+  useEffect(() => {
+    animateDeck(activeIndex);
   }, [activeIndex, animateDeck]);
 
   useEffect(() => {
@@ -116,92 +143,99 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
   return (
     <section
       ref={sectionRef}
-      className="w-full container mx-auto max-w-5xl px-4 md:px-6 flex flex-col items-start justify-start opacity-0 translate-y-6"
+      className="w-full container mx-auto max-w-5xl px-4 md:px-6 py-6 md:py-8 flex flex-col items-start justify-start opacity-0 translate-y-6"
     >
-      <div className="flex items-center justify-center text-4xl w-full mb-20">
+      <div className="flex items-center justify-center text-4xl w-full mb-24">
         One solution, multiple applications.
       </div>
       <div className="flex flex-col items-start w-full gap-10 flex-1 justify-start max-w-full">
-        <div className="relative w-full flex items-center justify-center min-h-[420px] md:min-h-[480px]">
-          {(() => {
-            const remaining = SLIDES.map((_, idx) => idx).filter(
-              (idx) => idx !== activeIndex,
-            );
-            const positions = [activeIndex, remaining[0], remaining[1]];
+        <div className="relative w-full flex items-center justify-center min-h-[600px] md:min-h-[720px]">
+          {SLIDES.map((slide, slideIndex) => {
+            const position = getVisualPosition(slideIndex, activeIndex);
+            const isFocused = position === 0;
+            const isHovered = hoverSlideIndex === slideIndex;
+            const layout = CARD_LAYOUT[position];
 
-            return positions.map((slideIndex, position) => {
-              const slide = SLIDES[slideIndex];
-              return (
-                <div
-                  key={`${slide.id}-${position}`}
-                  ref={(node) => {
-                    wrapperRefs.current[position] = node;
+            return (
+              <div
+                key={slide.id}
+                ref={(node) => {
+                  wrapperRefs.current[slideIndex] = node;
+                }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  zIndex: isFocused ? 40 : isHovered ? 35 : layout.baseZ,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelect(slideIndex);
                   }}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  style={{
-                    zIndex:
-                      position === 0
-                        ? 40
-                        : hoverIndex === position
-                          ? 35
-                          : CARD_LAYOUT[position].baseZ,
+                  onMouseEnter={() => {
+                    if (isFocused) return;
+                    setHoverSlideIndex(slideIndex);
+                    const wrapper = wrapperRefs.current[slideIndex];
+                    if (!wrapper) return;
+                    animate(wrapper, {
+                      translateY: -120,
+                      duration: 220,
+                      easing: "easeOutQuad",
+                    });
                   }}
+                  onMouseLeave={() => {
+                    setHoverSlideIndex(null);
+                    const wrapper = wrapperRefs.current[slideIndex];
+                    if (!wrapper) return;
+                    animate(wrapper, {
+                      translateY: isFocused ? -18 : 0,
+                      duration: 220,
+                      easing: "easeOutQuad",
+                    });
+                  }}
+                  className="border-0 bg-transparent p-0 text-left cursor-pointer focus:outline-none"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelect(slideIndex);
+                  <Card
+                    ref={(node) => {
+                      cardRefs.current[slideIndex] = node;
                     }}
-                    onMouseEnter={() => {
-                      setHoverIndex(position);
-                      const wrapper = wrapperRefs.current[position];
-                      if (!wrapper) return;
-                      if (position === 0) return;
-                      animate(wrapper, {
-                        translateY: { to: -120 },
-                        duration: 220,
-                        easing: "easeOutQuad",
-                      });
-                    }}
-                    onMouseLeave={() => {
-                      setHoverIndex((current) =>
-                        current === position ? null : current,
-                      );
-                      const wrapper = wrapperRefs.current[position];
-                      if (!wrapper) return;
-                      animate(wrapper, {
-                        translateY: { to: position === 0 ? -18 : 0 },
-                        duration: 220,
-                        easing: "easeOutQuad",
-                      });
-                    }}
-                    className="border-0 bg-transparent p-0 text-left cursor-pointer focus:outline-none"
+                    className={cn(
+                      "h-[52vh] min-h-[420px] w-[280px] md:w-[340px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
+                      isFocused &&
+                        "border-primary/40 h-[56vh] min-h-[460px] w-[320px] md:w-[380px] bg-background",
+                    )}
                   >
-                    <Card
-                      ref={(node) => {
-                        cardRefs.current[position] = node;
-                      }}
-                      className={cn(
-                        "h-[42vh] min-h-[320px] w-[260px] md:w-[320px] flex flex-col border border-border/60 bg-background backdrop-blur",
-                        position === 0 &&
-                          "border-primary/40 h-[46vh] min-h-[360px] w-[300px] md:w-[360px] bg-background",
+                    <div className="relative h-40 md:h-48 w-full overflow-hidden bg-muted/20">
+                      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <slide.Icon className="h-20 w-20 text-white stroke-[1]" />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+                    </div>
+                    <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
+                      <CardTitle className="text-base md:text-lg font-semibold">
+                        {slide.title}
+                      </CardTitle>
+                      <slide.Icon className="h-5 w-5 text-white" />
+                    </CardHeader>
+                    <CardContent className="pt-0 text-sm text-muted-foreground flex-1 flex flex-col gap-4">
+                      <p>{slide.description}</p>
+                      {slide.benefits && (
+                        <ul className="space-y-2 border-t border-border/40 pt-4">
+                          {slide.benefits.map((benefit, i) => (
+                            <li key={i} className="flex items-center gap-2 text-xs">
+                              <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
+                              {benefit}
+                            </li>
+                          ))}
+                        </ul>
                       )}
-                    >
-                      <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
-                        <CardTitle className="text-base md:text-lg font-semibold">
-                          {slide.title}
-                        </CardTitle>
-                        <slide.Icon className="h-5 w-5 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent className="pt-0 text-sm text-muted-foreground flex-1">
-                        {slide.description}
-                      </CardContent>
-                    </Card>
-                  </button>
-                </div>
-              );
-            });
-          })()}
+                    </CardContent>
+                  </Card>
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
