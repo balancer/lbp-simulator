@@ -28,7 +28,7 @@ type InsightItem = {
 
 const INSIGHTS = [
   {
-    title: "Buy Back: treasury accumulation",
+    title: "Buy Back",
     items: [
       {
         subtitle: "Invert the Mechanics",
@@ -51,7 +51,7 @@ const INSIGHTS = [
     ],
   },
   {
-    title: "Token Launch: a fair launch",
+    title: "Token Launch",
     items: [
       {
         subtitle: "Defend the Floor",
@@ -74,24 +74,24 @@ const INSIGHTS = [
     ],
   },
   {
-    title: "Divestment: a controlled exit",
+    title: "Investment & Divestment",
     items: [
       {
         subtitle: "Programmed Release",
         paragraph:
-          "Use controlled selling pressure to divest large positions over time, avoiding the 'green candles' of immediate market impact.",
+          "Use controlled market pressure over time to build or unwind large positions, avoiding sudden price movements.",
         Icon: Settings2,
       },
       {
         subtitle: "Minimize Slippage",
         paragraph:
-          "Spread the sell pressure to allow market liquidity to replenish, avoiding the high costs of low-depth pools.",
+          "Apply controlled execution over time to enter or exit large positions, minimizing immediate market impact.",
         Icon: ArrowDownRight,
       },
       {
-        subtitle: "Discover Fair Value",
+        subtitle: "Trade on a market fair price",
         paragraph:
-          "Allow the weight decay to find the true market clearing price rather than forcing a sale at a discount.",
+          "The curvature of an LBP continuously ensures external attractiveness for interacting with the token, which in the long term generates trades always around a fair price.",
         Icon: Search,
       },
     ],
