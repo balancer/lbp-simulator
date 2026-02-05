@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/lbp-simulator/Hero";
 import UseCases from "@/components/layout/UseCases";
@@ -16,16 +17,20 @@ type HomeClientProps = {
 
 export function HomeClient({ initialCase }: HomeClientProps) {
   const [activeUseCase, setActiveUseCase] = useState(0);
+  const [openCase, setOpenCase] = useState<string | null>(initialCase ?? null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!initialCase) return;
+    const caseParam = searchParams.get("case") ?? initialCase;
+    if (!caseParam) return;
+    setOpenCase(caseParam);
     const index = ["buy-back", "token-launches", "divestment"].indexOf(
-      initialCase,
+      caseParam,
     );
     if (index >= 0) {
       setActiveUseCase(index);
     }
-  }, [initialCase]);
+  }, [initialCase, searchParams]);
 
   return (
     <div className="relative min-h-screen w-full flex flex-col font-sans z-0">
@@ -36,7 +41,7 @@ export function HomeClient({ initialCase }: HomeClientProps) {
         <UseCases
           activeIndex={activeUseCase}
           onSelect={(index) => setActiveUseCase(index)}
-          openCaseSlug={initialCase}
+          openCaseSlug={openCase}
         />
         <Insights activeIndex={activeUseCase} />
         <Chains />
