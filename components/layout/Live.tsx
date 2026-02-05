@@ -32,17 +32,17 @@ export function Live() {
               Live on Balancer
             </p>
             <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
-              Launch, divest, and buy back tokens—securely on-chain.
+              Launch, divest, and buy back tokens, securely on-chain.
             </h2>
             <p className="text-base md:text-lg text-[#171717]/70 dark:text-white/70 max-w-lg">
               Launch with confidence using programmable LBP mechanics built for
               fair price discovery and transparent allocation.
             </p>
             <div className="mt-4">
-              <Link href='/lbp-simulator'>
+              <Link href="/lbp-simulator">
                 <Button
                   size="lg"
-                  className="bg-[#E6C8A3] text-[#171717] hover:bg-[#E6C8A3]/80 rounded-full px-8"
+                  className="relative overflow-hidden rounded-full px-8 text-[#171717] bg-gradient-to-r from-[#F1D7B2] via-[#E6C8A3] to-[#D9B27D] border border-[#E6C8A3]/60 shadow-[0_0_24px_rgba(230,200,163,0.45)] hover:shadow-[0_0_32px_rgba(230,200,163,0.6)] transition-transform hover:scale-105"
                 >
                   Simulate your LBP
                 </Button>

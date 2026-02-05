@@ -20,6 +20,7 @@ function formatCount(value: number) {
 export function KPI() {
   const [raised, setRaised] = useState(0);
   const [pools, setPools] = useState(0);
+  const [participants, setParticipants] = useState(0);
   const hasAnimated = useRef(false);
   const sectionRef = useRef<HTMLElement | null>(null);
 
@@ -52,6 +53,15 @@ export function KPI() {
           },
         });
 
+        createTimer({
+          duration: 1300,
+          onUpdate: (self) => {
+            const progress = Math.min(self.currentTime / self.duration, 1);
+            const eased = easeInOut(progress);
+            setParticipants(eased * 90_000);
+          },
+        });
+
         observer.disconnect();
       },
       { threshold: 0.3, root: scrollRoot ?? null },
@@ -66,7 +76,7 @@ export function KPI() {
       ref={sectionRef}
       className="w-full container mx-auto max-w-5xl px-4 md:px-6 mb-14 md:mb-16"
     >
-      <div className="grid gap-6 rounded-[28px] bg-background/80 px-6 py-8 md:grid-cols-2 md:px-10">
+      <div className="grid gap-12 rounded-[28px] bg-background/80 px-6 py-8 md:grid-cols-3 md:px-10 items-center justify-center">
         <div className="flex flex-col items-center text-center gap-2">
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             Historical amount raised
@@ -87,6 +97,17 @@ export function KPI() {
           </div>
           <div className="text-sm text-muted-foreground">
             Verified launches across ecosystems and communities.
+          </div>
+        </div>
+        <div className="flex flex-col items-center text-center gap-2">
+          <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
+            Single participants
+          </div>
+          <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
+            {formatCount(participants)}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Unique participants across LBP launches.
           </div>
         </div>
       </div>

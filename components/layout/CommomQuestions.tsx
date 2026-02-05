@@ -14,19 +14,24 @@ const QUESTIONS = [
       "A Liquidity Bootstrapping Pool is a mechanism for fair price discovery where token weights shift over time to balance demand and price.",
   },
   {
-    question: "How does the simulator help?",
+    question: "Why should i use a LBP?",
     answer:
-      "It lets you model weights, duration, and demand assumptions so you can see how price and liquidity evolve before launch.",
-  },
-  {
-    question: "Can LBPs be used for buy-backs or divestment?",
-    answer:
-      "Yes. LBPs are flexible enough for structured buy-backs or gradual divestment with transparent parameters.",
+      "LBPs give flexible, programmable price discovery with a simple setup. Just configure a few key parameters - curve, duration, weights - and Balancer handles the rest. Everything runs onchain and permissionless, so you get full transparency and verifiability without relying on centralized intermediaries or trusted third parties.",
   },
   {
     question: "Do I need on-chain liquidity to start?",
     answer:
-      "You’ll need initial liquidity, but the pool design helps distribute it over time and keeps discovery transparent.",
+    "The seedless feature enables teams to launch an LBP using virtual liquidity, eliminating the need for any upfront capital commitment.",
+  },
+  {
+    question: "Can i create a fixed-price LBP?",
+    answer:
+      "Yes. LBPs offer the flexibility to implement structured fixed-price strategies over time, enabling teams to launch tokens in a more efficient and controlled manner.",
+  },
+  {
+    question: "I wanted to deploy a LBP on a EVM with no support. How can i proceed?",
+    answer:
+      "Contact our product and support team to learn more about new integrations and other issues.",
   },
 ];
 

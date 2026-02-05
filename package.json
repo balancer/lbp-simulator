@@ -33,6 +33,8 @@
     "@react-three/fiber": "^9.5.0",
     "@types/react-window": "^1.8.8",
     "@types/three": "^0.182.0",
+    "@web3icons/core": "^4.0.51",
+    "@web3icons/react": "^4.1.17",
     "animejs": "^4.3.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

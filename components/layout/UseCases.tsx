@@ -3,33 +3,73 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { animate } from "animejs";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { RefreshCcw, Rocket, TrendingDown } from "lucide-react";
+import { UseCaseStudyDialog } from "@/components/layout/UseCaseStudyDialog";
 
 const SLIDES = [
   {
     id: 1,
+    slug: "buy-back",
     title: "Buy Back",
     description:
       "Programmatic buy-backs with transparent price discovery and predictable liquidity.",
     benefits: ["Market Stability", "Fair Pricing", "Transparent Execution"],
     Icon: RefreshCcw,
+    caseStudy: {
+      title: "Treasury Buy-Back Program",
+      summary:
+        "A DAO executed phased buy-backs using a reverse LBP curve to reduce price impact and improve transparency.",
+      takeaways: [
+        "Staggered budget windows prevented sharp price spikes.",
+        "Public parameters built trust with token holders.",
+        "Arbitrage kept price aligned with broader market signals.",
+      ],
+    },
   },
   {
     id: 2,
+    slug: "token-launches",
     title: "Token Launches",
     description:
       "Fair price discovery for new tokens. Let the market find the right price through an LBP.",
     benefits: ["No Bot Sniping", "Deep Initial Liquidity", "Community Driven"],
     Icon: Rocket,
+    caseStudy: {
+      title: "New Token Launch",
+      summary:
+        "A project launched via LBP to let the market set price over time while preventing early sniping.",
+      takeaways: [
+        "Initial high weight aided fair discovery.",
+        "Gradual weight shift smoothed volatility.",
+        "Clear rules reduced uncertainty for buyers.",
+      ],
+    },
   },
   {
     id: 3,
-    title: "Divestment",
+    slug: "divestment",
+    title: "Investment & Divestment",
     description:
       "Gradual, market-driven divestment with configurable weights and transparent execution.",
     benefits: ["Minimal Price Impact", "Controlled Flow", "Verified Discovery"],
     Icon: TrendingDown,
+    caseStudy: {
+      title: "Strategic Divestment",
+      summary:
+        "A foundation divested a treasury position through an LBP to avoid market shocks.",
+      takeaways: [
+        "Predictable intervals reduced sell pressure.",
+        "Market demand determined clearing price.",
+        "Transparent reporting kept stakeholders aligned.",
+      ],
+    },
   },
 ];
 
@@ -50,13 +90,15 @@ const getVisualPosition = (slideIndex: number, activeIndex: number) => {
 type UseCasesProps = {
   activeIndex: number;
   onSelect: (index: number) => void;
+  openCaseSlug?: string | null;
 };
 
-const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
+const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
   const wrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const sectionRef = useRef<HTMLElement | null>(null);
   const [hoverSlideIndex, setHoverSlideIndex] = useState<number | null>(null);
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
 
   const animateDeck = useCallback(
     (currentActiveIndex: number) => {
@@ -119,6 +161,14 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
   }, [activeIndex, animateDeck]);
 
   useEffect(() => {
+    if (!openCaseSlug) return;
+    setOpenSlug(openCaseSlug);
+    if (sectionRef.current) {
+      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [openCaseSlug]);
+
+  useEffect(() => {
     if (!sectionRef.current) return;
 
     const node = sectionRef.current;
@@ -143,9 +193,10 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
   return (
     <section
       ref={sectionRef}
-      className="w-full container mx-auto max-w-5xl px-4 md:px-6 py-6 md:py-8 flex flex-col items-start justify-start opacity-0 translate-y-6"
+      id="use-cases"
+      className="w-full container mx-auto max-w-5xl px-4 md:px-6 md:py-4 flex flex-col items-start justify-start opacity-0 translate-y-6"
     >
-      <div className="flex items-center justify-center text-4xl w-full mb-24">
+      <div className="flex items-center justify-center text-4xl w-full mb-12">
         One solution, multiple applications.
       </div>
       <div className="flex flex-col items-start w-full gap-10 flex-1 justify-start max-w-full">
@@ -164,11 +215,12 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
                 }}
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                 style={{
-                  zIndex: isFocused ? 40 : isHovered ? 35 : layout.baseZ,
+                  zIndex: isFocused ? 40 : position === 1 ? 30 : 20,
                 }}
               >
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     onSelect(slideIndex);
                   }}
@@ -178,7 +230,7 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
                     const wrapper = wrapperRefs.current[slideIndex];
                     if (!wrapper) return;
                     animate(wrapper, {
-                      translateY: -120,
+                      translateY: -12,
                       duration: 220,
                       easing: "easeOutQuad",
                     });
@@ -193,7 +245,16 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
                       easing: "easeOutQuad",
                     });
                   }}
-                  className="border-0 bg-transparent p-0 text-left cursor-pointer focus:outline-none"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelect(slideIndex);
+                    }
+                  }}
+                  className={cn(
+                    "border-0 bg-transparent p-0 text-left focus:outline-none",
+                    isFocused ? "cursor-default" : "cursor-pointer",
+                  )}
                 >
                   <Card
                     ref={(node) => {
@@ -208,9 +269,9 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
                     <div className="relative h-40 md:h-48 w-full overflow-hidden bg-muted/20">
                       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <slide.Icon className="h-20 w-20 text-white stroke-[1]" />
+                        <slide.Icon className="h-20 w-20 text-white stroke-1" />
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent" />
                     </div>
                     <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
                       <CardTitle className="text-base md:text-lg font-semibold">
@@ -231,8 +292,19 @@ const UseCases = ({ activeIndex, onSelect }: UseCasesProps) => {
                         </ul>
                       )}
                     </CardContent>
+                    <CardFooter className="pt-4 w-full justify-start">
+                      <UseCaseStudyDialog
+                        title={slide.caseStudy.title}
+                        summary={slide.caseStudy.summary}
+                        takeaways={slide.caseStudy.takeaways}
+                        open={openSlug === slide.slug}
+                        onOpenChange={(nextOpen) => {
+                          setOpenSlug(nextOpen ? slide.slug : null);
+                        }}
+                      />
+                    </CardFooter>
                   </Card>
-                </button>
+                </div>
               </div>
             );
           })}

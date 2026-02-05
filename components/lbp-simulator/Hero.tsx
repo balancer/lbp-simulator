@@ -47,8 +47,7 @@ export function Hero() {
   };
 
   return (
-    <section className="w-full container mx-auto max-w-5xl flex flex-col items-center justify-center py-20 md:py-32 px-4 md:px-6 text-center gap-2">
-      <Badge variant="outline">Liquidity Bootstrapping Pool</Badge>
+    <section className="w-full container mx-auto max-w-5xl flex flex-col items-center justify-center py-20 md:py-28 px-4 md:px-6 text-center gap-2">
       <h1
         ref={titleRef}
         className="text-4xl md:text-6xl lg:text-7xl text-foreground tracking-tight mb-6"
