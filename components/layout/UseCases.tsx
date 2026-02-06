@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { animate } from "animejs";
 import { cn } from "@/lib/utils";
+import { Check, Link2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -156,6 +157,14 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [hoverSlideIndex, setHoverSlideIndex] = useState<number | null>(null);
   const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+
+  const buildCaseUrl = useCallback((slug: string) => {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+    url.searchParams.set("case", slug);
+    return url.toString();
+  }, []);
 
   const animateDeck = useCallback((currentActiveIndex: number) => {
     SLIDES.forEach((_, slideIndex) => {
@@ -312,16 +321,15 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                     isFocused ? "cursor-default" : "cursor-pointer",
                   )}
                 >
-                  <Card
-                    ref={(node) => {
-                      cardRefs.current[slideIndex] = node;
-                    }}
-                    className={cn(
-                      "h-[52vh] min-h-[420px] w-[280px] md:w-[340px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
-                      isFocused &&
-                        "border-primary/40 h-[56vh] min-h-[460px] w-[320px] md:w-[380px] bg-background",
-                    )}
-                  >
+                    <Card
+                      ref={(node) => {
+                        cardRefs.current[slideIndex] = node;
+                      }}
+                      className={cn(
+                        "h-[52vh] min-h-[420px] w-[320px] md:w-[380px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
+                        isFocused && "border-primary/40 bg-background",
+                      )}
+                    >
                     <div className="relative h-40 md:h-48 w-full overflow-hidden bg-muted/20">
                       <div
                         className="absolute inset-0 opacity-[0.03]"
@@ -336,10 +344,51 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                       </div>
                       <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent" />
                     </div>
-                    <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
-                      <CardTitle className="text-base md:text-lg font-semibold">
-                        {slide.title}
-                      </CardTitle>
+                    <CardHeader className="pb-2 grid grid-cols-[1fr_auto] items-start gap-4">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <CardTitle className="min-w-0 text-base md:text-lg font-semibold leading-tight">
+                          {slide.title}
+                        </CardTitle>
+                        <button
+                          type="button"
+                          aria-label={`Copy ${slide.title} link`}
+                          className={cn(
+                            "rounded-full border px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all",
+                            copiedSlug === slide.slug
+                              ? "border-[#E6C8A3] bg-[#E6C8A3] text-[#171717]"
+                              : "border-[#E6C8A3] text-[#E6C8A3] hover:bg-[#E6C8A3]/15",
+                            !isFocused &&
+                              "cursor-not-allowed opacity-50 hover:bg-transparent",
+                          )}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (!isFocused) {
+                              onSelect(slideIndex);
+                              return;
+                            }
+                            const url = buildCaseUrl(slide.slug);
+                            if (!url) return;
+                            void navigator.clipboard?.writeText(url);
+                            setCopiedSlug(slide.slug);
+                            window.setTimeout(() => {
+                              setCopiedSlug((current) =>
+                                current === slide.slug ? null : current,
+                              );
+                            }, 1600);
+                          }}
+                          onPointerDown={(event) => {
+                            if (isFocused) {
+                              event.stopPropagation();
+                            }
+                          }}
+                        >
+                          {copiedSlug === slide.slug ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            <Link2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
                       <slide.Icon className="h-5 w-5 text-foreground" />
                     </CardHeader>
                     <CardContent className="pt-0 text-sm text-muted-foreground flex-1 flex flex-col gap-4">
