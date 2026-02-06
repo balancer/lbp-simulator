@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
-import { Inter, Newsreader } from "next/font/google";
+import { Newsreader } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
+const satoshi = localFont({
+  src: [
+    {
+      path: "../public/fonts/Satoshi-Variable.ttf",
+      weight: "100 900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-satoshi",
+  display: "swap",
 });
 
 const newsreader = Newsreader({
@@ -48,7 +56,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${newsreader.variable} antialiased font-sans text-foreground`}
+        className={`${satoshi.variable} ${newsreader.variable} antialiased font-sans text-foreground`}
       >
         {process.env.NODE_ENV === "development" && (
           <Script

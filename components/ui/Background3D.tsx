@@ -190,14 +190,18 @@ function Particles({
     currentMesh.instanceMatrix.needsUpdate = true;
   });
 
-  const color = resolvedTheme === "dark" ? "#ffffff" : "#000000";
-  const opacity = resolvedTheme === "dark" ? 0.3 : 0.2;
+  const color = resolvedTheme === "dark" ? "#f2e6d8" : "#000000";
+  const opacity = resolvedTheme === "dark" ? 0.2 : 0.2;
+  const emissive = resolvedTheme === "dark" ? "#e6d2bf" : "#000000";
+  const emissiveIntensity = resolvedTheme === "dark" ? 0.35 : 0;
 
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
       <dodecahedronGeometry args={[0.05, 0]} />
       <meshStandardMaterial
         color={color}
+        emissive={emissive}
+        emissiveIntensity={emissiveIntensity}
         transparent
         opacity={opacity}
         roughness={0.5}
