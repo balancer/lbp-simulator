@@ -6,9 +6,10 @@ import {
   NetworkBase,
   NetworkEthereum,
   NetworkGnosis,
+  NetworkHyperEvm,
+  NetworkMonad,
   NetworkOptimism,
   NetworkPlasma,
-  NetworkPolygon,
 } from "@web3icons/react";
 
 const CHAINS = [
@@ -17,7 +18,8 @@ const CHAINS = [
   { name: "Avalanche (C-Chain)", Icon: NetworkAvalanche, glow: "#E84142" },
   { name: "Optimism", Icon: NetworkOptimism, glow: "#FF0420" },
   { name: "Base", Icon: NetworkBase, glow: "#0052FF" },
-  { name: "Polygon", Icon: NetworkPolygon, glow: "#8247E5" },
+  { name: "HyperVM", Icon: NetworkHyperEvm, glow: "#50D2C1" },
+  { name: "Monad", Icon: NetworkMonad, glow: "#836EF9" },
   {
     name: "Gnosis Chain / related EVM chains",
     Icon: NetworkGnosis,
