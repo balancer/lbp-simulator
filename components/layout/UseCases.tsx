@@ -106,7 +106,29 @@ const SLIDES = [
       },
     },
   },
-];
+] as const satisfies ReadonlyArray<{
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  benefits?: string[];
+  Icon: typeof RefreshCcw;
+  caseStudy: {
+    title: string;
+    summary: string;
+    takeaways?: string[];
+    whatHappened?: string;
+    keyResults?: string[];
+    rightChoice?: string[];
+    showCurve?: boolean;
+    chart?: {
+      type: "mpl-price" | "akita-weights";
+      title: string;
+      caption?: string;
+      data?: number[];
+    };
+  };
+}>;
 
 const CARD_LAYOUT = [
   { offsetX: -160, rotate: -4, baseOpacity: 1, baseZ: 10 },
