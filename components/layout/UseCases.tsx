@@ -332,7 +332,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                         }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <slide.Icon className="h-20 w-20 text-white stroke-1" />
+                        <slide.Icon className="h-20 w-20 text-foreground stroke-1" />
                       </div>
                       <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent" />
                     </div>
@@ -340,7 +340,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                       <CardTitle className="text-base md:text-lg font-semibold">
                         {slide.title}
                       </CardTitle>
-                      <slide.Icon className="h-5 w-5 text-white" />
+                      <slide.Icon className="h-5 w-5 text-foreground" />
                     </CardHeader>
                     <CardContent className="pt-0 text-sm text-muted-foreground flex-1 flex flex-col gap-4">
                       <p>{slide.description}</p>
