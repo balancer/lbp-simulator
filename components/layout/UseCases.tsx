@@ -326,7 +326,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                         cardRefs.current[slideIndex] = node;
                       }}
                       className={cn(
-                        "h-[52vh] min-h-[420px] w-[320px] md:w-[380px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
+                        "h-[57vh] min-h-[460px] w-[320px] md:w-[380px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
                         isFocused && "border-primary/40 bg-background",
                       )}
                     >
