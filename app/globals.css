@@ -173,12 +173,13 @@
     z-index: 0;
     pointer-events: none;
     background-image:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.18) 100%),
-      url("/images/background-noise.png");
-    background-size: cover, 320px 320px;
-    background-repeat: no-repeat, repeat;
-    mix-blend-mode: soft-light;
-    opacity: 0.1;
+      url("/images/background-noise.png"),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.18) 100%);
+    background-size: 280px 280px, cover;
+    background-repeat: repeat, no-repeat;
+    mix-blend-mode: normal;
+    opacity: 0.22;
+    filter: contrast(120%);
   }
 
   .dark body::before {
