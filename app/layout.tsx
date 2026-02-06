@@ -75,7 +75,7 @@ export default function RootLayout({
           <Background3D />
           <div
             id="app-scroll"
-            className="fixed inset-0 z-0 overflow-y-auto overflow-x-hidden flex flex-col"
+            className="fixed inset-0 z-10 overflow-y-auto overflow-x-hidden flex flex-col"
           >
             <Header />
             <div className="flex-1 flex flex-col min-h-0">{children}</div>

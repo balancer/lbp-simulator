@@ -130,6 +130,7 @@
   }
   body {
     @apply overflow-x-hidden;
+    position: relative;
   }
 }
 
@@ -172,16 +173,17 @@
     z-index: 0;
     pointer-events: none;
     background-image:
-      radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.12), transparent 45%),
-      radial-gradient(circle at 85% 30%, rgba(0, 0, 0, 0.2), transparent 55%),
-      radial-gradient(circle at 35% 80%, rgba(0, 0, 0, 0.18), transparent 50%),
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='240' height='240' filter='url(%23n)' opacity='0.1'/></svg>");
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.18) 100%),
+      url("/images/background-noise.png");
+    background-size: cover, 320px 320px;
+    background-repeat: no-repeat, repeat;
     mix-blend-mode: soft-light;
-    opacity: 0.6;
+    opacity: 0.1;
   }
 
   .dark body::before {
-    opacity: 0.85;
+    opacity: 0.1;
     mix-blend-mode: overlay;
   }
+
 }
