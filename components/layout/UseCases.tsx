@@ -155,6 +155,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
   const wrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const sectionRef = useRef<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const [hoverSlideIndex, setHoverSlideIndex] = useState<number | null>(null);
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
@@ -176,12 +177,18 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
       const layout = CARD_LAYOUT[position];
       const isFocused = position === 0;
       const scale = isFocused ? 1.1 : 1;
+      const mobileOffsetY =
+        position === 0 ? -8 : position === 1 ? -28 : -48;
+      const translateX = isMobile ? 0 : layout.offsetX;
+      const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
+      const rotate = isMobile ? 0 : layout.rotate;
+      const deckScale = isMobile ? 1 : scale;
 
       animate(wrapper, {
-        translateX: layout.offsetX,
-        translateY: isFocused ? -18 : 0,
-        rotate: layout.rotate,
-        scale,
+        translateX,
+        translateY,
+        rotate,
+        scale: deckScale,
         duration: 420,
         easing: "easeOutQuad",
       });
@@ -197,7 +204,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
         easing: "easeOutQuad",
       });
     });
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     // Initialize styles for all slides
@@ -209,17 +216,21 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
       const position = getVisualPosition(slideIndex, activeIndex);
       const layout = CARD_LAYOUT[position];
       const isFocused = position === 0;
+      const mobileOffsetY =
+        position === 0 ? -8 : position === 1 ? -28 : -48;
+      const translateX = isMobile ? 0 : layout.offsetX;
+      const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
+      const rotate = isMobile ? 0 : layout.rotate;
+      const deckScale = isMobile ? 1 : isFocused ? 1.1 : 1;
 
-      wrapper.style.transform = `translateX(${layout.offsetX}px) translateY(${
-        isFocused ? -18 : 0
-      }px) rotate(${layout.rotate}deg) scale(${isFocused ? 1.1 : 1})`;
+      wrapper.style.transform = `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg) scale(${deckScale})`;
       wrapper.style.opacity = "1";
       wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
       card.style.boxShadow = isFocused
         ? "0 24px 60px rgba(230, 200, 163, 0.35)"
         : "0 18px 35px rgba(15, 23, 42, 0.2)";
     });
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     animateDeck(activeIndex);
@@ -253,6 +264,17 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
 
     observer.observe(node);
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const updateLayout = () => {
+      if (typeof window === "undefined") return;
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    updateLayout();
+    window.addEventListener("resize", updateLayout);
+    return () => window.removeEventListener("resize", updateLayout);
   }, []);
 
   return (
@@ -321,15 +343,15 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                     isFocused ? "cursor-default" : "cursor-pointer",
                   )}
                 >
-                    <Card
-                      ref={(node) => {
-                        cardRefs.current[slideIndex] = node;
-                      }}
-                      className={cn(
-                        "h-[57vh] min-h-[460px] w-[320px] md:w-[380px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
-                        isFocused && "border-primary/40 bg-background",
-                      )}
-                    >
+                  <Card
+                    ref={(node) => {
+                      cardRefs.current[slideIndex] = node;
+                    }}
+                    className={cn(
+                      "h-[57vh] min-h-[460px] w-[320px] md:w-[380px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
+                      isFocused && "border-primary/40 bg-background",
+                    )}
+                  >
                     <div className="relative h-40 md:h-48 w-full overflow-hidden bg-muted/20">
                       <div
                         className="absolute inset-0 opacity-[0.03]"

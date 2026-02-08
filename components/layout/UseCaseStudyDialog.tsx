@@ -125,7 +125,7 @@ export function UseCaseStudyDialog({
           See a study case
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl p-10">
+      <DialogContent className="w-[94vw] max-w-xl max-h-[85vh] overflow-y-auto p-6 sm:w-full sm:max-h-[90vh] sm:p-10">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{summary}</DialogDescription>
