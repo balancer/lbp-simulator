@@ -142,8 +142,8 @@ interface SimulatorState {
 }
 
 const DEFAULT_CONFIG: LBPConfig = {
-  tokenName: "Balancer",
-  tokenSymbol: "BAL",
+  tokenName: "Project Token",
+  tokenSymbol: "XYZ",
   totalSupply: 100_000_000,
   percentForSale: 10, // 10% of total supply
   collateralToken: "USDC",

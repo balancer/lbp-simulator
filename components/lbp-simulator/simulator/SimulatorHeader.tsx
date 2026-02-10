@@ -78,12 +78,9 @@ function SimulatorHeaderComponent() {
     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center font-bold">
-          <Image
-            src={"logo-balancer-black.svg"}
-            alt="Balancer Logo"
-            width={30}
-            height={30}
-          />
+          <span className="text-lg font-bold text-black">
+            {config.tokenSymbol?.charAt(0) ?? "?"}
+          </span>
         </div>
         <div>
           <div className="flex items-center gap-2">

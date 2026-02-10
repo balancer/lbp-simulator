@@ -213,12 +213,9 @@ function SwapFormSwapTabComponent() {
             className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0"
           >
             <div className="h-6 w-6 bg-white rounded-full flex items-center justify-center font-bold">
-              <Image
-                src={"logo-balancer-black.svg"}
-                alt="Balancer Logo"
-                width={16}
-                height={16}
-              />
+            <span className="text-lg font-bold text-black">
+            {config.tokenSymbol?.charAt(0) ?? "?"}
+          </span>
             </div>
             <span className="font-medium">{outputToken}</span>
           </Button>
