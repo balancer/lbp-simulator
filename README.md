@@ -89,6 +89,7 @@ components/
 lib/
   lbp-math.ts           # LBP math formulas
   simulation-core.ts    # Simulation engine
+  MATH.md               # Math documentation (formulas, curves, simulation)
   hooks/                # useSimulationWorker, usePricePathsWorker, useDisplayStep
   useDebounce.ts
   useThrottle.ts
