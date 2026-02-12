@@ -481,7 +481,7 @@ function SimulatorConfigComponent() {
                         <SelectValue placeholder="Select swap fee" />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5].map((fee) => (
+                        {[1, 2, 3, 4, 5, 6, 7 , 8, 9, 10].map((fee) => (
                           <SelectItem key={fee} value={String(fee)}>
                             {fee}%
                           </SelectItem>
