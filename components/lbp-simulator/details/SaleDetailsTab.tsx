@@ -3,8 +3,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { memo } from "react";
 import { formatNumber } from "@/lib/utils";
 
 function SaleDetailsTabComponent() {
@@ -18,20 +16,8 @@ function SaleDetailsTabComponent() {
   const tokensForSale = config.tknBalanceIn;
   const percentForSale = (tokensForSale / config.totalSupply) * 100;
 
-  const BALANCER_FEE = 50;
-  const swapFee = config.swapFee || 2;
-  const remainingFee = 100 - BALANCER_FEE - 25;
-
-  const donutData = [
-    { name: "Balancer DAO", value: BALANCER_FEE },
-    { name: "Project fee", value: 25 },
-    { name: "Remaining", value: remainingFee },
-  ];
-
-  const COLORS = ["#e9d5ff", "#fed7aa", "#6b7280"];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="max-w-md">
       <Card className="border-border/60 shadow-sm">
         <CardContent className="p-6">
           <h3 className="text-lg font-semibold mb-4">Sale Parameters</h3>
@@ -70,46 +56,6 @@ function SaleDetailsTabComponent() {
               <span className="text-muted-foreground">Token Name</span>
               <span className="font-medium">{config.tokenName}</span>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card className="border-border/60 shadow-sm">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Fee Allocation</h3>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}%`}
-                  outerRadius={80}
-                  innerRadius={40}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {donutData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number | undefined) => value != null ? `${value}%` : ""}
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid hsl(var(--border))",
-                    backgroundColor: "hsl(var(--popover))",
-                    color: "hsl(var(--popover-foreground))",
-                  }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={16}
-                  formatter={(value) => value}
-                />
-              </PieChart>
-            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
