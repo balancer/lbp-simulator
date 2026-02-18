@@ -86,7 +86,7 @@ export function HowItWorksTab() {
         <p className="text-xs pt-2 border-t border-border/50">
           Learn more about LBPs on{" "}
           <a
-            href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool.html"
+            href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool/liquidity-bootstrapping-pool.html"
             target="_blank"
             rel="noopener noreferrer"
             className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 underline"

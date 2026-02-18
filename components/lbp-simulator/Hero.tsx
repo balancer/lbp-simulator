@@ -60,7 +60,7 @@ export function Hero() {
           </Button>
         </Link>
         <Link
-          href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool.html"
+          href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool/liquidity-bootstrapping-pool.html"
           target="_blank"
           rel="noopener noreferrer"
         >
