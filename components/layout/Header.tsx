@@ -88,12 +88,6 @@ function HeaderComponent() {
             Menu
           </Link>
           <ModeToggle />
-          <Link href="https://balancer.fi/">
-            <Button className="hidden md:inline-flex bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 font-semibold rounded-xl px-6 h-11 items-center gap-2 transition-colors duration-200 cursor-pointer">
-              Build on Balancer
-              <ArrowUpRight className="h-4 w-4" />
-            </Button>
-          </Link>
         </div>
       </div>
     </header>

@@ -4,11 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { animate, splitText } from "animejs";
 import { Button } from "@/components/ui/button";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { Badge } from "../ui/badge";
 
 export function Hero() {
-  const setIsConfigOpen = useSimulatorStore((state) => state.setIsConfigOpen);
   const titleRef = useRef<HTMLHeadingElement | null>(null);
   const subtitleRef = useRef<HTMLParagraphElement | null>(null);
 
@@ -35,17 +32,6 @@ export function Hero() {
     });
   }, []);
 
-  const handleGetStartedClick = () => {
-    setIsConfigOpen(true);
-
-    if (typeof window !== "undefined") {
-      const el = document.getElementById("lbp-settings");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  };
-
   return (
     <section className="w-full container mx-auto max-w-5xl flex flex-col items-center justify-center py-20 md:py-28 px-4 md:px-6 text-center gap-2">
       <h1
@@ -61,14 +47,23 @@ export function Hero() {
         Programmable, on-chain price discovery for fair token launches, and more.
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
-        <Button
-          size="lg"
-          className="bg-[#E6C8A3] hover:bg-[#E6C8A3]/80 text-[#171717] rounded-full px-8 text-base cursor-pointer"
-          onClick={handleGetStartedClick}
+        <Link
+          href="https://v66oe78pzsm.typeform.com/to/XWW3ioRY"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          Get started
-        </Button>
-        <Link href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool.html">
+          <Button
+            size="lg"
+            className="bg-[#E6C8A3] hover:bg-[#E6C8A3]/80 text-[#171717] rounded-full px-8 text-base cursor-pointer"
+          >
+            Get started
+          </Button>
+        </Link>
+        <Link
+          href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool.html"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Button
             variant="outline"
             size="lg"
