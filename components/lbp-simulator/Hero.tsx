@@ -56,7 +56,7 @@ export function Hero() {
             size="lg"
             className="bg-[#E6C8A3] hover:bg-[#E6C8A3]/80 text-[#171717] rounded-full px-8 text-base cursor-pointer"
           >
-            Get started
+            Talk to us
           </Button>
         </Link>
         <Link
