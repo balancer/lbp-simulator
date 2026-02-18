@@ -19,6 +19,25 @@ export function Live() {
     });
   }, []);
 
+  const progress = 0.55; // mid-sale example for the marketing card
+  const progressLabel = `${Math.round(progress * 100)}%`;
+
+  const curveD = (() => {
+    const startY = 10;
+    const endY = 54;
+    const k = 3.2;
+    const points = Array.from({ length: 26 }, (_, i) => {
+      const t = i / 25;
+      const x = 100 * t;
+      const y = startY + (endY - startY) * (1 - Math.exp(-k * t));
+      return { x, y };
+    });
+
+    return points
+      .map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+      .join(" ");
+  })();
+
   return (
     <section className="w-full container mx-auto max-w-5xl px-4 md:px-6 mb-16 md:mb-20">
       <div
@@ -55,31 +74,69 @@ export function Live() {
               <div className="absolute inset-0 rounded-[28px] bg-[linear-gradient(120deg,rgba(230,200,163,0.25),transparent_55%)] dark:bg-[linear-gradient(120deg,rgba(230,200,163,0.2),transparent_50%)]" />
               <div className="relative flex h-full flex-col">
                 <div className="flex items-center justify-between text-xs text-[#171717]/60 dark:text-white/60">
-                  <span>Live curve</span>
-                  <span>Make a swap</span>
+                  <span>LBP price curve</span>
+                  <span>{progressLabel} elapsed</span>
                 </div>
-                <div className="mt-4 grid h-full grid-cols-8 items-end gap-1">
-                  {[
-                    "h-full",
-                    "h-[85%]",
-                    "h-[72%]",
-                    "h-[62%]",
-                    "h-[54%]",
-                    "h-[46%]",
-                    "h-[38%]",
-                    "h-[30%]",
-                  ].map((height, index) => (
-                    <div
-                      key={`bar-${index}`}
-                      className={`w-full rounded-lg ${height} bg-gradient-to-t from-[#E6C8A3] via-[#E1B782] to-[#EADBC8]`}
+                <div className="mt-4 flex-1 min-h-0 rounded-2xl border border-[#171717]/10 bg-white/40 p-3 dark:border-white/10 dark:bg-black/20">
+                  <svg viewBox="0 0 100 60" className="h-full w-full">
+                    <defs>
+                      <linearGradient id="lbpStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#E6C8A3" stopOpacity="1" />
+                        <stop offset="55%" stopColor="#E1B782" stopOpacity="1" />
+                        <stop offset="100%" stopColor="#EADBC8" stopOpacity="1" />
+                      </linearGradient>
+                      <clipPath id="elapsedClip">
+                        <rect x="0" y="0" width={100 * progress} height="60" />
+                      </clipPath>
+                      <clipPath id="remainingClip">
+                        <rect x={100 * progress} y="0" width={100 - 100 * progress} height="60" />
+                      </clipPath>
+                    </defs>
+
+                    <path
+                      d={curveD}
+                      fill="none"
+                      stroke="rgba(23,23,23,0.12)"
+                      strokeWidth="1"
+                      className="dark:hidden"
                     />
-                  ))}
+                    <path
+                      d={curveD}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.18)"
+                      strokeWidth="1"
+                      className="hidden dark:block"
+                    />
+
+                    <path
+                      d={curveD}
+                      fill="none"
+                      stroke="url(#lbpStroke)"
+                      strokeWidth="1.25"
+                      strokeLinecap="round"
+                      clipPath="url(#elapsedClip)"
+                    />
+                    <path
+                      d={curveD}
+                      fill="none"
+                      stroke="rgba(230,200,163,0.7)"
+                      strokeWidth="1.25"
+                      strokeLinecap="round"
+                      strokeDasharray="2 3"
+                      clipPath="url(#remainingClip)"
+                    />
+
+                    <line
+                      x1={100 * progress}
+                      y1="4"
+                      x2={100 * progress}
+                      y2="58"
+                      stroke="rgba(230,200,163,0.35)"
+                      strokeWidth="0.75"
+                    />
+                  </svg>
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs text-[#171717]/60 dark:text-white/60">
-                  <span>Budget</span>
-                  <span className="text-[#171717] dark:text-white">$50 USDC</span>
-                </div>
-                <div className="mt-2 flex items-center justify-between text-xs text-[#171717]/60 dark:text-white/60">
                   <span>Token price</span>
                   <span className="text-[#171717] dark:text-white">$1.50 USDC</span>
                 </div>
