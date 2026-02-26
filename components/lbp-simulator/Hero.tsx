@@ -79,13 +79,19 @@ export function Hero() {
         </div>
 
         <Button
-          type="button"
           variant="outline"
           size="lg"
           className="rounded-full px-8 text-base border-[#E6C8A3]/60 hover:bg-[#E6C8A3]/10 cursor-pointer w-72"
-          onClick={trackReportDownload}
+          asChild
         >
-          Get the 961 LBP Analysis
+          <a
+            href="/files/Balancer%20961%20LBP%20Analysis.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={trackReportDownload}
+          >
+            Get the 961 LBP Analysis
+          </a>
         </Button>
       </div>
     </section>
