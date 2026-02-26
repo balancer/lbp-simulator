@@ -82,10 +82,10 @@ export function Hero() {
           type="button"
           variant="outline"
           size="lg"
-          className="rounded-full px-8 text-base border-[#E6C8A3]/60 hover:bg-[#E6C8A3]/10 cursor-pointer"
+          className="rounded-full px-8 text-base border-[#E6C8A3]/60 hover:bg-[#E6C8A3]/10 cursor-pointer w-72"
           onClick={trackReportDownload}
         >
-          Download PDF report
+          Get the 961 LBP Analysis
         </Button>
       </div>
     </section>
