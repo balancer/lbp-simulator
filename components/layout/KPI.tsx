@@ -101,7 +101,7 @@ export function KPI() {
         </div>
         <div className="flex flex-col items-center text-center gap-2">
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Single participants
+            Unique participants
           </div>
           <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
             {formatCount(participants)}

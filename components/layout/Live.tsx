@@ -34,7 +34,10 @@ export function Live() {
     });
 
     return points
-      .map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+      .map(
+        (p, idx) =>
+          `${idx === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`,
+      )
       .join(" ");
   })();
 
@@ -51,11 +54,12 @@ export function Live() {
               Live on Balancer
             </p>
             <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
-              Launch, divest, and buy back tokens, securely on-chain.
+              Launch, divest, and buy back tokens, all transparent.
             </h2>
             <p className="text-base md:text-lg text-[#171717]/70 dark:text-white/70 max-w-lg">
-              Launch with confidence using programmable LBP mechanics built for
-              fair price discovery and transparent allocation.
+              Built for fair price discovery and minimal market impact, whether
+              you're launching a token, executing a buyback, or divesting a
+              treasury position.
             </p>
             <div className="mt-4">
               <Link href="/lbp-simulator">
@@ -80,16 +84,35 @@ export function Live() {
                 <div className="mt-4 flex-1 min-h-0 rounded-2xl border border-[#171717]/10 bg-white/40 p-3 dark:border-white/10 dark:bg-black/20">
                   <svg viewBox="0 0 100 60" className="h-full w-full">
                     <defs>
-                      <linearGradient id="lbpStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <linearGradient
+                        id="lbpStroke"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="0%"
+                      >
                         <stop offset="0%" stopColor="#E6C8A3" stopOpacity="1" />
-                        <stop offset="55%" stopColor="#E1B782" stopOpacity="1" />
-                        <stop offset="100%" stopColor="#EADBC8" stopOpacity="1" />
+                        <stop
+                          offset="55%"
+                          stopColor="#E1B782"
+                          stopOpacity="1"
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#EADBC8"
+                          stopOpacity="1"
+                        />
                       </linearGradient>
                       <clipPath id="elapsedClip">
                         <rect x="0" y="0" width={100 * progress} height="60" />
                       </clipPath>
                       <clipPath id="remainingClip">
-                        <rect x={100 * progress} y="0" width={100 - 100 * progress} height="60" />
+                        <rect
+                          x={100 * progress}
+                          y="0"
+                          width={100 - 100 * progress}
+                          height="60"
+                        />
                       </clipPath>
                     </defs>
 
@@ -138,7 +161,9 @@ export function Live() {
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs text-[#171717]/60 dark:text-white/60">
                   <span>Token price</span>
-                  <span className="text-[#171717] dark:text-white">$1.50 USDC</span>
+                  <span className="text-[#171717] dark:text-white">
+                    $1.50 USDC
+                  </span>
                 </div>
               </div>
             </div>
