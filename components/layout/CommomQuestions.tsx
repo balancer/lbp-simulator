@@ -29,7 +29,7 @@ const QUESTIONS = [
       "Yes. LBPs offer the flexibility to implement structured fixed price strategies over time, enabling teams to launch tokens in a more efficient and controlled manner.",
   },
   {
-    question: "I wanted to deploy a LBP on a EVM with no support. How can I proceed?",
+    question: "The chain I want to deploy on isn't supported yet. What are my options?",
     answer:
       "Contact our product and support team to learn more about new integrations and other issues.",
   },
