@@ -21,7 +21,7 @@ const SLIDES = [
     slug: "buy-back",
     title: "Buy Back",
     description:
-      "Programmatic buy-backs with transparent price discovery and predictable liquidity.",
+      "Automated buybacks with transparent price discovery and controlled market impact.",
     benefits: ["Market Stability", "Fair Pricing", "Transparent Execution"],
     Icon: RefreshCcw,
     caseStudy: {
@@ -49,7 +49,7 @@ const SLIDES = [
     slug: "token-launches",
     title: "Token Launches",
     description:
-      "Fair price discovery for new tokens. Let the market find the right price through an LBP.",
+      "Let the market set the price. Fairly, transparently, and without bot interference.",
     benefits: ["No Bot Sniping", "Deep Initial Liquidity", "Community Driven"],
     Icon: Rocket,
     caseStudy: {
@@ -81,7 +81,7 @@ const SLIDES = [
     slug: "divestment",
     title: "Investment & Divestment",
     description:
-      "Gradual, market-driven divestment with configurable weights and transparent execution.",
+      "Gradually enter or exit positions with configurable parameters and minimal price impact.",
     benefits: ["Minimal Price Impact", "Controlled Flow", "Verified Discovery"],
     Icon: TrendingDown,
     caseStudy: {
@@ -167,44 +167,46 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
     return url.toString();
   }, []);
 
-  const animateDeck = useCallback((currentActiveIndex: number) => {
-    SLIDES.forEach((_, slideIndex) => {
-      const wrapper = wrapperRefs.current[slideIndex];
-      const card = cardRefs.current[slideIndex];
-      if (!wrapper || !card) return;
+  const animateDeck = useCallback(
+    (currentActiveIndex: number) => {
+      SLIDES.forEach((_, slideIndex) => {
+        const wrapper = wrapperRefs.current[slideIndex];
+        const card = cardRefs.current[slideIndex];
+        if (!wrapper || !card) return;
 
-      const position = getVisualPosition(slideIndex, currentActiveIndex);
-      const layout = CARD_LAYOUT[position];
-      const isFocused = position === 0;
-      const scale = isFocused ? 1.1 : 1;
-      const mobileOffsetY =
-        position === 0 ? -8 : position === 1 ? -28 : -48;
-      const translateX = isMobile ? 0 : layout.offsetX;
-      const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
-      const rotate = isMobile ? 0 : layout.rotate;
-      const deckScale = isMobile ? 1 : scale;
+        const position = getVisualPosition(slideIndex, currentActiveIndex);
+        const layout = CARD_LAYOUT[position];
+        const isFocused = position === 0;
+        const scale = isFocused ? 1.1 : 1;
+        const mobileOffsetY = position === 0 ? -8 : position === 1 ? -28 : -48;
+        const translateX = isMobile ? 0 : layout.offsetX;
+        const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
+        const rotate = isMobile ? 0 : layout.rotate;
+        const deckScale = isMobile ? 1 : scale;
 
-      animate(wrapper, {
-        translateX,
-        translateY,
-        rotate,
-        scale: deckScale,
-        duration: 420,
-        easing: "easeOutQuad",
+        animate(wrapper, {
+          translateX,
+          translateY,
+          rotate,
+          scale: deckScale,
+          duration: 420,
+          easing: "easeOutQuad",
+        });
+
+        // Set z-index immediately to prevent overlap issues during transition
+        wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
+
+        animate(card, {
+          boxShadow: isFocused
+            ? "0 24px 60px rgba(230, 200, 163, 0.35)"
+            : "0 18px 35px rgba(15, 23, 42, 0.2)",
+          duration: 420,
+          easing: "easeOutQuad",
+        });
       });
-
-      // Set z-index immediately to prevent overlap issues during transition
-      wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
-
-      animate(card, {
-        boxShadow: isFocused
-          ? "0 24px 60px rgba(230, 200, 163, 0.35)"
-          : "0 18px 35px rgba(15, 23, 42, 0.2)",
-        duration: 420,
-        easing: "easeOutQuad",
-      });
-    });
-  }, [isMobile]);
+    },
+    [isMobile],
+  );
 
   useEffect(() => {
     // Initialize styles for all slides
@@ -216,8 +218,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
       const position = getVisualPosition(slideIndex, activeIndex);
       const layout = CARD_LAYOUT[position];
       const isFocused = position === 0;
-      const mobileOffsetY =
-        position === 0 ? -8 : position === 1 ? -28 : -48;
+      const mobileOffsetY = position === 0 ? -8 : position === 1 ? -28 : -48;
       const translateX = isMobile ? 0 : layout.offsetX;
       const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
       const rotate = isMobile ? 0 : layout.rotate;
