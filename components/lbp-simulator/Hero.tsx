@@ -47,8 +47,7 @@ export function Hero() {
       >
         Programmable, on-chain price discovery for fair token launches, and more.
       </p>
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
           <Link
             href="https://v66oe78pzsm.typeform.com/to/XWW3ioRY"
             target="_blank"
@@ -62,38 +61,22 @@ export function Hero() {
             </Button>
           </Link>
 
-          <Link
-            href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool/liquidity-bootstrapping-pool.html"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Button
+            variant="outline"
+            size="lg"
+            className="rounded-full px-8 text-base border-[#E6C8A3]/60 hover:bg-[#E6C8A3]/10 cursor-pointer"
+            asChild
           >
-            <Button
-              variant="outline"
-              size="lg"
-              className="rounded-full px-8 text-base hover:bg-[#E6C8A3]/50 cursor-pointer"
-              style={{ cursor: "pointer" }}
+            <a
+              href="/files/balancer-lbps-analysis.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={trackReportDownload}
             >
-              Learn more
-            </Button>
-          </Link>
+              Get the 961 LBPs Analysis
+            </a>
+          </Button>
         </div>
-
-        <Button
-          variant="outline"
-          size="lg"
-          className="rounded-full px-8 text-base border-[#E6C8A3]/60 hover:bg-[#E6C8A3]/10 cursor-pointer w-72"
-          asChild
-        >
-          <a
-            href="/files/Balancer%20961%20LBP%20Analysis.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={trackReportDownload}
-          >
-            Get the 961 LBP Analysis
-          </a>
-        </Button>
-      </div>
     </section>
   );
 }
