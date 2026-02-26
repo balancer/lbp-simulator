@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { animate, splitText } from "animejs";
 import { Button } from "@/components/ui/button";
+import { trackReportDownload } from "@/lib/analytics";
 
 export function Hero() {
   const titleRef = useRef<HTMLHeadingElement | null>(null);
@@ -33,7 +34,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="w-full container mx-auto max-w-5xl flex flex-col items-center justify-center py-20 md:py-28 px-4 md:px-6 text-center gap-2">
+    <section className="w-full container mx-auto max-w-5xl flex flex-col items-center justify-center pt-20 pb-12 md:pt-28 md:pb-16 px-4 md:px-6 text-center gap-2">
       <h1
         ref={titleRef}
         className="text-4xl md:text-6xl lg:text-7xl text-foreground tracking-tight mb-6"
@@ -47,33 +48,35 @@ export function Hero() {
         Programmable, on-chain price discovery for fair token launches, and more.
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
-        <Link
-          href="https://v66oe78pzsm.typeform.com/to/XWW3ioRY"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button
-            size="lg"
-            className="bg-[#E6C8A3] hover:bg-[#E6C8A3]/80 text-[#171717] rounded-full px-8 text-base cursor-pointer"
+          <Link
+            href="https://v66oe78pzsm.typeform.com/to/XWW3ioRY"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            Talk to us
-          </Button>
-        </Link>
-        <Link
-          href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool/liquidity-bootstrapping-pool.html"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+            <Button
+              size="lg"
+              className="bg-[#E6C8A3] hover:bg-[#E6C8A3]/80 text-[#171717] rounded-full px-8 text-base cursor-pointer"
+            >
+              Talk to us
+            </Button>
+          </Link>
+
           <Button
             variant="outline"
             size="lg"
-            className="rounded-full px-8 text-base hover:bg-[#E6C8A3]/50 cursor-pointer"
-            style={{ cursor: "pointer" }}
+            className="rounded-full px-8 text-base border-[#E6C8A3]/60 hover:bg-[#E6C8A3]/10 cursor-pointer"
+            asChild
           >
-            Learn more
+            <a
+              href="/files/balancer-lbps-analysis.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={trackReportDownload}
+            >
+              Get the 961 LBPs Analysis
+            </a>
           </Button>
-        </Link>
-      </div>
+        </div>
     </section>
   );
 }

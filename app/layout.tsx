@@ -24,7 +24,7 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   title: "LBP Simulator | Balancer",
-  description: "Simulate a lBP sale to understand price discovery.",
+  description: "Simulate a LBP sale to understand price discovery.",
   icons: {
     icon: [
       {
