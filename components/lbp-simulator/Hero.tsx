@@ -45,7 +45,7 @@ export function Hero() {
         ref={subtitleRef}
         className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8"
       >
-        Programmable, on-chain price discovery for fair token launches, and more.
+        Programmable price discovery for token launches, buybacks, and treasury diversification. All on-chain.
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
           <Link
@@ -73,7 +73,7 @@ export function Hero() {
               rel="noopener noreferrer"
               onClick={trackReportDownload}
             >
-              Get the 961 LBPs Analysis
+              Read the 961 LBPs Analysis
             </a>
           </Button>
         </div>
