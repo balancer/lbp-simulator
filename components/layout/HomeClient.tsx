@@ -10,6 +10,7 @@ import { Insights } from "@/components/layout/Insights";
 import { KPI } from "@/components/layout/KPI";
 import { CommomQuestions } from "@/components/layout/CommomQuestions";
 import { Chains } from "@/components/layout/Chains";
+import LearnMore from "./LearnMore";
 
 type HomeClientProps = {
   initialCase?: string | null;
@@ -44,6 +45,7 @@ export function HomeClient({ initialCase }: HomeClientProps) {
           openCaseSlug={openCase}
         />
         <Insights activeIndex={activeUseCase} />
+        <LearnMore />
         <Chains />
         <CommomQuestions />
       </main>
