@@ -79,35 +79,35 @@ export function KPI() {
       <div className="grid gap-12 rounded-[28px] bg-background/80 px-6 py-8 md:grid-cols-3 md:px-10 items-center justify-center">
         <div className="flex flex-col items-center text-center gap-2">
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Historical amount raised
+            Total Raised
           </div>
           <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
             {formatCurrency(raised)}
           </div>
           <div className="text-sm text-muted-foreground">
-            Liquidity bootstrapped through on-chain auctions.
+            Bootstrapped through on-chain auctions across all LBPs.
           </div>
         </div>
         <div className="flex flex-col items-center text-center gap-2">
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            LBP pools created
+            LBPs Launched
           </div>
           <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
             {formatCount(pools)}
           </div>
           <div className="text-sm text-muted-foreground">
-            Verified launches across ecosystems and communities.
+            Completed launches across ecosystems and communities.
           </div>
         </div>
         <div className="flex flex-col items-center text-center gap-2">
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Single participants
+            Unique participants
           </div>
           <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
             {formatCount(participants)}
           </div>
           <div className="text-sm text-muted-foreground">
-            Unique participants across LBP launches.
+            Individual wallets that participated in LBP launches.
           </div>
         </div>
       </div>

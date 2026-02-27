@@ -33,13 +33,13 @@ const INSIGHTS = [
       {
         subtitle: "Invert the Mechanics",
         paragraph:
-          "Reverse the standard logic by starting with high collateral weight (e.g., 90% DAI) to generate natural upward price pressure.",
+          "Start with high collateral weight (e.g., 90% DAI) to create natural upward price pressure as weights shift.",
         Icon: RefreshCcw,
       },
       {
         subtitle: "Passive Accumulation",
         paragraph:
-          "Operate as an automated limit order where arbitrageurs are incentivized to fill your treasury organically as weights adjust.",
+          "Function as an automated limit order: arbitrageurs fill your treasury with collateral as pool weights shift, requiring no active management.",
         Icon: Magnet,
       },
       {

@@ -23,7 +23,7 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "LBP Simulator | Balancer",
+  title: "Liquidity Bootstrapping Pools | Balancer",
   description: "Simulate a LBP sale to understand price discovery.",
   icons: {
     icon: [
