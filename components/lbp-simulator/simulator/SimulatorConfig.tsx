@@ -104,12 +104,18 @@ function SimulatorConfigComponent() {
   const [pressureMode, setPressureMode] = useState<"buy-and-sell" | "buy-only">(
     () => {
       if (sellPressureConfig.preset === "loyal") {
-        return sellPressureConfig.loyalSoldPct <= 0 ? "buy-only" : "buy-and-sell";
+        return sellPressureConfig.loyalSoldPct <= 0
+          ? "buy-only"
+          : "buy-and-sell";
       }
-      return sellPressureConfig.greedySellPct <= 0 ? "buy-only" : "buy-and-sell";
+      return sellPressureConfig.greedySellPct <= 0
+        ? "buy-only"
+        : "buy-and-sell";
     },
   );
-  const sellConfigBeforeBuyOnlyRef = useRef<SellPressureConfigType | null>(null);
+  const sellConfigBeforeBuyOnlyRef = useRef<SellPressureConfigType | null>(
+    null,
+  );
 
   // Update local state when store config changes
   useEffect(() => {
@@ -300,7 +306,8 @@ function SimulatorConfigComponent() {
                         // Buy-only should disable sell pressure regardless of the current preset
                         // (e.g. if the user previously selected "greedy", that still sells).
                         if (sellConfigBeforeBuyOnlyRef.current == null) {
-                          sellConfigBeforeBuyOnlyRef.current = sellPressureConfig;
+                          sellConfigBeforeBuyOnlyRef.current =
+                            sellPressureConfig;
                         }
                         updateSellPressureConfig({
                           preset: "loyal",
@@ -437,7 +444,7 @@ function SimulatorConfigComponent() {
                     <Label>Start (Token / {config.collateralToken})</Label>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-mono w-10 shrink-0">
-                        {config.tknWeightIn}%
+                        {localTknWeightIn}%
                       </span>
                       <Slider
                         value={[localTknWeightIn]}
@@ -448,15 +455,30 @@ function SimulatorConfigComponent() {
                         className="flex-1"
                       />
                       <span className="text-sm font-mono w-10 shrink-0 text-right">
-                        {config.usdcWeightIn}%
+                        {100 - localTknWeightIn}%
                       </span>
+                      <Input
+                        className="w-12 shrink-0 text-right p-0"
+                        type="number"
+                        min={1}
+                        max={99}
+                        step={1}
+                        value={localTknWeightIn}
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          if (!Number.isFinite(next)) return;
+                          handleWeightChange(
+                            Math.max(1, Math.min(99, Math.round(next))),
+                          );
+                        }}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>End (Token / {config.collateralToken})</Label>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-mono w-10 shrink-0">
-                        {config.tknWeightOut}%
+                        {localTknWeightOut}%
                       </span>
                       <Slider
                         value={[localTknWeightOut]}
@@ -467,8 +489,23 @@ function SimulatorConfigComponent() {
                         className="flex-1"
                       />
                       <span className="text-sm font-mono w-10 shrink-0 text-right">
-                        {config.usdcWeightOut}%
+                        {100 - localTknWeightOut}%
                       </span>
+                      <Input
+                        className="w-12 shrink-0 text-right p-0"
+                        type="number"
+                        min={1}
+                        max={99}
+                        step={1}
+                        value={localTknWeightOut}
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          if (!Number.isFinite(next)) return;
+                          handleEndWeightChange(
+                            Math.max(1, Math.min(99, Math.round(next))),
+                          );
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -517,7 +554,7 @@ function SimulatorConfigComponent() {
                         <SelectValue placeholder="Select swap fee" />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7 , 8, 9, 10].map((fee) => (
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((fee) => (
                           <SelectItem key={fee} value={String(fee)}>
                             {fee}%
                           </SelectItem>
