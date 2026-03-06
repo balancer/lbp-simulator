@@ -49,7 +49,7 @@ function normalizeWeights(cfg: LBPConfig): LBPConfig {
 
 function mergeCase(
   base: ScenarioFile["base"],
-  overrides?: ScenarioFile["cases"][number]["overrides"],
+  overrides?: NonNullable<ScenarioFile["cases"]>[number]["overrides"],
 ) {
   const steps = overrides?.steps ?? base.steps ?? 300;
   const lbpConfig = normalizeWeights({
