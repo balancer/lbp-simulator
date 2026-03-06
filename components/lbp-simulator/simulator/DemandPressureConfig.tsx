@@ -40,6 +40,39 @@ import { useDebounce } from "@/lib/useDebounce";
 import { useShallow } from "zustand/react/shallow";
 import { GiBull } from "react-icons/gi";
 import { GiBearFace } from "react-icons/gi";
+import { formatNumber } from "@/lib/utils";
+
+const MAGNITUDE_BASES = [10_000, 100_000, 1_000_000] as const;
+
+function parseNumberInput(raw: string) {
+  const cleaned = raw.replace(/,/g, "").trim();
+  if (cleaned === "") return null;
+  const n = Number(cleaned);
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
+
+function pickMagnitudeBaseForTarget(target: number) {
+  // Prefer multipliers in a "nice" range so the UI stays readable.
+  let best = 100_000 as (typeof MAGNITUDE_BASES)[number];
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (const base of MAGNITUDE_BASES) {
+    const mult = target / base;
+    const penaltyLow = mult < 0.1 ? 10 + (0.1 - mult) * 50 : 0;
+    const penaltyHigh = mult > 20 ? 10 + (mult - 20) : 0;
+    const score =
+      penaltyLow +
+      penaltyHigh +
+      Math.abs(Math.log10(Math.max(1e-9, mult)));
+    if (score < bestScore) {
+      bestScore = score;
+      best = base;
+    }
+  }
+
+  return best;
+}
 
 function DemandPressureConfigComponent() {
   const { demandPressureConfig, updateDemandPressureConfig, config } =
@@ -54,11 +87,24 @@ function DemandPressureConfigComponent() {
   // Local state for immediate UI updates
   const [localConfig, setLocalConfig] =
     useState<DemandPressureConfigType>(demandPressureConfig);
+  const [endCumulativeInput, setEndCumulativeInput] = useState<string>("");
+  const [isEditingEndCumulative, setIsEditingEndCumulative] = useState(false);
 
   // Update local state when store config changes (e.g., reset)
   useEffect(() => {
     setLocalConfig(demandPressureConfig);
   }, [demandPressureConfig]);
+
+  const endScale = localConfig.preset === "bearish" ? 0.35 : 1.0;
+  const endCumulativeValue =
+    localConfig.magnitudeBase * localConfig.multiplier * endScale;
+
+  // Keep the "single number" input in sync with underlying magnitudeBase * multiplier (and preset scaling),
+  // but don't fight the user while they're typing.
+  useEffect(() => {
+    if (isEditingEndCumulative) return;
+    setEndCumulativeInput(formatNumber(Math.round(endCumulativeValue)));
+  }, [endCumulativeValue, isEditingEndCumulative]);
 
   // Debounce the local config before updating the store
   const debouncedConfig = useDebounce(localConfig, 500);
@@ -195,7 +241,22 @@ function DemandPressureConfigComponent() {
                   <button
                     type="button"
                     onClick={() =>
-                      setLocalConfig((prev) => ({ ...prev, preset: "bullish" }))
+                      setLocalConfig((prev) => {
+                        const prevEndScale = prev.preset === "bearish" ? 0.35 : 1.0;
+                        const targetEndTotal =
+                          prev.magnitudeBase * prev.multiplier * prevEndScale;
+                        const nextEndScale = 1.0;
+                        const unscaled =
+                          nextEndScale > 0 ? targetEndTotal / nextEndScale : targetEndTotal;
+                        const base = pickMagnitudeBaseForTarget(unscaled);
+                        const nextMultiplier = base > 0 ? unscaled / base : 0;
+                        return {
+                          ...prev,
+                          preset: "bullish",
+                          magnitudeBase: base,
+                          multiplier: nextMultiplier,
+                        };
+                      })
                     }
                     className={[
                       "rounded-lg border p-3 text-left transition-colors",
@@ -217,7 +278,22 @@ function DemandPressureConfigComponent() {
                   <button
                     type="button"
                     onClick={() =>
-                      setLocalConfig((prev) => ({ ...prev, preset: "bearish" }))
+                      setLocalConfig((prev) => {
+                        const prevEndScale = prev.preset === "bearish" ? 0.35 : 1.0;
+                        const targetEndTotal =
+                          prev.magnitudeBase * prev.multiplier * prevEndScale;
+                        const nextEndScale = 0.35;
+                        const unscaled =
+                          nextEndScale > 0 ? targetEndTotal / nextEndScale : targetEndTotal;
+                        const base = pickMagnitudeBaseForTarget(unscaled);
+                        const nextMultiplier = base > 0 ? unscaled / base : 0;
+                        return {
+                          ...prev,
+                          preset: "bearish",
+                          magnitudeBase: base,
+                          multiplier: nextMultiplier,
+                        };
+                      })
                     }
                     className={[
                       "rounded-lg border p-3 text-left transition-colors",
@@ -239,48 +315,120 @@ function DemandPressureConfigComponent() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs">Magnitude (end cumulative buy)</Label>
-                <Select
-                  value={String(localConfig.magnitudeBase)}
-                  onValueChange={(value) =>
-                    setLocalConfig((prev) => ({
-                      ...prev,
-                      magnitudeBase: Number(value) as DemandPressureConfigType["magnitudeBase"],
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select magnitude" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10000">10k</SelectItem>
-                    <SelectItem value="100000">100k</SelectItem>
-                    <SelectItem value="1000000">1M</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-xs">
+                  End cumulative buy (target)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={endCumulativeInput}
+                    onFocus={() => setIsEditingEndCumulative(true)}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setEndCumulativeInput(raw);
+                      const desired = parseNumberInput(raw);
+                      if (desired == null || desired < 0) return;
+
+                      const unscaled = endScale > 0 ? desired / endScale : desired;
+                      const base = pickMagnitudeBaseForTarget(unscaled);
+                      const nextMultiplier = base > 0 ? unscaled / base : 0;
+
+                      setLocalConfig((prev) => ({
+                        ...prev,
+                        magnitudeBase: base,
+                        multiplier: nextMultiplier,
+                      }));
+                    }}
+                    onBlur={() => {
+                      setIsEditingEndCumulative(false);
+                      const desired = parseNumberInput(endCumulativeInput);
+                      if (desired == null || desired < 0) {
+                        setEndCumulativeInput(formatNumber(Math.round(endCumulativeValue)));
+                        return;
+                      }
+                      setEndCumulativeInput(formatNumber(Math.round(desired)));
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {config.collateralToken}
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Controls the Y-axis scale (USDC cumulative over time).
+                  Value at the end of the campaign (cumulative).{" "}
+                  <span className="font-mono">
+                    {formatNumber(parseNumberInput(endCumulativeInput) ?? 0)}
+                  </span>{" "}
+                  {config.collateralToken}
+                  {localConfig.preset === "bearish" ? (
+                    <>
+                      {" "}
+                      (bearish preset applies a <span className="font-mono">0.35</span> end-scale)
+                    </>
+                  ) : null}
+                  .
                 </p>
               </div>
 
-	              <div className="space-y-2">
-	                <Label className="text-xs">Multiplier</Label>
-	                <Input
-	                  type="number"
-	                  min={0}
-	                  step={0.1}
-	                  value={localConfig.multiplier}
-	                  onChange={(e) =>
-	                    setLocalConfig((prev) => ({
-	                      ...prev,
-	                      multiplier: Number(e.target.value),
-	                    }))
-	                  }
-	                />
-	                <p className="text-xs text-muted-foreground">
-	                  Fine-tune the curve’s magnitude (e.g. 0.5x, 2x).
-	                </p>
-	              </div>
+              <details className="rounded-md border bg-muted/30 p-3">
+                <summary className="cursor-pointer select-none text-xs text-muted-foreground">
+                  Advanced (magnitude base + multiplier)
+                </summary>
+                <div className="pt-3 space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs">
+                      Magnitude base
+                    </Label>
+                    <Select
+                      value={String(localConfig.magnitudeBase)}
+                      onValueChange={(value) =>
+                        setLocalConfig((prev) => ({
+                          ...prev,
+                          magnitudeBase: Number(value) as DemandPressureConfigType["magnitudeBase"],
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select magnitude" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10000">10k</SelectItem>
+                        <SelectItem value="100000">100k</SelectItem>
+                        <SelectItem value="1000000">1M</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Multiplier</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={localConfig.multiplier}
+                      onChange={(e) =>
+                        setLocalConfig((prev) => ({
+                          ...prev,
+                          multiplier: Number(e.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Internally:{" "}
+                    <span className="font-mono">
+                      endTotal = magnitudeBase × multiplier × endScale
+                    </span>
+                    . Current:{" "}
+                    <span className="font-mono">
+                      {formatNumber(localConfig.magnitudeBase)} ×{" "}
+                      {Number(localConfig.multiplier).toFixed(3)}
+                    </span>
+                    .
+                  </p>
+                </div>
+              </details>
 
 	              <div className="space-y-2">
 	                <Label className="text-xs">Price Elasticity (optional)</Label>
