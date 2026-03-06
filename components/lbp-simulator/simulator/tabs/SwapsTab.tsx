@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { useShallow } from "zustand/react/shallow";
+import { formatPrice } from "@/lib/utils";
 
 interface SwapsTabProps {
   swaps: any[];
@@ -82,7 +83,7 @@ function SwapsTabComponent({ swaps }: SwapsTabProps) {
                       {outToken}
                     </td>
                     <td className="px-4 py-3 text-right font-medium whitespace-nowrap">
-                      ${swap.price.toFixed(4)}
+                      {formatPrice(Number(swap.price), { tinyCutoff: 1e-6 })}
                     </td>
                   </tr>
                 );

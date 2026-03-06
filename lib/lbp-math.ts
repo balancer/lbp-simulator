@@ -16,7 +16,7 @@ export interface LBPConfig {
   usdcWeightOut: number; // Final USDC weight (e.g. 90)
   startDelay: number; // Delay before start (in blocks/time)
   duration: number; // Duration of LBP (in hours)
-  swapFee: number; // Swap fee (e.g., 0.01 for 1%)
+  swapFee: number; // Swap fee (accepts fraction 0.01=1% or percent 1=1%)
   creatorFee: number; // Creator fee percentage (1-10%)
 }
 
@@ -45,6 +45,40 @@ export interface DemandPressureConfig {
   preset: BuyPressurePreset;
   magnitudeBase: BuyPressureMagnitudeBase; // 10k / 100k / 1M
   multiplier: number; // fine control (e.g. 0.5x, 2x)
+  /**
+   * Optional price-elasticity model for buy pressure.
+   *
+   * When set > 0, per-step buy flow is scaled by:
+   *   multiplier = (P_ref / P_now) ^ priceElasticity
+   *
+   * Where P_ref is the initial spot price (step 0) and P_now is the current
+   * spot price at the step before applying buys.
+   *
+   * - direction="down-only" (default): multiplier is capped at 1 (buyers don't
+   *   exceed the baseline budget when price is cheaper).
+   * - direction="symmetric": multiplier can exceed 1 when price is cheaper,
+   *   within [minMultiplier, maxMultiplier].
+   */
+  priceElasticity?: number;
+  priceElasticityDirection?: "down-only" | "symmetric";
+  /**
+   * Multiplier applied to the reference price used by the elasticity model.
+   *
+   * Example: if initial spot price is $0.50 and you believe the market's
+   * "willingness to buy" is anchored closer to $0.10 early on, use 0.2.
+   */
+  priceElasticityReferenceMultiplier?: number;
+  /**
+   * How price elasticity is applied to per-step buy pressure.
+   * - "multiplier": flow = baseFlow * elasticityMultiplier (may change total volume).
+   * - "backlog": baseFlow accumulates into a backlog; execution rate depends on price,
+   *   which shifts volume later without increasing the total budget by default.
+   */
+  priceElasticityExecutionModel?: "multiplier" | "backlog";
+  /** Caps backlog execution to avoid unrealistic spikes (e.g. 5 = at most 5x baseFlow per step). */
+  priceElasticityBacklogMaxSpendMultiplier?: number;
+  priceElasticityMinMultiplier?: number;
+  priceElasticityMaxMultiplier?: number;
 }
 
 export const DEFAULT_DEMAND_PRESSURE_CONFIG: DemandPressureConfig = {
@@ -405,7 +439,8 @@ export function calculatePotentialPricePaths(
     sellPressureConfig.loyalConcentrationPct,
   );
   const rawSwapFee = config.swapFee ?? 0;
-  const swapFeeFraction = rawSwapFee > 1 ? rawSwapFee / 100 : rawSwapFee;
+  // Treat 1 as 1% (not 100%), since the UI commonly inputs whole percents.
+  const swapFeeFraction = rawSwapFee >= 1 ? rawSwapFee / 100 : rawSwapFee;
 
   // For each scenario, simulate price evolution (from step 0)
   for (const demandMultiplier of scenarios) {

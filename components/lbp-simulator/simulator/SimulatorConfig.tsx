@@ -29,9 +29,16 @@ import {
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { DemandPressureConfig } from "./DemandPressureConfig";
 import { SellPressureConfig } from "./SellPressureConfig";
-import { useState, useEffect, useTransition, memo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useTransition,
+  memo,
+  useCallback,
+  useRef,
+} from "react";
 import { useDebounce } from "@/lib/useDebounce";
-import { LBPConfig } from "@/lib/lbp-math";
+import type { SellPressureConfig as SellPressureConfigType } from "@/lib/lbp-math";
 import { useShallow } from "zustand/shallow";
 import { TokenLogo } from "@/components/ui/TokenLogo";
 import { formatNumber } from "@/lib/utils";
@@ -49,6 +56,7 @@ function SimulatorConfigComponent() {
     simulationSpeed,
     setSimulationSpeed,
     updateSellPressureConfig,
+    sellPressureConfig,
   } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
@@ -60,6 +68,7 @@ function SimulatorConfigComponent() {
       simulationSpeed: state.simulationSpeed,
       setSimulationSpeed: state.setSimulationSpeed,
       updateSellPressureConfig: state.updateSellPressureConfig,
+      sellPressureConfig: state.sellPressureConfig,
     })),
   );
 
@@ -93,8 +102,14 @@ function SimulatorConfigComponent() {
     config.usdcBalanceIn,
   );
   const [pressureMode, setPressureMode] = useState<"buy-and-sell" | "buy-only">(
-    "buy-and-sell",
+    () => {
+      if (sellPressureConfig.preset === "loyal") {
+        return sellPressureConfig.loyalSoldPct <= 0 ? "buy-only" : "buy-and-sell";
+      }
+      return sellPressureConfig.greedySellPct <= 0 ? "buy-only" : "buy-and-sell";
+    },
   );
+  const sellConfigBeforeBuyOnlyRef = useRef<SellPressureConfigType | null>(null);
 
   // Update local state when store config changes
   useEffect(() => {
@@ -282,7 +297,26 @@ function SimulatorConfigComponent() {
                     onValueChange={(value: "buy-and-sell" | "buy-only") => {
                       setPressureMode(value);
                       if (value === "buy-only") {
-                        updateSellPressureConfig({ loyalSoldPct: 0 });
+                        // Buy-only should disable sell pressure regardless of the current preset
+                        // (e.g. if the user previously selected "greedy", that still sells).
+                        if (sellConfigBeforeBuyOnlyRef.current == null) {
+                          sellConfigBeforeBuyOnlyRef.current = sellPressureConfig;
+                        }
+                        updateSellPressureConfig({
+                          preset: "loyal",
+                          loyalSoldPct: 0,
+                          greedySellPct: 0,
+                        });
+                        // Clear prior Sales rows + prevent ticking against stale snapshots.
+                        restartSimulation();
+                      } else {
+                        const prev = sellConfigBeforeBuyOnlyRef.current;
+                        if (prev != null) {
+                          sellConfigBeforeBuyOnlyRef.current = null;
+                          updateSellPressureConfig(prev);
+                        }
+                        // New sell config means a new deterministic path; restart for a clean run.
+                        restartSimulation();
                       }
                     }}
                     className="flex"
@@ -314,7 +348,9 @@ function SimulatorConfigComponent() {
                             : "opacity-0 pointer-events-none"
                         }`}
                       >
-                        <SellPressureConfig />
+                        {pressureMode === "buy-and-sell" ? (
+                          <SellPressureConfig />
+                        ) : null}
                       </div>
                     </div>
                   </div>

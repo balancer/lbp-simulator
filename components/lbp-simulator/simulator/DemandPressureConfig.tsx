@@ -263,27 +263,140 @@ function DemandPressureConfigComponent() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs">Multiplier</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.1}
-                  value={localConfig.multiplier}
-                  onChange={(e) =>
-                    setLocalConfig((prev) => ({
-                      ...prev,
-                      multiplier: Number(e.target.value),
-                    }))
-                  }
-                />
-                <p className="text-xs text-muted-foreground">
-                  Fine-tune the curve’s magnitude (e.g. 0.5x, 2x).
-                </p>
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
+	              <div className="space-y-2">
+	                <Label className="text-xs">Multiplier</Label>
+	                <Input
+	                  type="number"
+	                  min={0}
+	                  step={0.1}
+	                  value={localConfig.multiplier}
+	                  onChange={(e) =>
+	                    setLocalConfig((prev) => ({
+	                      ...prev,
+	                      multiplier: Number(e.target.value),
+	                    }))
+	                  }
+	                />
+	                <p className="text-xs text-muted-foreground">
+	                  Fine-tune the curve’s magnitude (e.g. 0.5x, 2x).
+	                </p>
+	              </div>
+
+	              <div className="space-y-2">
+	                <Label className="text-xs">Price Elasticity (optional)</Label>
+	                <div className="grid grid-cols-2 gap-2">
+	                  <div className="space-y-2">
+	                    <Label className="text-[11px] text-muted-foreground">
+	                      Elasticity exponent
+	                    </Label>
+	                    <Input
+	                      type="number"
+	                      min={0}
+	                      step={0.1}
+	                      value={localConfig.priceElasticity ?? 0}
+	                      onChange={(e) =>
+	                        setLocalConfig((prev) => ({
+	                          ...prev,
+	                          priceElasticity: Number(e.target.value),
+	                        }))
+	                      }
+	                    />
+	                  </div>
+
+	                  <div className="space-y-2">
+	                    <Label className="text-[11px] text-muted-foreground">
+	                      Direction
+	                    </Label>
+	                    <Select
+	                      value={localConfig.priceElasticityDirection ?? "down-only"}
+	                      onValueChange={(value) =>
+	                        setLocalConfig((prev) => ({
+	                          ...prev,
+	                          priceElasticityDirection: value as DemandPressureConfigType["priceElasticityDirection"],
+	                        }))
+	                      }
+	                    >
+	                      <SelectTrigger>
+	                        <SelectValue placeholder="Select mode" />
+	                      </SelectTrigger>
+	                      <SelectContent>
+	                        <SelectItem value="down-only">Down-only</SelectItem>
+	                        <SelectItem value="symmetric">Symmetric</SelectItem>
+	                      </SelectContent>
+	                    </Select>
+	                  </div>
+	                </div>
+
+	                <div className="space-y-2">
+	                  <Label className="text-[11px] text-muted-foreground">
+	                    Reference price multiplier (vs initial spot)
+	                  </Label>
+	                  <Input
+	                    type="number"
+	                    min={0.01}
+	                    step={0.05}
+	                    value={localConfig.priceElasticityReferenceMultiplier ?? 1}
+	                    onChange={(e) =>
+	                      setLocalConfig((prev) => ({
+	                        ...prev,
+	                        priceElasticityReferenceMultiplier: Number(e.target.value),
+	                      }))
+	                    }
+	                  />
+	                </div>
+
+	                <div className="grid grid-cols-2 gap-2">
+	                  <div className="space-y-2">
+	                    <Label className="text-[11px] text-muted-foreground">
+	                      Execution model
+	                    </Label>
+	                    <Select
+	                      value={localConfig.priceElasticityExecutionModel ?? "multiplier"}
+	                      onValueChange={(value) =>
+	                        setLocalConfig((prev) => ({
+	                          ...prev,
+	                          priceElasticityExecutionModel: value as DemandPressureConfigType["priceElasticityExecutionModel"],
+	                        }))
+	                      }
+	                    >
+	                      <SelectTrigger>
+	                        <SelectValue placeholder="Select model" />
+	                      </SelectTrigger>
+	                      <SelectContent>
+	                        <SelectItem value="multiplier">Multiplier</SelectItem>
+	                        <SelectItem value="backlog">Backlog</SelectItem>
+	                      </SelectContent>
+	                    </Select>
+	                  </div>
+
+	                  <div className="space-y-2">
+	                    <Label className="text-[11px] text-muted-foreground">
+	                      Backlog max spend (x)
+	                    </Label>
+	                    <Input
+	                      type="number"
+	                      min={1}
+	                      step={1}
+	                      value={localConfig.priceElasticityBacklogMaxSpendMultiplier ?? 5}
+	                      onChange={(e) =>
+	                        setLocalConfig((prev) => ({
+	                          ...prev,
+	                          priceElasticityBacklogMaxSpendMultiplier: Number(e.target.value),
+	                        }))
+	                      }
+	                    />
+	                  </div>
+	                </div>
+
+	                <p className="text-xs text-muted-foreground">
+	                  Scales per-step buys by <span className="font-mono">(P_ref / P_now)^e</span>,
+	                  where <span className="font-mono">P_ref</span> is the initial spot price times this multiplier.
+	                  Use &lt;1 to model users waiting for a cheaper price.
+	                </p>
+	              </div>
+	            </div>
+	          </div>
+	        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

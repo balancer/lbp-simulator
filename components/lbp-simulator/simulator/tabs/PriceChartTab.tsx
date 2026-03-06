@@ -12,6 +12,7 @@ import {
   Legend,
 } from "recharts";
 import { memo, useMemo } from "react";
+import { formatPrice } from "@/lib/utils";
 
 interface PriceChartTabProps {
   chartData: any[];
@@ -81,7 +82,7 @@ function PriceChartTabComponent({
             domain={yAxisDomain}
             stroke={axisLabelColor}
             fontSize={12}
-            tickFormatter={(val) => `$${val.toFixed(2)}`}
+            tickFormatter={(val) => formatPrice(Number(val))}
             axisLine={false}
             tickLine={false}
             tick={{ fill: axisLabelColor }}
@@ -107,7 +108,7 @@ function PriceChartTabComponent({
                 potentialPathHigh: "High path",
               };
               const label = name ? labels[name] || name : "Price";
-              return [`$${Number(value).toFixed(4)}`, label];
+              return [formatPrice(Number(value)), label];
             }}
           />
           <Legend
@@ -120,7 +121,7 @@ function PriceChartTabComponent({
             formatter={(value) => {
               const labels: Record<string, string> = {
                 price: "Spot price",
-                potentialPathLow: "Potential path (zero demand)",
+                potentialPathLow: "Potential path (no buys)",
                 potentialPathMedium: "Potential path (medium demand)",
                 potentialPathHigh: "Potential path (high demand)",
               };

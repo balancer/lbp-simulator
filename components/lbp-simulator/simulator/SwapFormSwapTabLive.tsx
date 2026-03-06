@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useMemo, memo } from "react";
 import { calculateOutGivenIn } from "@/lib/lbp-math";
 import type { LBPConfig } from "@/lib/lbp-math";
+import { formatPrice } from "@/lib/utils";
 
 type SwapDirection = "buy" | "sell";
 
@@ -123,7 +124,7 @@ function SwapFormSwapTabLiveComponent({
       <div className="flex justify-between">
         <span>Price:</span>
         <span className="font-medium text-foreground">
-          ${priceUsd.toFixed(4)} {config.tokenSymbol}/{config.collateralToken}
+          {formatPrice(priceUsd)} {config.tokenSymbol}/{config.collateralToken}
         </span>
       </div>
     </div>
