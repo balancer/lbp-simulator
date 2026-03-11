@@ -12,7 +12,8 @@
     "test:ui": "vitest --ui",
     "validate-quick": "tsx test/validade-quick.js",
     "prepare": "husky",
-    "compare-real-lbp": "tsx test/compare-real-lbp.ts"
+    "compare-real-lbp": "tsx test/compare-real-lbp.ts",
+    "scenario": "node scripts/run-scenario.mjs"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",

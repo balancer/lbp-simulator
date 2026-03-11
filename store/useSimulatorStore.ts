@@ -148,7 +148,7 @@ const DEFAULT_CONFIG: LBPConfig = {
   percentForSale: 10, // 10% of total supply
   collateralToken: "USDC",
 
-  tknBalanceIn: 50_000_000, // 50% of 100M
+  tknBalanceIn: 10_000_000, // auto-derived: totalSupply * percentForSale
   tknWeightIn: 90,
   usdcBalanceIn: 1_000_000, // 1M start
   usdcWeightIn: 10,
@@ -436,6 +436,10 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       communityAvgCost: 0,
       priceHistory: new Float64Array(simulationData.map((d) => d.price)),
       priceHistoryVersion: 0,
+      // Invalidate worker path so we don't keep ticking against stale snapshots
+      // while a new worker run is computing (e.g. after changing pressure configs).
+      baseSnapshots: [],
+      baseSnapshotsVersion: 0,
     });
   },
 

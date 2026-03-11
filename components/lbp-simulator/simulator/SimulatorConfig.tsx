@@ -29,9 +29,16 @@ import {
 import { useSimulatorStore } from "@/store/useSimulatorStore";
 import { DemandPressureConfig } from "./DemandPressureConfig";
 import { SellPressureConfig } from "./SellPressureConfig";
-import { useState, useEffect, useTransition, memo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useTransition,
+  memo,
+  useCallback,
+  useRef,
+} from "react";
 import { useDebounce } from "@/lib/useDebounce";
-import { LBPConfig } from "@/lib/lbp-math";
+import type { SellPressureConfig as SellPressureConfigType } from "@/lib/lbp-math";
 import { useShallow } from "zustand/shallow";
 import { TokenLogo } from "@/components/ui/TokenLogo";
 import { formatNumber } from "@/lib/utils";
@@ -49,6 +56,7 @@ function SimulatorConfigComponent() {
     simulationSpeed,
     setSimulationSpeed,
     updateSellPressureConfig,
+    sellPressureConfig,
   } = useSimulatorStore(
     useShallow((state) => ({
       config: state.config,
@@ -60,6 +68,7 @@ function SimulatorConfigComponent() {
       simulationSpeed: state.simulationSpeed,
       setSimulationSpeed: state.setSimulationSpeed,
       updateSellPressureConfig: state.updateSellPressureConfig,
+      sellPressureConfig: state.sellPressureConfig,
     })),
   );
 
@@ -93,7 +102,19 @@ function SimulatorConfigComponent() {
     config.usdcBalanceIn,
   );
   const [pressureMode, setPressureMode] = useState<"buy-and-sell" | "buy-only">(
-    "buy-and-sell",
+    () => {
+      if (sellPressureConfig.preset === "loyal") {
+        return sellPressureConfig.loyalSoldPct <= 0
+          ? "buy-only"
+          : "buy-and-sell";
+      }
+      return sellPressureConfig.greedySellPct <= 0
+        ? "buy-only"
+        : "buy-and-sell";
+    },
+  );
+  const sellConfigBeforeBuyOnlyRef = useRef<SellPressureConfigType | null>(
+    null,
   );
 
   // Update local state when store config changes
@@ -282,7 +303,27 @@ function SimulatorConfigComponent() {
                     onValueChange={(value: "buy-and-sell" | "buy-only") => {
                       setPressureMode(value);
                       if (value === "buy-only") {
-                        updateSellPressureConfig({ loyalSoldPct: 0 });
+                        // Buy-only should disable sell pressure regardless of the current preset
+                        // (e.g. if the user previously selected "greedy", that still sells).
+                        if (sellConfigBeforeBuyOnlyRef.current == null) {
+                          sellConfigBeforeBuyOnlyRef.current =
+                            sellPressureConfig;
+                        }
+                        updateSellPressureConfig({
+                          preset: "loyal",
+                          loyalSoldPct: 0,
+                          greedySellPct: 0,
+                        });
+                        // Clear prior Sales rows + prevent ticking against stale snapshots.
+                        restartSimulation();
+                      } else {
+                        const prev = sellConfigBeforeBuyOnlyRef.current;
+                        if (prev != null) {
+                          sellConfigBeforeBuyOnlyRef.current = null;
+                          updateSellPressureConfig(prev);
+                        }
+                        // New sell config means a new deterministic path; restart for a clean run.
+                        restartSimulation();
                       }
                     }}
                     className="flex"
@@ -314,7 +355,9 @@ function SimulatorConfigComponent() {
                             : "opacity-0 pointer-events-none"
                         }`}
                       >
-                        <SellPressureConfig />
+                        {pressureMode === "buy-and-sell" ? (
+                          <SellPressureConfig />
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -401,7 +444,7 @@ function SimulatorConfigComponent() {
                     <Label>Start (Token / {config.collateralToken})</Label>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-mono w-10 shrink-0">
-                        {config.tknWeightIn}%
+                        {localTknWeightIn}%
                       </span>
                       <Slider
                         value={[localTknWeightIn]}
@@ -412,15 +455,30 @@ function SimulatorConfigComponent() {
                         className="flex-1"
                       />
                       <span className="text-sm font-mono w-10 shrink-0 text-right">
-                        {config.usdcWeightIn}%
+                        {100 - localTknWeightIn}%
                       </span>
+                      <Input
+                        className="w-12 shrink-0 text-right p-0"
+                        type="number"
+                        min={1}
+                        max={99}
+                        step={1}
+                        value={localTknWeightIn}
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          if (!Number.isFinite(next)) return;
+                          handleWeightChange(
+                            Math.max(1, Math.min(99, Math.round(next))),
+                          );
+                        }}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>End (Token / {config.collateralToken})</Label>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-mono w-10 shrink-0">
-                        {config.tknWeightOut}%
+                        {localTknWeightOut}%
                       </span>
                       <Slider
                         value={[localTknWeightOut]}
@@ -431,8 +489,23 @@ function SimulatorConfigComponent() {
                         className="flex-1"
                       />
                       <span className="text-sm font-mono w-10 shrink-0 text-right">
-                        {config.usdcWeightOut}%
+                        {100 - localTknWeightOut}%
                       </span>
+                      <Input
+                        className="w-12 shrink-0 text-right p-0"
+                        type="number"
+                        min={1}
+                        max={99}
+                        step={1}
+                        value={localTknWeightOut}
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          if (!Number.isFinite(next)) return;
+                          handleEndWeightChange(
+                            Math.max(1, Math.min(99, Math.round(next))),
+                          );
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -481,7 +554,7 @@ function SimulatorConfigComponent() {
                         <SelectValue placeholder="Select swap fee" />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7 , 8, 9, 10].map((fee) => (
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((fee) => (
                           <SelectItem key={fee} value={String(fee)}>
                             {fee}%
                           </SelectItem>

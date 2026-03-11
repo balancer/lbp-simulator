@@ -5,6 +5,7 @@ import { StatCard } from "./StatCard";
 import { useShallow } from "zustand/react/shallow";
 import { memo, useEffect } from "react";
 import { calcTVLUSD } from "@/lib/lbp-math";
+import { formatPrice } from "@/lib/utils";
 
 function isEthOrWeth(
   token: string,
@@ -85,11 +86,11 @@ const STAT_VALUE_SELECTORS: ValueSelector[] = [
   },
   (state) => {
     const d = getDerived(state);
-    return `$${(d.startPrice * d.collateralUsd).toFixed(2)}`;
+    return formatPrice(d.startPrice * d.collateralUsd);
   },
   (state) => {
     const d = getDerived(state);
-    return `$${d.tokenPriceUsd.toFixed(2)}`;
+    return formatPrice(d.tokenPriceUsd);
   },
   (state) => {
     const d = getDerived(state);
@@ -98,6 +99,14 @@ const STAT_VALUE_SELECTORS: ValueSelector[] = [
   (state) => {
     const d = getDerived(state);
     return `$${(d.tvlUsd / 1_000_000).toFixed(2)}M`;
+  },
+  (state) => {
+    const d = getDerived(state);
+    const last =
+      state.simulationData[state.simulationData.length - 1] ??
+      state.simulationData[0];
+    const priceInUsd = (last?.price ?? 0) * d.collateralUsd;
+    return formatPrice(priceInUsd);
   },
 ];
 
@@ -142,6 +151,11 @@ const STAT_META = [
     description:
       "Total value locked in the pool: collateral balance (e.g. USDC) plus token balance valued at current spot price in collateral.",
   },
+  {
+    label: "Final (0 swaps)",
+    description:
+      "Final price if there were no trades at all (weight shift only; balances stay constant).",
+  },
 ] as const;
 
 function SimulatorStatsComponent() {
@@ -160,7 +174,7 @@ function SimulatorStatsComponent() {
   }, [config.collateralToken, ethPriceUsd, fetchEthPrice]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-2 gap-4 mb-6">
+    <div className="grid grid-cols-1 lg:grid-cols-7 md:grid-cols-4 sm:grid-cols-2 gap-4 mb-6">
       {STAT_META.map((meta, i) => (
         <StatCard
           key={meta.label}

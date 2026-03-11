@@ -5,7 +5,10 @@ import type {
   SellPressureConfig,
 } from "../lib/lbp-math";
 import type { SimulationStateSnapshot } from "../lib/simulation-core";
-import { runDeterministicSimulation } from "../public/workers/simulation-runner.js";
+import {
+  runDeterministicSimulation,
+  calculatePotentialPricePaths,
+} from "../public/workers/simulation-runner.js";
 
 /**
  * Integration tests for the complete simulation (run in-process; no Worker).
@@ -219,6 +222,76 @@ describe("LBP Simulation Integration", () => {
   });
 
   describe("Scenario Testing", () => {
+    it("potential low path: no buys from pause point (factor=0)", async () => {
+      const config = createBaseConfig();
+      const demandConfig: DemandPressureConfig = {
+        preset: "bullish",
+        magnitudeBase: 100000,
+        multiplier: 1,
+      };
+      const sellConfig: SellPressureConfig = {
+        preset: "loyal",
+        loyalSoldPct: 0,
+        loyalConcentrationPct: 60,
+        greedySpreadPct: 2,
+        greedySellPct: 0,
+      };
+
+      const steps = 100;
+      const paths = calculatePotentialPricePaths(
+        config,
+        demandConfig,
+        sellConfig,
+        steps,
+        [0],
+        0,
+        null,
+      );
+      expect(paths.length).toBe(1);
+      expect(paths[0].length).toBe(steps + 1);
+
+      const noBuyDemand: DemandPressureConfig = {
+        ...demandConfig,
+        multiplier: 0,
+      };
+      const snapshots = await runSimulation(config, noBuyDemand, sellConfig, steps);
+      expect(snapshots.length).toBe(steps + 1);
+
+      for (let i = 0; i <= steps; i++) {
+        expect(Math.abs(paths[0][i] - snapshots[i].price)).toBeLessThan(1e-9);
+      }
+    });
+
+    it("buy-only (sell pressure disabled): total raised equals executed demand", async () => {
+      const config = createBaseConfig();
+      const demandConfig: DemandPressureConfig = {
+        preset: "bullish",
+        magnitudeBase: 100000,
+        multiplier: 1,
+      };
+      const sellConfig: SellPressureConfig = {
+        preset: "loyal",
+        loyalSoldPct: 0,
+        loyalConcentrationPct: 60,
+        greedySpreadPct: 2,
+        greedySellPct: 0,
+      };
+
+      const snapshots = await runSimulation(
+        config,
+        demandConfig,
+        sellConfig,
+        100,
+      );
+
+      const totalBuy = snapshots.reduce((acc, s) => acc + s.buyVolumeUSDC, 0);
+      const totalSell = snapshots.reduce((acc, s) => acc + s.sellVolumeUSDC, 0);
+      const netRaised = snapshots[snapshots.length - 1].usdcBalance - config.usdcBalanceIn;
+
+      expect(totalSell).toBeLessThan(1e-9);
+      expect(Math.abs(netRaised - totalBuy)).toBeLessThan(0.01);
+    });
+
     it("no demand scenario: price should only decrease from weight changes", async () => {
       const config = createBaseConfig();
       const demandConfig: DemandPressureConfig = {

@@ -32,7 +32,69 @@ function clampNumber(v, min, max) {
 
 function normalizeSwapFee(swapFee) {
   if (!swapFee) return 0;
-  return swapFee > 1 ? swapFee / 100 : swapFee;
+  // UI uses percent (e.g. 2 => 2%). Also accept fractions (e.g. 0.01 => 1%).
+  // Treat 1 as 1% (not 100%), since that's the common UI input.
+  return swapFee >= 1 ? swapFee / 100 : swapFee;
+}
+
+function getPriceElasticityMultiplier(demandConfig, priceNow, priceRef) {
+  const elasticity = Number(demandConfig && demandConfig.priceElasticity != null ? demandConfig.priceElasticity : 0);
+  if (!Number.isFinite(elasticity) || elasticity <= 0) return 1;
+  if (!Number.isFinite(priceNow) || priceNow <= 0) return 1;
+  if (!Number.isFinite(priceRef) || priceRef <= 0) return 1;
+
+  const direction =
+    demandConfig && demandConfig.priceElasticityDirection
+      ? demandConfig.priceElasticityDirection
+      : "down-only";
+  const refMult = Number(
+    demandConfig && demandConfig.priceElasticityReferenceMultiplier != null
+      ? demandConfig.priceElasticityReferenceMultiplier
+      : 1,
+  );
+  const minMult = Number(
+    demandConfig && demandConfig.priceElasticityMinMultiplier != null
+      ? demandConfig.priceElasticityMinMultiplier
+      : 0,
+  );
+  const defaultMax = direction === "down-only" ? 1 : 5;
+  const maxMult = Number(
+    demandConfig && demandConfig.priceElasticityMaxMultiplier != null
+      ? demandConfig.priceElasticityMaxMultiplier
+      : defaultMax,
+  );
+
+  const effectiveRef = priceRef * (Number.isFinite(refMult) && refMult > 0 ? refMult : 1);
+  const ratio = effectiveRef / priceNow;
+  let mult = Math.pow(ratio, elasticity);
+  if (direction === "down-only") mult = Math.min(1, mult);
+
+  const lo = Number.isFinite(minMult) ? minMult : 0;
+  const hi = Number.isFinite(maxMult) ? maxMult : defaultMax;
+  return clampNumber(mult, lo, hi);
+}
+
+function getPriceElasticityExecutionRate(demandConfig, priceNow, priceRef) {
+  // Execution rate is always in [0, 1] and is intended for backlog execution (wait-until-cheaper).
+  const elasticity = Number(
+    demandConfig && demandConfig.priceElasticity != null
+      ? demandConfig.priceElasticity
+      : 0,
+  );
+  if (!Number.isFinite(elasticity) || elasticity <= 0) return 1;
+  if (!Number.isFinite(priceNow) || priceNow <= 0) return 1;
+  if (!Number.isFinite(priceRef) || priceRef <= 0) return 1;
+
+  const refMult = Number(
+    demandConfig && demandConfig.priceElasticityReferenceMultiplier != null
+      ? demandConfig.priceElasticityReferenceMultiplier
+      : 1,
+  );
+  const effectiveRef =
+    priceRef * (Number.isFinite(refMult) && refMult > 0 ? refMult : 1);
+  const ratio = effectiveRef / priceNow;
+  const rate = Math.pow(ratio, elasticity);
+  return clampNumber(rate, 0, 1);
 }
 
 function getCumulativeBuyPressureCurve(hours, steps, config) {
@@ -254,6 +316,24 @@ export function runDeterministicSimulation(
     sellConfig.loyalConcentrationPct,
   );
 
+  const initialSpotPrice = calculateSpotPrice(
+    usdcBalanceIn,
+    usdcWeightIn,
+    tknBalanceIn,
+    tknWeightIn,
+  );
+
+  const executionModel =
+    demandConfig && demandConfig.priceElasticityExecutionModel
+      ? demandConfig.priceElasticityExecutionModel
+      : "multiplier";
+  const backlogMaxSpendMult = Number(
+    demandConfig && demandConfig.priceElasticityBacklogMaxSpendMultiplier != null
+      ? demandConfig.priceElasticityBacklogMaxSpendMultiplier
+      : 5,
+  );
+  let buyBacklog = 0;
+
   for (let i = 0; i <= safeSteps; i++) {
     const progress = i / safeSteps;
     const time = progress * duration;
@@ -270,7 +350,36 @@ export function runDeterministicSimulation(
     let stepSellTKN = 0;
 
     // --- BUY PRESSURE (community buys) ---
-    const flowUSDC = buyFlowCurve[i] || 0;
+    const priceBeforeBuys = calculateSpotPrice(
+      usdcBalance,
+      currentUsdcWeight,
+      tknBalance,
+      currentTknWeight,
+    );
+    const flowUSDCBase = buyFlowCurve[i] || 0;
+    let flowUSDC = 0;
+    if (executionModel === "backlog") {
+      buyBacklog += flowUSDCBase;
+      const execRate = getPriceElasticityExecutionRate(
+        demandConfig,
+        priceBeforeBuys,
+        initialSpotPrice,
+      );
+      const desired = buyBacklog * execRate;
+      const maxSpend =
+        flowUSDCBase > 0 && Number.isFinite(backlogMaxSpendMult) && backlogMaxSpendMult > 0
+          ? flowUSDCBase * backlogMaxSpendMult
+          : 0;
+      flowUSDC = Math.min(desired, maxSpend);
+      buyBacklog = Math.max(0, buyBacklog - flowUSDC);
+    } else {
+      const elasticityMult = getPriceElasticityMultiplier(
+        demandConfig,
+        priceBeforeBuys,
+        initialSpotPrice,
+      );
+      flowUSDC = flowUSDCBase * elasticityMult;
+    }
     if (flowUSDC > 0) {
       const amountOut = calculateOutGivenIn(
         usdcBalance,
@@ -499,6 +608,24 @@ export function calculatePotentialPricePaths(
 
   const remainingSteps = Math.max(1, totalSteps - startStep);
 
+  const initialSpotPrice = calculateSpotPrice(
+    config.usdcBalanceIn,
+    config.usdcWeightIn,
+    config.tknBalanceIn,
+    config.tknWeightIn,
+  );
+
+  const executionModel =
+    demandPressureConfig && demandPressureConfig.priceElasticityExecutionModel
+      ? demandPressureConfig.priceElasticityExecutionModel
+      : "multiplier";
+  const backlogMaxSpendMult = Number(
+    demandPressureConfig &&
+      demandPressureConfig.priceElasticityBacklogMaxSpendMultiplier != null
+      ? demandPressureConfig.priceElasticityBacklogMaxSpendMultiplier
+      : 5,
+  );
+
   for (const scenarioFactor of scenarios) {
     const path = [];
 
@@ -506,6 +633,7 @@ export function calculatePotentialPricePaths(
     let usdcBalance = startUsdcBalance;
     let commHeld = communityTokensHeld;
     let commCost = communityAvgCost;
+    let buyBacklog = 0;
 
     // First point: current step price (no extra flow at junction).
     const initialProgress = startStep / totalSteps;
@@ -538,8 +666,43 @@ export function calculatePotentialPricePaths(
         1,
         Math.max(0, localIdx / remainingSteps),
       );
-      const effectiveFactor = 1 + (scenarioFactor - 1) * transitionProgress;
-      const flowUSDC = flowUSDCBase * effectiveFactor;
+      // Scenario semantics:
+      // - factor=0: "no more buy pressure at all" from the pause point onwards.
+      // - factor>0: transition smoothly from 1x to factor over the remaining steps.
+      const effectiveFactor =
+        scenarioFactor === 0
+          ? 0
+          : 1 + (scenarioFactor - 1) * transitionProgress;
+      const priceBeforeBuys = calculateSpotPrice(
+        usdcBalance,
+        currentUsdcWeight,
+        tknBalance,
+        currentTknWeight,
+      );
+      const elasticityMult = getPriceElasticityMultiplier(
+        demandPressureConfig,
+        priceBeforeBuys,
+        initialSpotPrice,
+      );
+      let flowUSDC = 0;
+      if (executionModel === "backlog") {
+        const base = flowUSDCBase * effectiveFactor;
+        buyBacklog += base;
+        const execRate = getPriceElasticityExecutionRate(
+          demandPressureConfig,
+          priceBeforeBuys,
+          initialSpotPrice,
+        );
+        const desired = buyBacklog * execRate;
+        const maxSpend =
+          base > 0 && Number.isFinite(backlogMaxSpendMult) && backlogMaxSpendMult > 0
+            ? base * backlogMaxSpendMult
+            : 0;
+        flowUSDC = Math.min(desired, maxSpend);
+        buyBacklog = Math.max(0, buyBacklog - flowUSDC);
+      } else {
+        flowUSDC = flowUSDCBase * effectiveFactor * elasticityMult;
+      }
 
       // --- BUY PRESSURE ---
       if (flowUSDC > 0) {

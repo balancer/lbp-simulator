@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
 import type { LBPConfig } from "@/lib/lbp-math";
+import { formatPrice } from "@/lib/utils";
 
 /**
  * Subscribes only to step-changing state (currentPrice) and userUsdcBalance.
@@ -75,7 +76,8 @@ function SwapFormTWAPTabLiveComponent({
   if (part === "currentPrice") {
     return (
       <span className="ml-auto text-xs text-muted-foreground">
-        Current price: {currentPrice.toFixed(4)} {config.collateralToken} /{" "}
+        Current price: {formatPrice(currentPrice, { currencySymbol: "" })}{" "}
+        {config.collateralToken} /{" "}
         {config.tokenSymbol}
       </span>
     );
@@ -92,7 +94,8 @@ function SwapFormTWAPTabLiveComponent({
             maximumFractionDigits: 4,
           })}{" "}
           {config.tokenSymbol} @ ~
-          {currentPrice.toFixed(4)} {config.collateralToken}
+          {formatPrice(currentPrice, { currencySymbol: "" })}{" "}
+          {config.collateralToken}
         </div>
       </div>
     );
