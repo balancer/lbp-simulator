@@ -42,3 +42,9 @@ next-env.d.ts
 
 # Scenarios
 /scenarios
+
+## Tests related to specific LBP clients
+project-scenarios.test.js
+
+## Spreadsheet outputs
+/out

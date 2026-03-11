@@ -1322,3 +1322,659 @@ describe("AmplifyWorld parameter sweep summary", () => {
     },
   );
 });
+
+describe("Nerite parameter sweep summary", () => {
+  it(
+    "runs multiple parameter variations and prints a compact summary",
+    { timeout: 15_000 },
+    () => {
+      const filePath = path.resolve(process.cwd(), "scenarios/nerite.json");
+      if (!fs.existsSync(filePath)) {
+        // No scenario file in this repo checkout — don't fail CI for that.
+        return;
+      }
+
+      const raw = fs.readFileSync(filePath, "utf8");
+      const scenario = JSON.parse(raw) as ScenarioFile;
+
+      const base = scenario.base;
+      const steps = base.steps ?? 720;
+      const baseCfg = normalizeWeights(base.lbpConfig);
+      const baseDemand = base.demandConfig;
+      const baseSell = base.sellConfig;
+
+      if (baseCfg.collateralToken !== "USDC" && baseCfg.collateralToken !== "USDT") {
+        throw new Error(
+          `Nerite sweep expects stable collateral (USDC/USDT). Got: ${baseCfg.collateralToken}`,
+        );
+      }
+
+      const BUY_ONLY_SELL_CONFIG: SellPressureConfig = {
+        preset: "loyal",
+        loyalSoldPct: 0,
+        loyalConcentrationPct: 60,
+        greedySpreadPct: 2,
+        greedySellPct: 0,
+      };
+
+      const ASSUMED_ETH_USD = 3000;
+
+      const weightPairs: Array<{ start: number; end: number }> = [
+        { start: 98, end: 50 },
+        { start: 95, end: 50 },
+        { start: 98, end: 30 },
+        // Classic Balancer LBP weight curve (90/10 -> 10/90)
+        { start: 90, end: 10 },
+      ];
+      const swapFeesPct = [1, 2, 3];
+      const initialCollateralUsd = [500_000, 1_500_000, 3_000_000];
+      const demandLevelsUsd = [1_000_000, 3_000_000, 5_000_000, 10_000_000];
+
+      const sellModes: Array<{ id: string; sell: SellPressureConfig }> = [
+        { id: "buyOnly", sell: BUY_ONLY_SELL_CONFIG },
+        {
+          id: "loyal5c60",
+          sell: { ...baseSell, preset: "loyal", loyalSoldPct: 5, loyalConcentrationPct: 60 },
+        },
+        {
+          id: "greedy5_50",
+          sell: { ...baseSell, preset: "greedy", greedySpreadPct: 5, greedySellPct: 50 },
+        },
+      ];
+
+      const summaries: Array<Record<string, unknown>> = [];
+
+      for (const pair of weightPairs) {
+        const startWeightTknPct = pair.start;
+        const endWeightTknPct = pair.end;
+
+        for (const swapFeePct of swapFeesPct) {
+          for (const initialUsd of initialCollateralUsd) {
+            for (const demandUsd of demandLevelsUsd) {
+              const magnitudeBase = pickMagnitudeBaseForTarget(demandUsd);
+              const demandConfig: DemandPressureConfig = {
+                ...baseDemand,
+                preset: "bullish",
+                magnitudeBase,
+                multiplier: demandUsd / magnitudeBase,
+              };
+
+              for (const sellMode of sellModes) {
+                const scenarioId = [
+                  "collUSDC",
+                  `w${startWeightTknPct}`,
+                  `e${endWeightTknPct}`,
+                  `fee${swapFeePct}`,
+                  `c${Math.round(initialUsd / 1000)}k`,
+                  `d${Math.round(demandUsd / 1_000_000)}m`,
+                  sellMode.id,
+                ].join("_");
+
+                const lbpConfig: LBPConfig = normalizeWeights({
+                  ...baseCfg,
+                  tknWeightIn: startWeightTknPct,
+                  usdcWeightIn: 100 - startWeightTknPct,
+                  tknWeightOut: endWeightTknPct,
+                  usdcWeightOut: 100 - endWeightTknPct,
+                  usdcBalanceIn: initialUsd,
+                  swapFee: swapFeePct,
+                  duration: 72,
+                });
+
+                const snapshots = runDeterministicSimulation(
+                  lbpConfig,
+                  demandConfig,
+                  sellMode.sell,
+                  steps,
+                );
+
+                const summary = summarizeSnapshots(snapshots);
+                const swaps = estimateSwapEvents(
+                  snapshots,
+                  lbpConfig.collateralToken,
+                  ASSUMED_ETH_USD,
+                );
+
+                summaries.push({
+                  ScenarioId: scenarioId,
+                  Token: lbpConfig.tokenSymbol,
+                  DurationHours: lbpConfig.duration,
+                  Steps: steps,
+                  StartWeightTknPct: startWeightTknPct,
+                  EndWeightTknPct: endWeightTknPct,
+                  SwapFeePct: swapFeePct,
+                  InitialCollateralUsd: initialUsd,
+                  DemandEndCumulativeUsd: estimateEndCumulativeBuys(demandConfig),
+                  SellBehavior: sellMode.id,
+                  InitialPriceUsd: summary.initialPrice,
+                  MinPriceUsd: summary.minPrice,
+                  FinalPriceUsd: summary.finalPrice,
+                  NetRaisedUsd: summary.netRaised,
+                  EstSwaps: swaps.estTotal,
+                  CommunityHeld: summary.communityHeld,
+                  CommunityAvgCostUsd: summary.communityAvgCost,
+                });
+              }
+            }
+          }
+        }
+      }
+
+      const byRaised = [...summaries].sort(
+        (a, b) => Number(b.NetRaisedUsd ?? 0) - Number(a.NetRaisedUsd ?? 0),
+      );
+      const topRaised = byRaised.slice(0, 10);
+      const bottomRaised = byRaised.slice(-10).reverse();
+
+      // eslint-disable-next-line no-console
+      console.log("[Nerite sweep] Top net raised:");
+      // eslint-disable-next-line no-console
+      console.table(topRaised);
+
+      // eslint-disable-next-line no-console
+      console.log("[Nerite sweep] Bottom net raised:");
+      // eslint-disable-next-line no-console
+      console.table(bottomRaised);
+
+      if (process.env.EXPORT_CSV === "1") {
+        const now = new Date();
+        const stamp = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, "0"),
+          String(now.getDate()).padStart(2, "0"),
+          String(now.getHours()).padStart(2, "0"),
+          String(now.getMinutes()).padStart(2, "0"),
+          String(now.getSeconds()).padStart(2, "0"),
+        ].join("");
+        const outPath = path.resolve(process.cwd(), `out/nerite-sweep-${stamp}.csv`);
+        writeCsvFile(outPath, byRaised);
+        // eslint-disable-next-line no-console
+        console.log(`[Nerite sweep] CSV exported: ${outPath}`);
+      }
+
+      if (process.env.EXPORT_XLSX === "1") {
+        const now = new Date();
+        const stamp = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, "0"),
+          String(now.getDate()).padStart(2, "0"),
+          String(now.getHours()).padStart(2, "0"),
+          String(now.getMinutes()).padStart(2, "0"),
+          String(now.getSeconds()).padStart(2, "0"),
+        ].join("");
+        const outPath = path.resolve(process.cwd(), `out/nerite-sweep-${stamp}.xlsx`);
+        writeXlsxFile(outPath, byRaised);
+        // eslint-disable-next-line no-console
+        console.log(`[Nerite sweep] XLSX exported: ${outPath}`);
+      }
+    },
+  );
+});
+
+describe("Nerite FDV target curve", () => {
+  it("matches ~500k -> ~200k FDV (no-trades curve)", () => {
+    const filePath = path.resolve(process.cwd(), "scenarios/nerite.json");
+    if (!fs.existsSync(filePath)) return;
+
+    const raw = fs.readFileSync(filePath, "utf8");
+    const scenario = JSON.parse(raw) as ScenarioFile;
+
+    const caseId = "fdv-500k-200k";
+    const c = scenario.cases?.find((x) => x.id === caseId);
+    if (!c) {
+      throw new Error(`Expected nerite.json to include case id=${caseId}`);
+    }
+
+    const { steps, lbpConfig, demandConfig, sellConfig } = mergeCase(
+      scenario.base,
+      c.overrides,
+    );
+
+    const snapshots = runDeterministicSimulation(lbpConfig, demandConfig, sellConfig, steps);
+    const first = snapshots[0];
+    const last = snapshots[snapshots.length - 1];
+
+    const totalSupply = lbpConfig.totalSupply;
+    const initialFdvUsd = (first?.price ?? 0) * totalSupply;
+    const finalFdvUsd = (last?.price ?? 0) * totalSupply;
+
+    expect(initialFdvUsd).toBeGreaterThan(450_000);
+    expect(initialFdvUsd).toBeLessThan(550_000);
+    expect(finalFdvUsd).toBeGreaterThan(180_000);
+    expect(finalFdvUsd).toBeLessThan(220_000);
+  });
+});
+
+const RUN_NERITE_OPT_SWEEP = process.env.RUN_NERITE_OPT_SWEEP === "1";
+const neriteOptIt = RUN_NERITE_OPT_SWEEP ? it : it.skip;
+
+describe("Nerite optimization sweep (FDV + early fair price)", () => {
+  neriteOptIt(
+    "searches feasible weight curves for ~200k FDV final and early fair price",
+    { timeout: 60_000 },
+    () => {
+      const filePath = path.resolve(process.cwd(), "scenarios/nerite.json");
+      if (!fs.existsSync(filePath)) return;
+
+      const raw = fs.readFileSync(filePath, "utf8");
+      const scenario = JSON.parse(raw) as ScenarioFile;
+
+      const base = scenario.base;
+      const steps = base.steps ?? 720;
+      const baseCfg = normalizeWeights(base.lbpConfig);
+      const baseDemand = base.demandConfig;
+
+      if (baseCfg.collateralToken !== "USDC" && baseCfg.collateralToken !== "USDT") {
+        throw new Error(
+          `Nerite optimization expects stable collateral (USDC/USDT). Got: ${baseCfg.collateralToken}`,
+        );
+      }
+
+      const durationHours = 72;
+      const fairPriceUsd = 0.002;
+      const targetFdvUsd = 200_000;
+      const totalSupply = baseCfg.totalSupply;
+      const tknBalanceIn = baseCfg.tknBalanceIn;
+
+      const BUY_ONLY_SELL_CONFIG: SellPressureConfig = {
+        preset: "loyal",
+        loyalSoldPct: 0,
+        loyalConcentrationPct: 60,
+        greedySpreadPct: 2,
+        greedySellPct: 0,
+      };
+
+      const weightCurves: Array<{ id: string; start: number; end: number }> = [
+        { id: "w98to10", start: 98, end: 10 }, // 98/2 -> 10/90
+        { id: "w90to10", start: 90, end: 10 }, // 90/10 -> 10/90
+        { id: "w90to25", start: 90, end: 25 }, // 90/10 -> 25/75
+      ];
+
+      // Feasible initial collateral ranges (seed collateral is a major realism knob).
+      const initialCollateralUsd = [
+        5_000,
+        7_500,
+        10_000,
+        15_000,
+        20_000,
+        30_000,
+        50_000,
+        75_000,
+        100_000,
+        250_000,
+      ];
+      const swapFeesPct = [1, 2, 3];
+      const demandPresets: Array<DemandPressureConfig["preset"]> = ["bearish", "bullish"];
+      const demandBudgetsUsd = [
+        0,
+        5_000,
+        10_000,
+        15_000,
+        20_000,
+        25_000,
+        30_000,
+        40_000,
+        50_000,
+        75_000,
+        100_000,
+        150_000,
+        200_000,
+        250_000,
+        500_000,
+        1_000_000,
+        2_000_000,
+        5_000_000,
+        10_000_000,
+      ];
+
+      const elasticities = [0, 1, 2];
+      const refMultipliers = [0.2, 0.3, 0.4];
+
+      const weightAtProgress = (start: number, end: number, p: number) => start + (end - start) * p;
+      const ratioToWeightPct = (ratio: number) => (100 * ratio) / (1 + ratio); // ratio = Wtkn/Wusdc
+
+      const estimateNoTradeFairHour = (start: number, end: number, usdcIn: number) => {
+        if (!(usdcIn > 0)) return Number.POSITIVE_INFINITY;
+        const k = usdcIn / tknBalanceIn; // Busdc/Btkn
+        const targetRatio = fairPriceUsd / k; // = Wtkn/Wusdc at fair price (no trades)
+        const targetWtkn = ratioToWeightPct(targetRatio);
+        const denom = end - start;
+        if (denom === 0) return Number.POSITIVE_INFINITY;
+        const p = (targetWtkn - start) / denom;
+        if (!Number.isFinite(p) || p < 0 || p > 1) return Number.POSITIVE_INFINITY;
+        return p * durationHours;
+      };
+
+      const hoursToPriceAtOrBelow = (snapshots: any[], priceUsd: number) => {
+        const target = priceUsd * 1.01; // allow small numeric wiggle
+        for (const s of snapshots) {
+          if (Number.isFinite(s.price) && s.price <= target) return Number(s.time ?? 0);
+        }
+        return Number.POSITIVE_INFINITY;
+      };
+
+      const pctStepsAtOrBelow = (snapshots: any[], priceUsd: number) => {
+        if (!snapshots.length) return 0;
+        const target = priceUsd;
+        let count = 0;
+        for (const s of snapshots) {
+          if (Number.isFinite(s.price) && s.price <= target) count++;
+        }
+        return count / snapshots.length;
+      };
+
+      type OptRow = {
+        ScenarioId: string;
+        Curve: string;
+        NoTradeFairHour: number;
+        SwapFeePct: number;
+        DemandPreset: DemandPressureConfig["preset"];
+        DemandBudgetUsd: number;
+        PriceElasticity: number;
+        RefMult: number;
+        InitialCollateralUsd: number;
+        InitialPriceUsd: number;
+        HoursToFair: number;
+        PctStepsWithBuys: number;
+        PctStepsBelowFair: number;
+        PctStepsInFdvBand200to500: number;
+        HoursInFdvBand200to500: number;
+        MinPriceUsd: number;
+        MaxPriceUsd: number;
+        FinalPriceUsd: number;
+        MaxFdvUsd: number;
+        FinalFdvUsd: number;
+        FinalFdvErrorPct: number;
+        NetRaisedUsd: number;
+        TotalBuysUsd: number;
+        Score: number;
+      };
+
+      const rows: OptRow[] = [];
+
+      for (const curve of weightCurves) {
+        for (const usdcIn of initialCollateralUsd) {
+          const noTradeFairHour = estimateNoTradeFairHour(curve.start, curve.end, usdcIn);
+          // Focus: scenarios where the weights alone would reach fair within ~12h (otherwise it can't be "early").
+          if (!Number.isFinite(noTradeFairHour) || noTradeFairHour > 12) continue;
+          const curveDemandBudgetsUsd =
+            curve.id === "w98to10"
+              ? demandBudgetsUsd
+              : demandBudgetsUsd.filter((b) => b <= 500_000);
+
+          for (const swapFeePct of swapFeesPct) {
+            for (const demandPreset of demandPresets) {
+              const endScale = demandPreset === "bearish" ? 0.35 : 1.0;
+
+              for (const demandBudgetUsd of curveDemandBudgetsUsd) {
+                const curveElasticities = curve.id === "w98to10" ? [0, 1, 2, 3, 4] : elasticities;
+                const curveRefMultipliers =
+                  curve.id === "w98to10" ? [0.05, 0.1, 0.2, 0.3, 0.4] : refMultipliers;
+
+                for (const priceElasticity of curveElasticities) {
+                  for (const refMult of curveRefMultipliers) {
+                    const magnitudeBase = pickMagnitudeBaseForTarget(demandBudgetUsd / endScale);
+                    const demandConfig: DemandPressureConfig = {
+                      ...baseDemand,
+                      preset: demandPreset,
+                      magnitudeBase,
+                      multiplier: demandBudgetUsd === 0 ? 0 : (demandBudgetUsd / endScale) / magnitudeBase,
+                      priceElasticity,
+                      priceElasticityDirection: "symmetric",
+                      priceElasticityReferenceMultiplier: refMult,
+                      priceElasticityExecutionModel: "backlog",
+                      priceElasticityBacklogMaxSpendMultiplier: 5,
+                    };
+
+                    const scenarioId = [
+                      "nerite",
+                      curve.id,
+                      `c${Math.round(usdcIn / 1000)}k`,
+                      `fee${swapFeePct}`,
+                      `d${Math.round(demandBudgetUsd / 1000)}k`,
+                      demandPreset,
+                      `el${priceElasticity}`,
+                      `ref${String(refMult).replace(".", "_")}`,
+                    ].join("_");
+
+                    const lbpConfig: LBPConfig = normalizeWeights({
+                      ...baseCfg,
+                      duration: durationHours,
+                      swapFee: swapFeePct,
+                      tknWeightIn: curve.start,
+                      usdcWeightIn: 100 - curve.start,
+                      tknWeightOut: curve.end,
+                      usdcWeightOut: 100 - curve.end,
+                      usdcBalanceIn: usdcIn,
+                    });
+
+                    const snapshots = runDeterministicSimulation(
+                      lbpConfig,
+                      demandConfig,
+                      BUY_ONLY_SELL_CONFIG,
+                      steps,
+                    );
+
+                    const summary = summarizeSnapshots(snapshots);
+                    const hoursToFair = hoursToPriceAtOrBelow(snapshots, fairPriceUsd);
+                    const pctBelow = pctStepsAtOrBelow(snapshots, fairPriceUsd);
+
+                    let buySteps = 0;
+                    let inBandSteps = 0;
+                    let maxFdvUsd = 0;
+                    const fdvBandLo = 200_000;
+                    const fdvBandHi = 500_000;
+                    for (const s of snapshots) {
+                      if ((s.buyVolumeUSDC ?? 0) > 0) buySteps++;
+                      const price = Number(s.price ?? 0);
+                      if (Number.isFinite(price) && price >= 0) {
+                        const fdv = price * totalSupply;
+                        maxFdvUsd = Math.max(maxFdvUsd, fdv);
+                        if (fdv >= fdvBandLo && fdv <= fdvBandHi) inBandSteps++;
+                      }
+                    }
+                    const pctStepsWithBuys = snapshots.length ? buySteps / snapshots.length : 0;
+                    const pctStepsInFdvBand200to500 = snapshots.length
+                      ? inBandSteps / snapshots.length
+                      : 0;
+                    const hoursInFdvBand200to500 = pctStepsInFdvBand200to500 * durationHours;
+
+                    const finalFdvUsd = Number(summary.finalPrice ?? 0) * totalSupply;
+                    const finalFdvErrorPct =
+                      targetFdvUsd > 0
+                        ? (Math.abs(finalFdvUsd - targetFdvUsd) / targetFdvUsd) * 100
+                        : 0;
+
+                    // Score: prioritize FDV accuracy, then hitting fair early and sustaining buys.
+                    let score = finalFdvErrorPct * 5 + hoursToFair * 2;
+                    if (!Number.isFinite(hoursToFair) || hoursToFair > 12) score += 500;
+                    if (finalFdvErrorPct > 15) score += 300;
+                    if (pctStepsWithBuys < 0.35 && demandBudgetUsd > 0) score += 25;
+                    if (Number(summary.minPrice ?? 0) < fairPriceUsd / 10) score += 25;
+
+                    rows.push({
+                      ScenarioId: scenarioId,
+                      Curve: `${curve.start}/${100 - curve.start} -> ${curve.end}/${100 - curve.end}`,
+                      NoTradeFairHour: noTradeFairHour,
+                      SwapFeePct: swapFeePct,
+                      DemandPreset: demandPreset,
+                      DemandBudgetUsd: demandBudgetUsd,
+                      PriceElasticity: priceElasticity,
+                      RefMult: refMult,
+                      InitialCollateralUsd: usdcIn,
+                      InitialPriceUsd: Number(summary.initialPrice ?? 0),
+                      HoursToFair: hoursToFair,
+                      PctStepsWithBuys: pctStepsWithBuys,
+                      PctStepsBelowFair: pctBelow,
+                      PctStepsInFdvBand200to500: pctStepsInFdvBand200to500,
+                      HoursInFdvBand200to500: hoursInFdvBand200to500,
+                      MinPriceUsd: Number(summary.minPrice ?? 0),
+                      MaxPriceUsd: Number(summary.maxPrice ?? 0),
+                      FinalPriceUsd: Number(summary.finalPrice ?? 0),
+                      MaxFdvUsd: maxFdvUsd,
+                      FinalFdvUsd: finalFdvUsd,
+                      FinalFdvErrorPct: finalFdvErrorPct,
+                      NetRaisedUsd: Number(summary.netRaised ?? 0),
+                      TotalBuysUsd: Number(summary.totalBuys ?? 0),
+                      Score: score,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const sorted = [...rows].sort((a, b) => a.Score - b.Score);
+      const top10FastFairPrimary = [...rows]
+        .filter(
+          (r) =>
+            r.DemandBudgetUsd > 0 &&
+            r.FinalFdvUsd >= 150_000 &&
+            r.FinalFdvUsd <= 500_000 &&
+            Number.isFinite(r.HoursToFair),
+        )
+        .sort((a, b) => a.HoursToFair - b.HoursToFair)
+        .slice(0, 10);
+      const top10FastFairFallback = [...rows]
+        .filter((r) => Number.isFinite(r.HoursToFair))
+        .sort((a, b) => a.HoursToFair - b.HoursToFair)
+        .slice(0, 10);
+      const top10FastFair = top10FastFairPrimary.length ? top10FastFairPrimary : top10FastFairFallback;
+
+      const top10MaxFdvPrimary = [...rows]
+        .filter((r) => r.DemandBudgetUsd > 0)
+        .sort((a, b) => b.MaxFdvUsd - a.MaxFdvUsd)
+        .slice(0, 10);
+      const top10MaxFdv = top10MaxFdvPrimary.length
+        ? top10MaxFdvPrimary
+        : [...rows].sort((a, b) => b.MaxFdvUsd - a.MaxFdvUsd).slice(0, 10);
+
+      const top10BandTimePrimary = [...rows]
+        .filter((r) => r.PctStepsInFdvBand200to500 > 0)
+        .sort((a, b) => b.HoursInFdvBand200to500 - a.HoursInFdvBand200to500)
+        .slice(0, 10);
+      const top10BandTime = top10BandTimePrimary.length
+        ? top10BandTimePrimary
+        : [...rows]
+            .sort((a, b) => b.HoursInFdvBand200to500 - a.HoursInFdvBand200to500)
+            .slice(0, 10);
+
+      const eligible = sorted.filter(
+        (r) => r.FinalFdvErrorPct <= 10 && Number.isFinite(r.HoursToFair) && r.HoursToFair <= 12,
+      );
+      const pool = eligible.length >= 3 ? eligible : sorted;
+      const top3: OptRow[] = [];
+      const seen = new Set<string>();
+      for (const r of pool) {
+        const key = [
+          r.Curve,
+          r.InitialCollateralUsd,
+          r.SwapFeePct,
+          r.DemandPreset,
+          r.DemandBudgetUsd,
+        ].join("|");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        top3.push(r);
+        if (top3.length >= 3) break;
+      }
+
+      // eslint-disable-next-line no-console
+      console.log("[Nerite opt] Top 3 by score (FDV accuracy + early fair):");
+      // eslint-disable-next-line no-console
+      console.table(
+        top3.map((r) => ({
+          ScenarioId: r.ScenarioId,
+          Curve: r.Curve,
+          NoTradeFairHour: Number.isFinite(r.NoTradeFairHour)
+            ? Number(r.NoTradeFairHour.toFixed(2))
+            : Infinity,
+          SwapFeePct: r.SwapFeePct,
+          DemandPreset: r.DemandPreset,
+          DemandBudgetUsd: Math.round(r.DemandBudgetUsd),
+          Elasticity: r.PriceElasticity,
+          RefMult: r.RefMult,
+          InitialPriceUsd: r.InitialPriceUsd,
+          HoursToFair: r.HoursToFair,
+          PctStepsWithBuys: Number((r.PctStepsWithBuys * 100).toFixed(1)),
+          FinalFdvUsd: Math.round(r.FinalFdvUsd),
+          FinalFdvErrorPct: Number(r.FinalFdvErrorPct.toFixed(2)),
+          NetRaisedUsd: Math.round(r.NetRaisedUsd),
+          PctStepsBelowFair: Number((r.PctStepsBelowFair * 100).toFixed(1)),
+        })),
+      );
+
+      // eslint-disable-next-line no-console
+      console.log("[Nerite opt] Top 10 fastest time-to-fair ($0.002):");
+      // eslint-disable-next-line no-console
+      console.table(
+        top10FastFair.map((r) => ({
+          ScenarioId: r.ScenarioId,
+          Curve: r.Curve,
+          HoursToFair: Number(r.HoursToFair.toFixed(2)),
+          InitialPriceUsd: r.InitialPriceUsd,
+          FinalFdvUsd: Math.round(r.FinalFdvUsd),
+          FinalFdvErrorPct: Number(r.FinalFdvErrorPct.toFixed(2)),
+          NetRaisedUsd: Math.round(r.NetRaisedUsd),
+        })),
+      );
+
+      // eslint-disable-next-line no-console
+      console.log("[Nerite opt] Top 10 highest FDV (max over LBP):");
+      // eslint-disable-next-line no-console
+      console.table(
+        top10MaxFdv.map((r) => ({
+          ScenarioId: r.ScenarioId,
+          Curve: r.Curve,
+          MaxFdvUsd: Math.round(r.MaxFdvUsd),
+          MaxPriceUsd: r.MaxPriceUsd,
+          FinalFdvUsd: Math.round(r.FinalFdvUsd),
+          HoursToFair: Number.isFinite(r.HoursToFair) ? Number(r.HoursToFair.toFixed(2)) : Infinity,
+        })),
+      );
+
+      // eslint-disable-next-line no-console
+      console.log("[Nerite opt] Top 10 longest time in FDV band ($500k..$200k):");
+      // eslint-disable-next-line no-console
+      console.table(
+        top10BandTime.map((r) => ({
+          ScenarioId: r.ScenarioId,
+          Curve: r.Curve,
+          HoursInBand: Number(r.HoursInFdvBand200to500.toFixed(2)),
+          PctStepsInBand: Number((r.PctStepsInFdvBand200to500 * 100).toFixed(1)),
+          FinalFdvUsd: Math.round(r.FinalFdvUsd),
+          HoursToFair: Number.isFinite(r.HoursToFair) ? Number(r.HoursToFair.toFixed(2)) : Infinity,
+        })),
+      );
+
+      if (process.env.EXPORT_NERITE_OPT_XLSX === "1") {
+        const now = new Date();
+        const stamp = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, "0"),
+          String(now.getDate()).padStart(2, "0"),
+          String(now.getHours()).padStart(2, "0"),
+          String(now.getMinutes()).padStart(2, "0"),
+          String(now.getSeconds()).padStart(2, "0"),
+        ].join("");
+        const outPath = path.resolve(process.cwd(), `out/nerite-opt-${stamp}.xlsx`);
+        const sheets = [
+          { name: "All Runs", rows: sorted },
+          { name: "Top 3", rows: top3 },
+          { name: "Top 10 - TimeToFair", rows: top10FastFair },
+          { name: "Top 10 - MaxFDV", rows: top10MaxFdv },
+          { name: "Top 10 - Band200-500", rows: top10BandTime },
+        ];
+        writeXlsxWorkbook(outPath, sheets);
+        const latestPath = path.resolve(process.cwd(), "out/nerite-opt-latest.xlsx");
+        writeXlsxWorkbook(latestPath, sheets);
+        // eslint-disable-next-line no-console
+        console.log(`[Nerite opt] XLSX exported: ${outPath}`);
+        // eslint-disable-next-line no-console
+        console.log(`[Nerite opt] XLSX exported (latest): ${latestPath}`);
+      }
+    },
+  );
+});
