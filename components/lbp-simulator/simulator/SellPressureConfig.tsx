@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { RotateCcw, TrendingUp } from "lucide-react";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
+} from '@/components/ui/dialog';
+import { RotateCcw, TrendingUp } from 'lucide-react';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
 import {
   DEFAULT_SELL_PRESSURE_CONFIG,
   getLoyalSellSchedule,
   SellPressureConfig as SellPressureConfigType,
-} from "@/lib/lbp-math";
-import { Separator } from "@/components/ui/separator";
+} from '@/lib/lbp-math';
+import { Separator } from '@/components/ui/separator';
 import {
   LineChart,
   Line,
@@ -27,10 +27,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { useMemo, useState, useEffect, memo } from "react";
-import { useDebounce } from "@/lib/useDebounce";
-import { useShallow } from "zustand/react/shallow";
+} from 'recharts';
+import { useMemo, useState, useEffect, memo } from 'react';
+import { useDebounce } from '@/lib/useDebounce';
+import { useShallow } from 'zustand/react/shallow';
 
 function SellPressureConfigComponent() {
   const { sellPressureConfig, updateSellPressureConfig, config } =
@@ -42,9 +42,8 @@ function SellPressureConfigComponent() {
       })),
     );
 
-  const [localConfig, setLocalConfig] = useState<SellPressureConfigType>(
-    sellPressureConfig,
-  );
+  const [localConfig, setLocalConfig] =
+    useState<SellPressureConfigType>(sellPressureConfig);
 
   useEffect(() => {
     setLocalConfig(sellPressureConfig);
@@ -64,7 +63,7 @@ function SellPressureConfigComponent() {
   // For greedy, we don't plot a deterministic curve because it depends on
   // simulated price vs cost basis; we show an explainer instead.
   const previewData = useMemo(() => {
-    if (localConfig.preset === "loyal") {
+    if (localConfig.preset === 'loyal') {
       const schedule = getLoyalSellSchedule(
         config.duration,
         100,
@@ -100,17 +99,17 @@ function SellPressureConfigComponent() {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl h-[90vh] max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="p-6 border-b flex flex-row items-center justify-between space-y-0 shrink-0">
+        <DialogHeader className="p-6 border-b flex flex-row items-center space-y-0 shrink-0">
           <DialogTitle className="text-xl font-semibold">
             Sell Pressure Model
           </DialogTitle>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-muted-foreground"
+            className="h-8 text-muted-foreground ml-2"
             onClick={handleReset}
           >
-            <RotateCcw className="mr-2 h-4 w-4" />
+            <RotateCcw className="h-4 w-4" />
             Reset
           </Button>
         </DialogHeader>
@@ -123,7 +122,7 @@ function SellPressureConfigComponent() {
                 Preview
               </h3>
               <div className="h-[250px] border rounded-md p-4 flex items-center justify-center">
-                {localConfig.preset === "loyal" ? (
+                {localConfig.preset === 'loyal' ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={previewData}>
                       <CartesianGrid
@@ -134,27 +133,27 @@ function SellPressureConfigComponent() {
                       <XAxis
                         dataKey="time"
                         stroke={
-                          typeof window !== "undefined" &&
-                          document.documentElement.classList.contains("dark")
-                            ? "#505050"
-                            : "hsl(var(--muted-foreground))"
+                          typeof window !== 'undefined' &&
+                          document.documentElement.classList.contains('dark')
+                            ? '#505050'
+                            : 'hsl(var(--muted-foreground))'
                         }
                         fontSize={10}
                         tickFormatter={(val) => `${val.toFixed(0)}h`}
                       />
                       <YAxis
                         stroke={
-                          typeof window !== "undefined" &&
-                          document.documentElement.classList.contains("dark")
-                            ? "#505050"
-                            : "hsl(var(--muted-foreground))"
+                          typeof window !== 'undefined' &&
+                          document.documentElement.classList.contains('dark')
+                            ? '#505050'
+                            : 'hsl(var(--muted-foreground))'
                         }
                         fontSize={10}
                         tickFormatter={(val) => `${val.toFixed(0)}%`}
                       />
                       <Tooltip
                         formatter={(value: any) =>
-                          value != null ? `${value.toFixed(2)}%` : ""
+                          value != null ? `${value.toFixed(2)}%` : ''
                         }
                         labelFormatter={(label) =>
                           `Time: ${Number(label).toFixed(1)}h`
@@ -176,8 +175,8 @@ function SellPressureConfigComponent() {
                     </div>
                     <div className="text-xs text-muted-foreground max-w-md">
                       Greedy selling depends on simulated price relative to the
-                      community&apos;s average entry price. Run the simulation to
-                      see when sells trigger.
+                      community&apos;s average entry price. Run the simulation
+                      to see when sells trigger.
                     </div>
                   </div>
                 )}
@@ -196,15 +195,15 @@ function SellPressureConfigComponent() {
                 <button
                   type="button"
                   onClick={() =>
-                    setLocalConfig((prev) => ({ ...prev, preset: "loyal" }))
+                    setLocalConfig((prev) => ({ ...prev, preset: 'loyal' }))
                   }
                   className={[
-                    "rounded-lg border p-3 text-left transition-colors",
-                    "bg-primary/5 hover:bg-primary/10 border-primary/30",
-                    localConfig.preset === "loyal"
-                      ? "ring-2 ring-primary/60"
-                      : "",
-                  ].join(" ")}
+                    'rounded-lg border p-3 text-left transition-colors',
+                    'bg-primary/5 hover:bg-primary/10 border-primary/30',
+                    localConfig.preset === 'loyal'
+                      ? 'ring-2 ring-primary/60'
+                      : '',
+                  ].join(' ')}
                 >
                   <div className="text-xs font-semibold text-primary">
                     Loyal community
@@ -218,15 +217,15 @@ function SellPressureConfigComponent() {
                 <button
                   type="button"
                   onClick={() =>
-                    setLocalConfig((prev) => ({ ...prev, preset: "greedy" }))
+                    setLocalConfig((prev) => ({ ...prev, preset: 'greedy' }))
                   }
                   className={[
-                    "rounded-lg border p-3 text-left transition-colors",
-                    "bg-[#B68449]/10 hover:bg-[#B68449]/15 border-[#B68449]/30",
-                    localConfig.preset === "greedy"
-                      ? "ring-2 ring-[#B68449]/60"
-                      : "",
-                  ].join(" ")}
+                    'rounded-lg border p-3 text-left transition-colors',
+                    'bg-[#B68449]/10 hover:bg-[#B68449]/15 border-[#B68449]/30',
+                    localConfig.preset === 'greedy'
+                      ? 'ring-2 ring-[#B68449]/60'
+                      : '',
+                  ].join(' ')}
                 >
                   <div className="text-xs font-semibold text-[#B68449]">
                     Greedy community
@@ -243,7 +242,7 @@ function SellPressureConfigComponent() {
 
             {/* Scenario parameters */}
             <div className="space-y-4">
-              {localConfig.preset === "loyal" ? (
+              {localConfig.preset === 'loyal' ? (
                 <>
                   <div className="space-y-2">
                     <Label className="text-xs">
@@ -348,4 +347,3 @@ function SellPressureConfigComponent() {
 }
 
 export const SellPressureConfig = memo(SellPressureConfigComponent);
-

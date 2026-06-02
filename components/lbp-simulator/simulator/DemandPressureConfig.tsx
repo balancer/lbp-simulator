@@ -104,17 +104,17 @@ function DemandPressureConfigComponent() {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl h-[90vh] max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="p-6 border-b flex flex-row items-center justify-between space-y-0 shrink-0">
+        <DialogHeader className="p-6 border-b flex flex-row items-center space-y-0 shrink-0">
           <DialogTitle className="text-xl font-semibold">
             Buy Pressure Model
           </DialogTitle>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-muted-foreground"
+            className="h-8 text-muted-foreground ml-2"
             onClick={handleReset}
           >
-            <RotateCcw className="mr-2 h-4 w-4" />
+            <RotateCcw className="h-4 w-4" />
             Reset
           </Button>
         </DialogHeader>
