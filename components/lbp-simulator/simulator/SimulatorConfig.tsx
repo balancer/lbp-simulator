@@ -443,11 +443,7 @@ function SimulatorConfigComponent() {
                       value={config.collateralToken}
                       onValueChange={(value) =>
                         updateConfig({
-                          collateralToken: value as
-                            | 'USDC'
-                            | 'USDT'
-                            | 'ETH'
-                            | 'wETH',
+                          collateralToken: value as 'USSD' | 'stS' | 'wS',
                         })
                       }
                     >
@@ -455,7 +451,7 @@ function SimulatorConfigComponent() {
                         <SelectValue placeholder="Select collateral token" />
                       </SelectTrigger>
                       <SelectContent>
-                        {['USDC', 'USDT', 'ETH', 'wETH'].map((token) => (
+                        {['USSD', 'stS', 'wS'].map((token) => (
                           <SelectItem key={token} value={token}>
                             <span className="flex items-center gap-2">
                               <span className="inline-block">

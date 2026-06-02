@@ -47,9 +47,7 @@ function SimulatorHeaderComponent() {
   // Total raised: net collateral that has entered the pool (bots + user),
   // derived from pool USDC balance plus user-raised collateral.
   const collateralUsd =
-    config.collateralToken === 'ETH' || config.collateralToken === 'wETH'
-      ? (ethPriceUsd ?? 1)
-      : 1;
+    config.collateralToken === 'wS' ? (ethPriceUsd ?? 1) : 1;
 
   // Use worker snapshots if available, otherwise fall back to live balance.
   const currentSnapshot =

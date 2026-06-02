@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { CollateralToken } from "@/lib/lbp-math";
-import Image from "next/image";
+import * as React from 'react';
+import { CollateralToken } from '@/lib/lbp-math';
+import Image from 'next/image';
 
 interface TokenLogoProps {
   token: CollateralToken | string;
@@ -33,21 +33,24 @@ const EthLogo = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const TOKEN_LOGOS: Record<string, string> = {
-  USDC: "https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=040",
-  USDT: "https://cryptologos.cc/logos/tether-usdt-logo.svg?v=002"
+  USSD: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=040',
 };
 
-export function TokenLogo({ token, size = 24, className = "" }: TokenLogoProps) {
-  // Handle ETH and wETH with inline SVG
-  if (token === "ETH" || token === "wETH") {
+export function TokenLogo({
+  token,
+  size = 24,
+  className = '',
+}: TokenLogoProps) {
+  // Handle wS with inline SVG (replaces ETH/wETH)
+  if (token === 'wS') {
     return (
       <div
         className={`rounded-full overflow-hidden ${className}`}
         style={{ width: size, height: size }}
       >
-        <EthLogo 
+        <EthLogo
           className="w-full h-full"
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: '100%', height: '100%' }}
         />
       </div>
     );
@@ -79,7 +82,7 @@ export function TokenLogo({ token, size = 24, className = "" }: TokenLogoProps) 
       className={`rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-foreground ${className}`}
       style={{ width: size, height: size }}
     >
-      {token[0]?.toUpperCase() || "?"}
+      {token[0]?.toUpperCase() || '?'}
     </div>
   );
 }

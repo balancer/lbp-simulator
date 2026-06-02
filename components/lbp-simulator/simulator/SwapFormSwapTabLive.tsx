@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useShallow } from "zustand/react/shallow";
-import { useMemo, memo } from "react";
-import { calculateOutGivenIn } from "@/lib/lbp-math";
-import type { LBPConfig } from "@/lib/lbp-math";
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useMemo, memo } from 'react';
+import { calculateOutGivenIn } from '@/lib/lbp-math';
+import type { LBPConfig } from '@/lib/lbp-math';
 
-type SwapDirection = "buy" | "sell";
+type SwapDirection = 'buy' | 'sell';
 
 /**
  * Subscribes only to step-changing store state. Renders output amount, USD values, and price.
@@ -21,7 +21,7 @@ function SwapFormSwapTabLiveComponent({
   inputAmount: string;
   direction: SwapDirection;
   config: LBPConfig;
-  part: "inputUsd" | "output" | "price";
+  part: 'inputUsd' | 'output' | 'price';
 }) {
   const {
     currentStep,
@@ -44,25 +44,24 @@ function SwapFormSwapTabLiveComponent({
   );
 
   const collateralUsd =
-    config.collateralToken === "ETH" || config.collateralToken === "wETH"
-      ? (ethPriceUsd ?? 1)
-      : 1;
+    config.collateralToken === 'wS' ? (ethPriceUsd ?? 1) : 1;
 
-  const stepData = baseSnapshots.length > 0 && baseSnapshots[currentStep]
-    ? baseSnapshots[currentStep]
-    : simulationData[currentStep] || simulationData[0];
+  const stepData =
+    baseSnapshots.length > 0 && baseSnapshots[currentStep]
+      ? baseSnapshots[currentStep]
+      : simulationData[currentStep] || simulationData[0];
 
   const currentPrice =
     priceHistory.length > 0 && priceHistory[currentStep] > 0
       ? priceHistory[currentStep]
       : baseSnapshots.length > 0 && baseSnapshots[currentStep]
-      ? baseSnapshots[currentStep].price
-      : stepData?.price || 0;
+        ? baseSnapshots[currentStep].price
+        : stepData?.price || 0;
 
   const outputAmount = useMemo(() => {
     if (!inputAmount || !stepData || parseFloat(inputAmount) <= 0) return 0;
     const amount = parseFloat(inputAmount);
-    if (direction === "buy") {
+    if (direction === 'buy') {
       return calculateOutGivenIn(
         currentUsdcBalance,
         stepData.usdcWeight,
@@ -83,17 +82,17 @@ function SwapFormSwapTabLiveComponent({
   const inputUsdValue = useMemo(() => {
     if (!inputAmount || parseFloat(inputAmount) <= 0) return 0;
     const amount = parseFloat(inputAmount);
-    if (direction === "buy") return amount * collateralUsd;
+    if (direction === 'buy') return amount * collateralUsd;
     return amount * currentPrice * collateralUsd;
   }, [inputAmount, direction, currentPrice, collateralUsd]);
 
   const outputUsdValue = useMemo(() => {
     if (outputAmount <= 0) return 0;
-    if (direction === "buy") return outputAmount * currentPrice * collateralUsd;
+    if (direction === 'buy') return outputAmount * currentPrice * collateralUsd;
     return outputAmount * collateralUsd;
   }, [outputAmount, direction, currentPrice, collateralUsd]);
 
-  if (part === "inputUsd") {
+  if (part === 'inputUsd') {
     return (
       <div className="text-sm text-muted-foreground mt-1">
         ${inputUsdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
@@ -101,16 +100,21 @@ function SwapFormSwapTabLiveComponent({
     );
   }
 
-  if (part === "output") {
+  if (part === 'output') {
     return (
       <>
         <div className="text-2xl font-semibold">
           {outputAmount > 0
-            ? outputAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })
-            : "0.00"}
+            ? outputAmount.toLocaleString(undefined, {
+                maximumFractionDigits: 6,
+              })
+            : '0.00'}
         </div>
         <div className="text-sm text-muted-foreground mt-1">
-          ${outputUsdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          $
+          {outputUsdValue.toLocaleString(undefined, {
+            maximumFractionDigits: 2,
+          })}
         </div>
       </>
     );

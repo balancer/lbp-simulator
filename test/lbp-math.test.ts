@@ -224,7 +224,7 @@ describe('LBP Math Invariants', () => {
         tokenSymbol: 'TST',
         totalSupply: 10000000,
         percentForSale: 10,
-        collateralToken: 'USDC',
+        collateralToken: 'USSD',
         tknBalanceIn: 1000000,
         tknWeightIn: 90,
         usdcBalanceIn: 100000,
@@ -259,7 +259,7 @@ describe('LBP Math Invariants', () => {
         tokenSymbol: 'TST',
         totalSupply: 10000000,
         percentForSale: 10,
-        collateralToken: 'ETH',
+        collateralToken: 'wS',
         tknBalanceIn: 1000000,
         tknWeightIn: 90,
         usdcBalanceIn: 50, // 50 ETH

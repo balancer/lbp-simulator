@@ -207,16 +207,15 @@ function SwapFormSwapTabComponent() {
               part="output"
             />
           </div>
-          <Button
-            variant="outline"
-            className="flex items-center gap-2 px-3 py-2 h-auto font-semibold bg-primary text-primary-foreground hover:bg-primary/90 border-0"
-          >
+          <Button className="flex items-center gap-2 px-3 py-2 h-auto font-semibold bg-primary text-primary-foreground hover:bg-primary/90 border-0">
             <div className="h-6 w-6 bg-white rounded-full flex items-center justify-center font-bold">
               <span className="text-lg font-bold text-black">
                 {config.tokenSymbol?.charAt(0) ?? '?'}
               </span>
             </div>
-            <span className="font-medium">{outputToken}</span>
+            <span className="font-medium text-primary-foreground">
+              {outputToken}
+            </span>
           </Button>
         </div>
       </div>
