@@ -5,7 +5,6 @@ import { Clock } from 'lucide-react';
 import { useSimulatorStore } from '@/store/useSimulatorStore';
 import { useMemo, memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import Image from 'next/image';
 
 function SimulatorHeaderComponent() {
   const {

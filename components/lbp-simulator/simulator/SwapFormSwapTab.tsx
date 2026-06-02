@@ -10,7 +10,6 @@ import { ArrowUpDown, Wallet } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { TokenLogo } from '@/components/ui/TokenLogo';
 import { SwapFormSwapTabLive } from './SwapFormSwapTabLive';
-import Image from 'next/image';
 
 type SwapDirection = 'buy' | 'sell';
 

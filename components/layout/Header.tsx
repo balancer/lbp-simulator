@@ -1,10 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import { ArrowUpRight } from 'lucide-react';
-import { useEffect, useState, useRef, memo, useMemo } from 'react';
+import { useEffect, useState, useRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 
 const SCROLL_THRESHOLD = 60;
@@ -28,7 +24,6 @@ function getScrollParent(el: HTMLElement | null): HTMLElement | null {
 function HeaderComponent() {
   const [hidden, setHidden] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
-  const lastScrollY = useRef(0);
 
   useEffect(() => {
     const el = headerRef.current;
@@ -36,22 +31,12 @@ function HeaderComponent() {
     if (!scrollParent) return;
 
     const handleScroll = () => {
-      const y = scrollParent.scrollTop;
-      const scrollingDown = y > lastScrollY.current;
-      lastScrollY.current = y;
-
-      setHidden(() => {
-        if (y <= SCROLL_THRESHOLD) return false;
-        if (scrollingDown) return true;
-        return false;
-      });
+      setHidden(scrollParent.scrollTop > SCROLL_THRESHOLD);
     };
 
     scrollParent.addEventListener('scroll', handleScroll, { passive: true });
     return () => scrollParent.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const logoSrc = '/logo-beets-white.svg';
 
   return (
     <header
@@ -60,32 +45,7 @@ function HeaderComponent() {
         'fixed top-0 z-50 w-full transition-transform duration-300 ease-out',
         hidden && '-translate-y-full',
       )}
-    >
-      <div className="w-full container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src={logoSrc} alt="Beets Logo" width={30} height={30} />
-            <span className="text-xl font-bold tracking-tight">Beets</span>
-          </Link>
-        </div>
-        <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/lbp-simulator"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Simulator
-          </Link>
-          <Link
-            href="https://docs.beets.fi"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Docs
-          </Link>
-        </div>
-      </div>
-    </header>
+    />
   );
 }
 

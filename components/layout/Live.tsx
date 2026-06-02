@@ -64,7 +64,8 @@ export function Live() {
               <Link href="/lbp-simulator">
                 <Button
                   size="lg"
-                  className="relative overflow-hidden rounded-full px-8 text-primary-foreground bg-gradient-to-r from-accent via-primary to-[#18B575] border border-primary/60 shadow-[0_0_24px_rgba(5,214,144,0.45)] hover:shadow-[0_0_32px_rgba(5,214,144,0.6)] transition-transform hover:scale-105"
+                  className="rounded-full px-8 text-[#111111] bg-gradient-to-r from-[#91E2C1] to-[#05D690] hover:from-[#05D690] hover:to-[#91E2C1] shadow-[0_3px_20px_rgba(5,214,144,0.25)] hover:shadow-[0_3px_20px_rgba(5,214,144,0.35)] transition-all duration-400"
+                  style={{ backgroundSize: '120% 100%' }}
                 >
                   Simulate your LBP
                 </Button>

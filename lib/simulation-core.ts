@@ -1,5 +1,3 @@
-import type { LBPConfig, DemandPressureConfig, SellPressureConfig } from "./lbp-math";
-
 // Minimal snapshot shape that charts and store need per simulation step.
 export interface SimulationStateSnapshot {
   index: number;
@@ -26,4 +24,3 @@ export interface SimulationStateSnapshot {
 // (public/workers/simulationWorker.js), which mirrors the math from lbp-math.ts.
 // Keeping this file small and dependency-free makes it safe to import from both
 // the store and UI components without pulling in worker-specific code.
-

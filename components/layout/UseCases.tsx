@@ -1,109 +1,109 @@
-"use client";
+'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { animate } from "animejs";
-import { cn } from "@/lib/utils";
-import { Check, Link2 } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { animate } from 'animejs';
+import { cn } from '@/lib/utils';
+import { Check, Link2 } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { RefreshCcw, Rocket, TrendingDown } from "lucide-react";
-import { UseCaseStudyDialog } from "@/components/layout/UseCaseStudyDialog";
-import mplPriceData from "@/public/data/mpl-price.json";
+} from '@/components/ui/card';
+import { RefreshCcw, Rocket, TrendingDown } from 'lucide-react';
+import { UseCaseStudyDialog } from '@/components/layout/UseCaseStudyDialog';
+import mplPriceData from '@/public/data/mpl-price.json';
 
 const SLIDES = [
   {
     id: 1,
-    slug: "buy-back",
-    title: "Buy Back",
+    slug: 'buy-back',
+    title: 'Buy Back',
     description:
-      "Programmatic buy-backs with transparent price discovery and predictable liquidity.",
-    benefits: ["Market Stability", "Fair Pricing", "Transparent Execution"],
+      'Programmatic buy-backs with transparent price discovery and predictable liquidity.',
+    benefits: ['Market Stability', 'Fair Pricing', 'Transparent Execution'],
     Icon: RefreshCcw,
     caseStudy: {
-      title: "Institutional-Scale Buybacks with rLBPs",
+      title: 'Institutional-Scale Buybacks with rLBPs',
       summary:
-        "TempleDAO executed a $43.19M on-chain buyback using a reverse Liquidity Bootstrapping Pool (rLBP)—representing 98.5% of all volume in our dataset. The rLBP acted as a moving limit order, tightly tracking external prices and minimizing slippage while outsourcing timing risk to arbitrageurs.",
+        'TempleDAO executed a $43.19M on-chain buyback using a reverse Liquidity Bootstrapping Pool (rLBP)—representing 98.5% of all volume in our dataset. The rLBP acted as a moving limit order, tightly tracking external prices and minimizing slippage while outsourcing timing risk to arbitrageurs.',
       whatHappened:
-        "Using DAI and FRAX, TempleDAO accumulated TEMPLE via standard and NoProtocolFee rLBP factories. Across 3,870 trades, the pool price closely followed the external market, with arbitrageurs correcting any deviations in real time.",
+        'Using DAI and FRAX, TempleDAO accumulated TEMPLE via standard and NoProtocolFee rLBP factories. Across 3,870 trades, the pool price closely followed the external market, with arbitrageurs correcting any deviations in real time.',
       showCurve: true,
       keyResults: [
-        "Avg. execution premium: +0.13% (13 bps above spot)",
-        "Total volume: $43.19M",
-        "Markout: -0.12% (neutral-to-healthy inventory selection)",
-        "Price behavior: strong adherence to market price, minimal decoupling",
+        'Avg. execution premium: +0.13% (13 bps above spot)',
+        'Total volume: $43.19M',
+        'Markout: -0.12% (neutral-to-healthy inventory selection)',
+        'Price behavior: strong adherence to market price, minimal decoupling',
       ],
       rightChoice: [
-        "Near-spot execution at scale without market impact",
-        "Arbitrage-enforced price discipline (no sustained mispricing)",
-        "Clean inventory accumulation without buying local tops",
+        'Near-spot execution at scale without market impact',
+        'Arbitrage-enforced price discipline (no sustained mispricing)',
+        'Clean inventory accumulation without buying local tops',
       ],
     },
   },
   {
     id: 2,
-    slug: "token-launches",
-    title: "Token Launches",
+    slug: 'token-launches',
+    title: 'Token Launches',
     description:
-      "Fair price discovery for new tokens. Let the market find the right price through an LBP.",
-    benefits: ["No Bot Sniping", "Deep Initial Liquidity", "Community Driven"],
+      'Fair price discovery for new tokens. Let the market find the right price through an LBP.',
+    benefits: ['No Bot Sniping', 'Deep Initial Liquidity', 'Community Driven'],
     Icon: Rocket,
     caseStudy: {
-      title: "Maple LBP Public Launch",
+      title: 'Maple LBP Public Launch',
       summary:
-        "Maple DAO ran a public LBP sale to distribute 5% of MPL supply in a fixed 72-hour window, using on-chain price discovery for broad access.",
+        'Maple DAO ran a public LBP sale to distribute 5% of MPL supply in a fixed 72-hour window, using on-chain price discovery for broad access.',
       whatHappened:
-        "Maple DAO proposed depositing 500,000 MPL and 850,000 USDC into a Beets LBP. The pool opened at 4:30pm EST on April 28, 2021, ran for 72 hours, and returned raised USDC plus any remaining MPL to the DAO multisig afterward.",
+        'Maple DAO proposed depositing 500,000 MPL and 850,000 USDC into a Beets LBP. The pool opened at 4:30pm EST on April 28, 2021, ran for 72 hours, and returned raised USDC plus any remaining MPL to the DAO multisig afterward.',
       keyResults: [
-        "500,000 MPL (5% of supply) allocated for the public sale",
-        "72-hour, time-boxed sale window (April 28, 2021)",
-        "Expected proceeds: 5m–7.5m USDC",
+        '500,000 MPL (5% of supply) allocated for the public sale',
+        '72-hour, time-boxed sale window (April 28, 2021)',
+        'Expected proceeds: 5m–7.5m USDC',
       ],
       rightChoice: [
-        "Fixed schedule gave all buyers equal access to the launch window",
-        "Pre-funded liquidity made price discovery transparent on-chain",
-        "DAO multisig approvals provided governance oversight of transfers",
+        'Fixed schedule gave all buyers equal access to the launch window',
+        'Pre-funded liquidity made price discovery transparent on-chain',
+        'DAO multisig approvals provided governance oversight of transfers',
       ],
       chart: {
-        type: "mpl-price",
-        title: "Post-launch MPL Price",
-        caption: "Source: MPL price dataset (USD, Apr 29–May 13, 2021).",
+        type: 'mpl-price',
+        title: 'Post-launch MPL Price',
+        caption: 'Source: MPL price dataset (USD, Apr 29–May 13, 2021).',
         data: mplPriceData.map((point) => point.price),
       },
     },
   },
   {
     id: 3,
-    slug: "divestment",
-    title: "Investment & Divestment",
+    slug: 'divestment',
+    title: 'Investment & Divestment',
     description:
-      "Gradual, market-driven divestment with configurable weights and transparent execution.",
-    benefits: ["Minimal Price Impact", "Controlled Flow", "Verified Discovery"],
+      'Gradual, market-driven divestment with configurable weights and transparent execution.',
+    benefits: ['Minimal Price Impact', 'Controlled Flow', 'Verified Discovery'],
     Icon: TrendingDown,
     caseStudy: {
-      title: "Gitcoin’s AKITA Divestment via LBP",
+      title: 'Gitcoin’s AKITA Divestment via LBP',
       summary:
-        "Gitcoin used a Beets LBP to gradually divest a large AKITA donation, creating predictable sell pressure and deeper liquidity without a sudden market dump.",
+        'Gitcoin used a Beets LBP to gradually divest a large AKITA donation, creating predictable sell pressure and deeper liquidity without a sudden market dump.',
       whatHappened:
-        "Gitcoin placed AKITA and WETH in a Beets LBP (99% AKITA / 1% WETH) via Fjord Foundry, then slowly shifted weights over a year toward 99% WETH / 1% AKITA. The LBP both sold AKITA into the market and bought AKITA as needed to maintain the changing weights, while collecting swap fees.",
+        'Gitcoin placed AKITA and WETH in a Beets LBP (99% AKITA / 1% WETH) via Fjord Foundry, then slowly shifted weights over a year toward 99% WETH / 1% AKITA. The LBP both sold AKITA into the market and bought AKITA as needed to maintain the changing weights, while collecting swap fees.',
       keyResults: [
-        "LBP concluded on December 19, 2022",
-        "23,437,196,448,684.83 AKITA released",
-        "3,812.98 WETH accrued during the sale",
+        'LBP concluded on December 19, 2022',
+        '23,437,196,448,684.83 AKITA released',
+        '3,812.98 WETH accrued during the sale',
       ],
       rightChoice: [
-        "Gradual weight shifts turned a large position into orderly flow",
-        "Market demand, not a single dump, set the clearing price",
-        "Swap fees added incremental yield during divestment",
+        'Gradual weight shifts turned a large position into orderly flow',
+        'Market demand, not a single dump, set the clearing price',
+        'Swap fees added incremental yield during divestment',
       ],
       chart: {
-        type: "akita-weights",
-        title: "AKITA Divestment Weight Shift",
-        caption: "Modeled weight change from 99/1 to 1/99 over the sale.",
+        type: 'akita-weights',
+        title: 'AKITA Divestment Weight Shift',
+        caption: 'Modeled weight change from 99/1 to 1/99 over the sale.',
       },
     },
   },
@@ -123,7 +123,7 @@ const SLIDES = [
     rightChoice?: string[];
     showCurve?: boolean;
     chart?: {
-      type: "mpl-price" | "akita-weights";
+      type: 'mpl-price' | 'akita-weights';
       title: string;
       caption?: string;
       data?: number[];
@@ -161,50 +161,52 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   const buildCaseUrl = useCallback((slug: string) => {
-    if (typeof window === "undefined") return "";
+    if (typeof window === 'undefined') return '';
     const url = new URL(window.location.href);
-    url.searchParams.set("case", slug);
+    url.searchParams.set('case', slug);
     return url.toString();
   }, []);
 
-  const animateDeck = useCallback((currentActiveIndex: number) => {
-    SLIDES.forEach((_, slideIndex) => {
-      const wrapper = wrapperRefs.current[slideIndex];
-      const card = cardRefs.current[slideIndex];
-      if (!wrapper || !card) return;
+  const animateDeck = useCallback(
+    (currentActiveIndex: number) => {
+      SLIDES.forEach((_, slideIndex) => {
+        const wrapper = wrapperRefs.current[slideIndex];
+        const card = cardRefs.current[slideIndex];
+        if (!wrapper || !card) return;
 
-      const position = getVisualPosition(slideIndex, currentActiveIndex);
-      const layout = CARD_LAYOUT[position];
-      const isFocused = position === 0;
-      const scale = isFocused ? 1.1 : 1;
-      const mobileOffsetY =
-        position === 0 ? -8 : position === 1 ? -28 : -48;
-      const translateX = isMobile ? 0 : layout.offsetX;
-      const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
-      const rotate = isMobile ? 0 : layout.rotate;
-      const deckScale = isMobile ? 1 : scale;
+        const position = getVisualPosition(slideIndex, currentActiveIndex);
+        const layout = CARD_LAYOUT[position];
+        const isFocused = position === 0;
+        const scale = isFocused ? 1.1 : 1;
+        const mobileOffsetY = position === 0 ? -8 : position === 1 ? -28 : -48;
+        const translateX = isMobile ? 0 : layout.offsetX;
+        const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
+        const rotate = isMobile ? 0 : layout.rotate;
+        const deckScale = isMobile ? 1 : scale;
 
-      animate(wrapper, {
-        translateX,
-        translateY,
-        rotate,
-        scale: deckScale,
-        duration: 420,
-        easing: "easeOutQuad",
+        animate(wrapper, {
+          translateX,
+          translateY,
+          rotate,
+          scale: deckScale,
+          duration: 420,
+          easing: 'easeOutQuad',
+        });
+
+        // Set z-index immediately to prevent overlap issues during transition
+        wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
+
+        animate(card, {
+          boxShadow: isFocused
+            ? '0 24px 60px rgba(0, 0, 0, 0.4)'
+            : '0 18px 35px rgba(0, 0, 0, 0.3)',
+          duration: 420,
+          easing: 'easeOutQuad',
+        });
       });
-
-      // Set z-index immediately to prevent overlap issues during transition
-      wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
-
-      animate(card, {
-        boxShadow: isFocused
-          ? "0 24px 60px rgba(0, 0, 0, 0.4)"
-          : "0 18px 35px rgba(0, 0, 0, 0.3)",
-        duration: 420,
-        easing: "easeOutQuad",
-      });
-    });
-  }, [isMobile]);
+    },
+    [isMobile],
+  );
 
   useEffect(() => {
     // Initialize styles for all slides
@@ -216,19 +218,18 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
       const position = getVisualPosition(slideIndex, activeIndex);
       const layout = CARD_LAYOUT[position];
       const isFocused = position === 0;
-      const mobileOffsetY =
-        position === 0 ? -8 : position === 1 ? -28 : -48;
+      const mobileOffsetY = position === 0 ? -8 : position === 1 ? -28 : -48;
       const translateX = isMobile ? 0 : layout.offsetX;
       const translateY = isMobile ? mobileOffsetY : isFocused ? -18 : 0;
       const rotate = isMobile ? 0 : layout.rotate;
       const deckScale = isMobile ? 1 : isFocused ? 1.1 : 1;
 
       wrapper.style.transform = `translateX(${translateX}px) translateY(${translateY}px) rotate(${rotate}deg) scale(${deckScale})`;
-      wrapper.style.opacity = "1";
+      wrapper.style.opacity = '1';
       wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
       card.style.boxShadow = isFocused
-        ? "0 24px 60px rgba(0, 0, 0, 0.4)"
-        : "0 18px 35px rgba(0, 0, 0, 0.3)";
+        ? '0 24px 60px rgba(0, 0, 0, 0.4)'
+        : '0 18px 35px rgba(0, 0, 0, 0.3)';
     });
   }, [isMobile]);
 
@@ -240,7 +241,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
     if (!openCaseSlug) return;
     setOpenSlug(openCaseSlug);
     if (sectionRef.current) {
-      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [openCaseSlug]);
 
@@ -255,7 +256,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
           translateY: [24, 0],
           opacity: [0, 1],
           duration: 650,
-          easing: "easeOutExpo",
+          easing: 'easeOutExpo',
         });
         observer.disconnect();
       },
@@ -268,13 +269,13 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
 
   useEffect(() => {
     const updateLayout = () => {
-      if (typeof window === "undefined") return;
+      if (typeof window === 'undefined') return;
       setIsMobile(window.innerWidth < 640);
     };
 
     updateLayout();
-    window.addEventListener("resize", updateLayout);
-    return () => window.removeEventListener("resize", updateLayout);
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
   }, []);
 
   return (
@@ -319,7 +320,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                     animate(wrapper, {
                       translateY: -12,
                       duration: 220,
-                      easing: "easeOutQuad",
+                      easing: 'easeOutQuad',
                     });
                   }}
                   onMouseLeave={() => {
@@ -329,18 +330,18 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                     animate(wrapper, {
                       translateY: isFocused ? -18 : 0,
                       duration: 220,
-                      easing: "easeOutQuad",
+                      easing: 'easeOutQuad',
                     });
                   }}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
+                    if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
                       onSelect(slideIndex);
                     }
                   }}
                   className={cn(
-                    "border-0 bg-transparent p-0 text-left focus:outline-none",
-                    isFocused ? "cursor-default" : "cursor-pointer",
+                    'border-0 bg-transparent p-0 text-left focus:outline-none',
+                    isFocused ? 'cursor-default' : 'cursor-pointer',
                   )}
                 >
                   <Card
@@ -348,8 +349,9 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                       cardRefs.current[slideIndex] = node;
                     }}
                     className={cn(
-                      "h-[57vh] min-h-[460px] w-[320px] md:w-[380px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-colors",
-                      isFocused && "border-primary/40 bg-background",
+                      'h-[57vh] min-h-[460px] w-[320px] md:w-[380px] flex flex-col overflow-hidden border border-border/60 bg-background backdrop-blur transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_24px_rgba(5,214,144,0.12)]',
+                      isFocused &&
+                        'border-primary/40 bg-background shadow-[0_0_24px_rgba(5,214,144,0.15)]',
                     )}
                   >
                     <div className="relative h-40 md:h-48 w-full overflow-hidden bg-muted/20">
@@ -357,8 +359,8 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                         className="absolute inset-0 opacity-[0.03]"
                         style={{
                           backgroundImage:
-                            "radial-gradient(circle, #fff 1px, transparent 1px)",
-                          backgroundSize: "20px 20px",
+                            'radial-gradient(circle, #fff 1px, transparent 1px)',
+                          backgroundSize: '20px 20px',
                         }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -375,12 +377,12 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                           type="button"
                           aria-label={`Copy ${slide.title} link`}
                           className={cn(
-                            "rounded-full border px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all",
+                            'rounded-full border px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all',
                             copiedSlug === slide.slug
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-primary text-primary hover:bg-primary/15",
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-primary text-primary hover:bg-primary/15',
                             !isFocused &&
-                              "cursor-not-allowed opacity-50 hover:bg-transparent",
+                              'cursor-not-allowed opacity-50 hover:bg-transparent',
                           )}
                           onClick={(event) => {
                             event.stopPropagation();

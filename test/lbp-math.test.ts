@@ -1,20 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from 'vitest';
 import {
   calculateSpotPrice,
   calculateOutGivenIn,
-  calcSpotPriceTokenInCollateral,
   calcTVLUSD,
   getCumulativeBuyPressureCurve,
   getPerStepBuyFlowFromCumulative,
   getLoyalSellSchedule,
   type LBPConfig,
   type DemandPressureConfig,
-} from "../lib/lbp-math";
+} from '../lib/lbp-math';
 
-describe("LBP Math Invariants", () => {
-  describe("Beets Core Formulas", () => {
+describe('LBP Math Invariants', () => {
+  describe('Beets Core Formulas', () => {
     // Assumes no swap fee; see fee-aware test below.
-    it("should maintain value function V = B_i^w_i * B_o^w_o after swaps", () => {
+    it('should maintain value function V = B_i^w_i * B_o^w_o after swaps', () => {
       const balanceIn = 100000; // USDC
       const weightIn = 10;
       const balanceOut = 1000000; // TKN
@@ -45,16 +44,16 @@ describe("LBP Math Invariants", () => {
       // Value function should be preserved (within numerical precision)
       expect(Math.abs(V_after - V_before) / V_before).toBeLessThan(0.0001);
       console.log(
-        "  → V_before:",
+        '  → V_before:',
         V_before,
-        "V_after:",
+        'V_after:',
         V_after,
-        "amountOut:",
+        'amountOut:',
         amountOut,
       );
     });
 
-    it("should maintain value function when caller applies swap fee (amountInAfterFee)", () => {
+    it('should maintain value function when caller applies swap fee (amountInAfterFee)', () => {
       const balanceIn = 100000;
       const weightIn = 10;
       const balanceOut = 1000000;
@@ -84,7 +83,7 @@ describe("LBP Math Invariants", () => {
       expect(Math.abs(V_after - V_before) / V_before).toBeLessThan(0.0001);
     });
 
-    it("spot price should increase after buying token", () => {
+    it('spot price should increase after buying token', () => {
       const usdcBalance = 100000;
       const usdcWeight = 10;
       const tknBalance = 1000000;
@@ -116,21 +115,21 @@ describe("LBP Math Invariants", () => {
 
       expect(priceAfter).toBeGreaterThan(priceBefore);
       console.log(
-        "  → priceBefore:",
+        '  → priceBefore:',
         priceBefore,
-        "priceAfter:",
+        'priceAfter:',
         priceAfter,
-        "amountOut:",
+        'amountOut:',
         amountOut,
       );
     });
 
-    it("should return zero tokens when buying with zero USDC", () => {
+    it('should return zero tokens when buying with zero USDC', () => {
       const result = calculateOutGivenIn(100000, 10, 1000000, 90, 0);
       expect(result).toBe(0);
     });
 
-    it("should return reasonable slippage for small trades", () => {
+    it('should return reasonable slippage for small trades', () => {
       const balanceIn = 100000;
       const weightIn = 10;
       const balanceOut = 1000000;
@@ -156,18 +155,18 @@ describe("LBP Math Invariants", () => {
       const slippage = (effectivePrice - priceBefore) / priceBefore;
       expect(slippage).toBeLessThan(0.01); // Less than 1% slippage
       console.log(
-        "  → priceBefore:",
+        '  → priceBefore:',
         priceBefore,
-        "amountOut:",
+        'amountOut:',
         amountOut,
-        "effectivePrice:",
+        'effectivePrice:',
         effectivePrice,
-        "slippage:",
-        (slippage * 100).toFixed(4) + "%",
+        'slippage:',
+        (slippage * 100).toFixed(4) + '%',
       );
     });
 
-    it("spot price ratio should scale with token weight ratio (weighted formula)", () => {
+    it('spot price ratio should scale with token weight ratio (weighted formula)', () => {
       const usdcBalance = 100000;
       const tknBalance = 1000000;
 
@@ -179,18 +178,18 @@ describe("LBP Math Invariants", () => {
       expect(ratio).toBeGreaterThan(1.8);
       expect(ratio).toBeLessThan(2.3);
       console.log(
-        "  → price1 (tkn 10%):",
+        '  → price1 (tkn 10%):',
         price1,
-        "price2 (tkn 20%):",
+        'price2 (tkn 20%):',
         price2,
-        "ratio:",
+        'ratio:',
         ratio.toFixed(4),
       );
     });
   });
 
-  describe("Weight schedule", () => {
-    it("LBP weight should interpolate linearly in time", () => {
+  describe('Weight schedule', () => {
+    it('LBP weight should interpolate linearly in time', () => {
       const duration = 48;
       const steps = 100;
       const tknWeightIn = 90;
@@ -207,25 +206,25 @@ describe("LBP Math Invariants", () => {
     });
   });
 
-  describe("Weight Normalization", () => {
-    it("should handle percentage weights (0-100) correctly", () => {
+  describe('Weight Normalization', () => {
+    it('should handle percentage weights (0-100) correctly', () => {
       const price1 = calculateSpotPrice(100000, 10, 1000000, 90);
       const price2 = calculateSpotPrice(100000, 0.1, 1000000, 0.9);
 
       // Both representations should yield the same price
       expect(Math.abs(price1 - price2) / price1).toBeLessThan(0.0001);
-      console.log("  → price (10/90):", price1, "price (0.1/0.9):", price2);
+      console.log('  → price (10/90):', price1, 'price (0.1/0.9):', price2);
     });
   });
 
-  describe("TVL Calculations", () => {
-    it("should calculate TVL correctly for stablecoin collateral", () => {
+  describe('TVL Calculations', () => {
+    it('should calculate TVL correctly for stablecoin collateral', () => {
       const config: LBPConfig = {
-        tokenName: "TEST",
-        tokenSymbol: "TST",
+        tokenName: 'TEST',
+        tokenSymbol: 'TST',
         totalSupply: 10000000,
         percentForSale: 10,
-        collateralToken: "USDC",
+        collateralToken: 'USDC',
         tknBalanceIn: 1000000,
         tknWeightIn: 90,
         usdcBalanceIn: 100000,
@@ -245,22 +244,22 @@ describe("LBP Math Invariants", () => {
         config.usdcBalanceIn + config.tknBalanceIn * tokenPriceUsd;
       expect(Math.abs(tvlUsd - expectedTVL) / tvlUsd).toBeLessThan(0.0001);
       console.log(
-        "  → tokenPriceUsd:",
+        '  → tokenPriceUsd:',
         tokenPriceUsd,
-        "tvlUsd:",
+        'tvlUsd:',
         tvlUsd,
-        "expectedTVL:",
+        'expectedTVL:',
         expectedTVL,
       );
     });
 
-    it("should handle ETH collateral with price conversion", () => {
+    it('should handle ETH collateral with price conversion', () => {
       const config: LBPConfig = {
-        tokenName: "TEST",
-        tokenSymbol: "TST",
+        tokenName: 'TEST',
+        tokenSymbol: 'TST',
         totalSupply: 10000000,
         percentForSale: 10,
-        collateralToken: "ETH",
+        collateralToken: 'ETH',
         tknBalanceIn: 1000000,
         tknWeightIn: 90,
         usdcBalanceIn: 50, // 50 ETH
@@ -288,18 +287,18 @@ describe("LBP Math Invariants", () => {
       // TVL should be at least the ETH value
       expect(tvlUsd).toBeGreaterThan(config.usdcBalanceIn * ethPrice);
       console.log(
-        "  → tvlUsd:",
+        '  → tvlUsd:',
         tvlUsd,
-        "ETH value:",
+        'ETH value:',
         config.usdcBalanceIn * ethPrice,
       );
     });
   });
 
-  describe("Demand Pressure Curves", () => {
-    it("cumulative buy curve should be monotonically increasing", () => {
+  describe('Demand Pressure Curves', () => {
+    it('cumulative buy curve should be monotonically increasing', () => {
       const config: DemandPressureConfig = {
-        preset: "bullish",
+        preset: 'bullish',
         magnitudeBase: 100000,
         multiplier: 1,
       };
@@ -310,16 +309,16 @@ describe("LBP Math Invariants", () => {
         expect(curve[i]).toBeGreaterThanOrEqual(curve[i - 1]);
       }
       console.log(
-        "  → curve[0]:",
+        '  → curve[0]:',
         curve[0],
-        "curve[last]:",
+        'curve[last]:',
         curve[curve.length - 1],
       );
     });
 
-    it("cumulative buy curve should start at 0 and end at total USDC", () => {
+    it('cumulative buy curve should start at 0 and end at total USDC', () => {
       const config: DemandPressureConfig = {
-        preset: "bullish",
+        preset: 'bullish',
         magnitudeBase: 100000,
         multiplier: 2,
       };
@@ -329,16 +328,16 @@ describe("LBP Math Invariants", () => {
       expect(curve[0]).toBe(0);
       expect(curve[curve.length - 1]).toBe(200000); // 100k * 2
       console.log(
-        "  → curve[0]:",
+        '  → curve[0]:',
         curve[0],
-        "curve[last]:",
+        'curve[last]:',
         curve[curve.length - 1],
       );
     });
 
-    it("per-step flow should be non-negative", () => {
+    it('per-step flow should be non-negative', () => {
       const config: DemandPressureConfig = {
-        preset: "bullish",
+        preset: 'bullish',
         magnitudeBase: 100000,
         multiplier: 1,
       };
@@ -351,9 +350,9 @@ describe("LBP Math Invariants", () => {
       });
     });
 
-    it("sum of per-step flow should equal total cumulative", () => {
+    it('sum of per-step flow should equal total cumulative', () => {
       const config: DemandPressureConfig = {
-        preset: "bullish",
+        preset: 'bullish',
         magnitudeBase: 100000,
         multiplier: 1.5,
       };
@@ -367,18 +366,18 @@ describe("LBP Math Invariants", () => {
       expect(Math.abs(totalFlow - expectedTotal) / expectedTotal).toBeLessThan(
         0.0001,
       );
-      console.log("  → totalFlow:", totalFlow, "expectedTotal:", expectedTotal);
+      console.log('  → totalFlow:', totalFlow, 'expectedTotal:', expectedTotal);
     });
 
-    it("bearish preset should have lower total than bullish", () => {
+    it('bearish preset should have lower total than bullish', () => {
       const bullish: DemandPressureConfig = {
-        preset: "bullish",
+        preset: 'bullish',
         magnitudeBase: 100000,
         multiplier: 1,
       };
 
       const bearish: DemandPressureConfig = {
-        preset: "bearish",
+        preset: 'bearish',
         magnitudeBase: 100000,
         multiplier: 1,
       };
@@ -390,24 +389,24 @@ describe("LBP Math Invariants", () => {
         bullishCurve[bullishCurve.length - 1],
       );
       console.log(
-        "  → bearish total:",
+        '  → bearish total:',
         bearishCurve[bearishCurve.length - 1],
-        "bullish total:",
+        'bullish total:',
         bullishCurve[bullishCurve.length - 1],
       );
     });
   });
 
-  describe("Loyal Sell Schedule", () => {
-    it("should sum to 1 (normalized weights)", () => {
+  describe('Loyal Sell Schedule', () => {
+    it('should sum to 1 (normalized weights)', () => {
       const schedule = getLoyalSellSchedule(48, 100, 60);
       const sum = schedule.reduce((acc, w) => acc + w, 0);
 
       expect(Math.abs(sum - 1)).toBeLessThan(0.0001);
-      console.log("  → schedule sum:", sum);
+      console.log('  → schedule sum:', sum);
     });
 
-    it("should be non-negative", () => {
+    it('should be non-negative', () => {
       const schedule = getLoyalSellSchedule(48, 100, 60);
 
       schedule.forEach((w) => {
@@ -415,7 +414,7 @@ describe("LBP Math Invariants", () => {
       });
     });
 
-    it("higher concentration should create more weight at edges", () => {
+    it('higher concentration should create more weight at edges', () => {
       const lowConc = getLoyalSellSchedule(48, 100, 20);
       const highConc = getLoyalSellSchedule(48, 100, 80);
 
@@ -426,43 +425,43 @@ describe("LBP Math Invariants", () => {
       // Middle elements should have lower weight in high concentration
       expect(highConc[50]).toBeLessThan(lowConc[50]);
       console.log(
-        "  → highConc[0]:",
+        '  → highConc[0]:',
         highConc[0],
-        "lowConc[0]:",
+        'lowConc[0]:',
         lowConc[0],
-        "highConc[50]:",
+        'highConc[50]:',
         highConc[50],
-        "lowConc[50]:",
+        'lowConc[50]:',
         lowConc[50],
       );
     });
   });
 
-  describe("Edge Cases", () => {
+  describe('Edge Cases', () => {
     // Returning 0 for spot price when balance or weight is zero is a deliberate safety/UX
     // choice (avoids Infinity/NaN), not a mathematical definition.
-    it("should handle zero balances gracefully", () => {
+    it('should handle zero balances gracefully', () => {
       const a = calculateSpotPrice(0, 10, 1000000, 90);
       const b = calculateSpotPrice(100000, 10, 0, 90);
       expect(a).toBe(0);
       expect(b).toBe(0);
       console.log(
-        "  → spotPrice(0 balance):",
+        '  → spotPrice(0 balance):',
         a,
-        "spotPrice(0 tknBalance):",
+        'spotPrice(0 tknBalance):',
         b,
       );
     });
 
-    it("should handle zero weights gracefully", () => {
+    it('should handle zero weights gracefully', () => {
       const a = calculateSpotPrice(100000, 0, 1000000, 90);
       const b = calculateSpotPrice(100000, 10, 1000000, 0);
       expect(a).toBe(0);
       expect(b).toBe(0);
-      console.log("  → spotPrice(usdcW=0):", a, "spotPrice(tknW=0):", b);
+      console.log('  → spotPrice(usdcW=0):', a, 'spotPrice(tknW=0):', b);
     });
 
-    it("should handle very large trades without overflow", () => {
+    it('should handle very large trades without overflow', () => {
       const balanceIn = 100000;
       const weightIn = 10;
       const balanceOut = 1000000;
@@ -482,14 +481,14 @@ describe("LBP Math Invariants", () => {
       expect(result).toBeGreaterThan(0);
       expect(isFinite(result)).toBe(true);
       console.log(
-        "  → amountIn: 1M, amountOut:",
+        '  → amountIn: 1M, amountOut:',
         result,
-        "balanceOut:",
+        'balanceOut:',
         balanceOut,
       );
     });
 
-    it("should handle very small trades accurately", () => {
+    it('should handle very small trades accurately', () => {
       const balanceIn = 100000;
       const weightIn = 10;
       const balanceOut = 1000000;
@@ -513,9 +512,9 @@ describe("LBP Math Invariants", () => {
         weightOut,
       );
       console.log(
-        "  → amountIn: 0.01, amountOut:",
+        '  → amountIn: 0.01, amountOut:',
         result,
-        "spotPrice:",
+        'spotPrice:',
         spotPrice,
       );
     });

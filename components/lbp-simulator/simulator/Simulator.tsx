@@ -1,28 +1,31 @@
-"use client";
+'use client';
 
-import React, { memo, useCallback, startTransition } from "react";
+import React, { memo, useCallback, startTransition } from 'react';
 
-import { SimulatorHeader } from "./SimulatorHeader";
-import { SimulatorStats } from "./SimulatorStats";
-import { SimulatorConfig } from "./SimulatorConfig";
-import { SwapForm } from "./SwapForm";
+import { SimulatorHeader } from './SimulatorHeader';
+import { SimulatorStats } from './SimulatorStats';
+import { SimulatorConfig } from './SimulatorConfig';
+import { SwapForm } from './SwapForm';
 
-import { useSimulatorStore } from "@/store/useSimulatorStore";
+import { useSimulatorStore } from '@/store/useSimulatorStore';
 import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
-} from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { SimulatorMain } from "./SimulatorMain";
+} from '@/components/ui/tooltip';
+import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { SimulatorMain } from './SimulatorMain';
 
-const CONFIG_MAX_HEIGHT = "70vh";
+const CONFIG_MAX_HEIGHT = '70vh';
 
 /** Config overlay: sits on top of header + stats when open; animates open/close. */
 const ConfigOverlay = memo(function ConfigOverlay() {
@@ -45,13 +48,13 @@ const ConfigOverlay = memo(function ConfigOverlay() {
       )}
       <div
         className={cn(
-          "absolute top-0 left-0 right-0 z-10 overflow-hidden rounded-t-xl border-b border-border/60 bg-card shadow-lg transition-[max-height,opacity] duration-300 ease-out",
+          'absolute top-0 left-0 right-0 z-10 overflow-hidden rounded-t-xl border-b border-border/60 bg-card shadow-lg transition-[max-height,opacity] duration-300 ease-out',
           isOpen
-            ? "max-h-(--config-overlay-max) opacity-100"
-            : "max-h-0 opacity-0 pointer-events-none border-transparent",
+            ? 'max-h-(--config-overlay-max) opacity-100'
+            : 'max-h-0 opacity-0 pointer-events-none border-transparent',
         )}
         style={
-          { "--config-overlay-max": CONFIG_MAX_HEIGHT } as React.CSSProperties
+          { '--config-overlay-max': CONFIG_MAX_HEIGHT } as React.CSSProperties
         }
         onClick={(e) => e.stopPropagation()} // 👈 IMPORTANT
       >
@@ -115,9 +118,9 @@ export function Simulator() {
         setIsConfigOpen(open);
       });
       if (open) {
-        document.getElementById("lbp-settings")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
+        document.getElementById('lbp-settings')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
         });
       }
     },
@@ -135,6 +138,16 @@ export function Simulator() {
         className="w-full flex flex-col"
       >
         <div className="relative z-10 flex items-center gap-2 border-b border-border/60 bg-card px-2 py-2 rounded-t-2xl">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="min-w-11 min-h-11 touch-manipulation shrink-0"
+              aria-label="Back to landing page"
+            >
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </Link>
           <Tooltip>
             <TooltipTrigger asChild>
               <SidebarTrigger
@@ -148,10 +161,10 @@ export function Simulator() {
             </TooltipTrigger>
             <TooltipContent>
               <p>
-                Use{" "}
+                Use{' '}
                 <KbdGroup>
                   <Kbd>⌘ + b</Kbd>
-                </KbdGroup>{" "}
+                </KbdGroup>{' '}
                 to open the configuration panel
               </p>
             </TooltipContent>
