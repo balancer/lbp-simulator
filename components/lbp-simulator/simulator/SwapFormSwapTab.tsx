@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState, memo } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useShallow } from "zustand/react/shallow";
-import { calculateOutGivenIn } from "@/lib/lbp-math";
-import { ArrowUpDown, Wallet } from "lucide-react";
-import { toast } from "@/components/ui/toast";
-import { TokenLogo } from "@/components/ui/TokenLogo";
-import { SwapFormSwapTabLive } from "./SwapFormSwapTabLive";
-import Image from "next/image";
+import { useState, memo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useShallow } from 'zustand/react/shallow';
+import { calculateOutGivenIn } from '@/lib/lbp-math';
+import { ArrowUpDown, Wallet } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import { TokenLogo } from '@/components/ui/TokenLogo';
+import { SwapFormSwapTabLive } from './SwapFormSwapTabLive';
+import Image from 'next/image';
 
-type SwapDirection = "buy" | "sell";
+type SwapDirection = 'buy' | 'sell';
 
 function SwapFormSwapTabComponent() {
   const { config, processBuy, processSell, userTknBalance, userUsdcBalance } =
@@ -26,16 +26,16 @@ function SwapFormSwapTabComponent() {
       })),
     );
 
-  const [direction, setDirection] = useState<SwapDirection>("buy");
-  const [inputAmount, setInputAmount] = useState<string>("");
+  const [direction, setDirection] = useState<SwapDirection>('buy');
+  const [inputAmount, setInputAmount] = useState<string>('');
 
   const handleSwap = () => {
-    setDirection((d) => (d === "buy" ? "sell" : "buy"));
-    setInputAmount("");
+    setDirection((d) => (d === 'buy' ? 'sell' : 'buy'));
+    setInputAmount('');
   };
 
   const handleMax = () => {
-    if (direction === "buy") {
+    if (direction === 'buy') {
       setInputAmount(userUsdcBalance.toString());
     } else {
       setInputAmount(userTknBalance.toString());
@@ -60,7 +60,7 @@ function SwapFormSwapTabComponent() {
         ? baseSnapshots[currentStep]
         : simulationData[currentStep] || simulationData[0];
 
-    if (direction === "buy") {
+    if (direction === 'buy') {
       if (amount > userUsdcBalance) {
         alert(
           `Insufficient ${config.collateralToken} balance. You have ${userUsdcBalance.toLocaleString()} ${config.collateralToken}.`,
@@ -105,21 +105,21 @@ function SwapFormSwapTabComponent() {
         duration: 5000,
       });
     }
-    setInputAmount("");
+    setInputAmount('');
   };
 
   const isValidAmount = Boolean(inputAmount && parseFloat(inputAmount) > 0);
   const hasInsufficientBalance = isValidAmount
-    ? (direction === "buy" && parseFloat(inputAmount) > userUsdcBalance) ||
-      (direction === "sell" && parseFloat(inputAmount) > userTknBalance)
+    ? (direction === 'buy' && parseFloat(inputAmount) > userUsdcBalance) ||
+      (direction === 'sell' && parseFloat(inputAmount) > userTknBalance)
     : false;
 
   const inputToken =
-    direction === "buy" ? config.collateralToken : config.tokenSymbol;
+    direction === 'buy' ? config.collateralToken : config.tokenSymbol;
   const outputToken =
-    direction === "buy" ? config.tokenSymbol : config.collateralToken;
-  const inputBalance = direction === "buy" ? userUsdcBalance : userTknBalance;
-  const outputBalance = direction === "buy" ? userTknBalance : userUsdcBalance;
+    direction === 'buy' ? config.tokenSymbol : config.collateralToken;
+  const inputBalance = direction === 'buy' ? userUsdcBalance : userTknBalance;
+  const outputBalance = direction === 'buy' ? userTknBalance : userUsdcBalance;
 
   return (
     <div className="space-y-4">
@@ -137,7 +137,7 @@ function SwapFormSwapTabComponent() {
             <Button
               variant="link"
               onClick={handleMax}
-              className="text-indigo-600 hover:text-indigo-700 font-medium ml-1 h-auto p-0 text-xs min-w-0"
+              className="text-primary hover:text-primary/80 font-medium ml-1 h-auto p-0 text-xs min-w-0"
             >
               Max
             </Button>
@@ -210,12 +210,12 @@ function SwapFormSwapTabComponent() {
           </div>
           <Button
             variant="outline"
-            className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground border-0"
+            className="flex items-center gap-2 px-3 py-2 h-auto font-semibold bg-primary text-primary-foreground hover:bg-primary/90 border-0"
           >
             <div className="h-6 w-6 bg-white rounded-full flex items-center justify-center font-bold">
-            <span className="text-lg font-bold text-black">
-            {config.tokenSymbol?.charAt(0) ?? "?"}
-          </span>
+              <span className="text-lg font-bold text-black">
+                {config.tokenSymbol?.charAt(0) ?? '?'}
+              </span>
             </div>
             <span className="font-medium">{outputToken}</span>
           </Button>
@@ -241,10 +241,10 @@ function SwapFormSwapTabComponent() {
       <Button
         onClick={handleSubmit}
         disabled={!isValidAmount || hasInsufficientBalance}
-        className="w-full bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
         size="lg"
       >
-        {direction === "buy"
+        {direction === 'buy'
           ? `Buy ${config.tokenSymbol}`
           : `Sell ${config.tokenSymbol}`}
       </Button>

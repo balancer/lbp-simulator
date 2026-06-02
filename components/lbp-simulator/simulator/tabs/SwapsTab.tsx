@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useShallow } from "zustand/react/shallow";
+import { memo } from 'react';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useShallow } from 'zustand/react/shallow';
 
 interface SwapsTabProps {
   swaps: any[];
@@ -41,9 +41,9 @@ function SwapsTabComponent({ swaps }: SwapsTabProps) {
               </tr>
             ) : (
               swaps.map((swap) => {
-                const isBuy = swap.direction === "buy";
-                const inToken = isBuy ? "USDC" : config.tokenSymbol;
-                const outToken = isBuy ? config.tokenSymbol : "USDC";
+                const isBuy = swap.direction === 'buy';
+                const inToken = isBuy ? 'USDC' : config.tokenSymbol;
+                const outToken = isBuy ? config.tokenSymbol : 'USDC';
 
                 return (
                   <tr
@@ -57,28 +57,28 @@ function SwapsTabComponent({ swaps }: SwapsTabProps) {
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                           isBuy
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                            : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-[#B68449]/15 text-[#B68449]'
                         }`}
                       >
-                        {isBuy ? "Buy" : "Sell"}
+                        {isBuy ? 'Buy' : 'Sell'}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs max-w-[120px] truncate">
                       {swap.account}
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <span className={isBuy ? "text-emerald-600" : ""}>
+                      <span className={isBuy ? 'text-primary' : ''}>
                         {swap.amountIn.toLocaleString(undefined, {
                           maximumFractionDigits: 2,
-                        })}{" "}
+                        })}{' '}
                         {inToken}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       {swap.amountOut.toLocaleString(undefined, {
                         maximumFractionDigits: 2,
-                      })}{" "}
+                      })}{' '}
                       {outToken}
                     </td>
                     <td className="px-4 py-3 text-right font-medium whitespace-nowrap">

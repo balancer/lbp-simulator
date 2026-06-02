@@ -35,7 +35,7 @@ function ToastItem({ toast, onClose }: ToastProps) {
       )}
     >
       <div className="flex items-start gap-3">
-        <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+        <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
         <div className="grid gap-1 flex-1">
           <div className="text-sm font-semibold">{toast.title}</div>
           {toast.description && (

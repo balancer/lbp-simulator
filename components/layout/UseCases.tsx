@@ -198,8 +198,8 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
 
       animate(card, {
         boxShadow: isFocused
-          ? "0 24px 60px rgba(5, 214, 144, 0.35)"
-          : "0 18px 35px rgba(15, 23, 42, 0.2)",
+          ? "0 24px 60px rgba(0, 0, 0, 0.4)"
+          : "0 18px 35px rgba(0, 0, 0, 0.3)",
         duration: 420,
         easing: "easeOutQuad",
       });
@@ -227,8 +227,8 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
       wrapper.style.opacity = "1";
       wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
       card.style.boxShadow = isFocused
-        ? "0 24px 60px rgba(5, 214, 144, 0.35)"
-        : "0 18px 35px rgba(15, 23, 42, 0.2)";
+        ? "0 24px 60px rgba(0, 0, 0, 0.4)"
+        : "0 18px 35px rgba(0, 0, 0, 0.3)";
     });
   }, [isMobile]);
 

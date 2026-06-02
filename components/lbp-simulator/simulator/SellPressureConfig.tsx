@@ -200,13 +200,13 @@ function SellPressureConfigComponent() {
                   }
                   className={[
                     "rounded-lg border p-3 text-left transition-colors",
-                    "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/30",
+                    "bg-primary/5 hover:bg-primary/10 border-primary/30",
                     localConfig.preset === "loyal"
-                      ? "ring-2 ring-emerald-500/60"
+                      ? "ring-2 ring-primary/60"
                       : "",
                   ].join(" ")}
                 >
-                  <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                  <div className="text-xs font-semibold text-primary">
                     Loyal community
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
@@ -222,13 +222,13 @@ function SellPressureConfigComponent() {
                   }
                   className={[
                     "rounded-lg border p-3 text-left transition-colors",
-                    "bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/30",
+                    "bg-[#B68449]/10 hover:bg-[#B68449]/15 border-[#B68449]/30",
                     localConfig.preset === "greedy"
-                      ? "ring-2 ring-amber-500/60"
+                      ? "ring-2 ring-[#B68449]/60"
                       : "",
                   ].join(" ")}
                 >
-                  <div className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                  <div className="text-xs font-semibold text-[#B68449]">
                     Greedy community
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">

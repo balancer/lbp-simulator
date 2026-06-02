@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import {
   LineChart,
   Line,
@@ -8,8 +8,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-} from "recharts";
-import { memo, useMemo } from "react";
+} from 'recharts';
+import { memo, useMemo } from 'react';
 
 interface WeightsChartTabProps {
   chartData: any[];
@@ -18,8 +18,12 @@ interface WeightsChartTabProps {
   currentStep: number;
 }
 
-function WeightsChartTabComponent({ chartData, shouldAnimate, currentStep }: WeightsChartTabProps) {
-const axisLabelColor = "#b3b3b3";
+function WeightsChartTabComponent({
+  chartData,
+  shouldAnimate,
+  currentStep,
+}: WeightsChartTabProps) {
+  const axisLabelColor = '#b3b3b3';
 
   const referenceTimeLabel = useMemo(() => {
     if (chartData.length === 0 || currentStep < 0) return null;
@@ -35,12 +39,24 @@ const axisLabelColor = "#b3b3b3";
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           <defs>
-            <linearGradient id="tknWeightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+              id="tknWeightGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
               <stop offset="0%" stopColor="#91E2C1" /> {/* accent */}
               <stop offset="50%" stopColor="#05D690" /> {/* primary */}
               <stop offset="100%" stopColor="#18B575" /> {/* dark green */}
             </linearGradient>
-            <linearGradient id="usdcWeightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+              id="usdcWeightGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
               <stop offset="0%" stopColor="#91E2C1" /> {/* accent */}
               <stop offset="50%" stopColor="#05D690" /> {/* primary */}
               <stop offset="100%" stopColor="#18B575" /> {/* dark green */}
@@ -79,19 +95,19 @@ const axisLabelColor = "#b3b3b3";
           )}
           <Tooltip
             contentStyle={{
-              borderRadius: "8px",
-              border: "1px solid hsl(var(--border))",
-              backgroundColor: "hsl(var(--popover))",
-              color: "hsl(var(--popover-foreground))",
+              borderRadius: '8px',
+              border: '1px solid hsl(var(--border))',
+              backgroundColor: 'hsl(var(--popover))',
+              color: 'hsl(var(--popover-foreground))',
             }}
-            itemStyle={{ color: "hsl(var(--foreground))" }}
+            itemStyle={{ color: 'hsl(var(--foreground))' }}
             labelStyle={{
-              color: "hsl(var(--muted-foreground))",
-              marginBottom: "0.25rem",
+              color: 'hsl(var(--muted-foreground))',
+              marginBottom: '0.25rem',
             }}
             formatter={(value: any, name: any) => [
               `${Number(value).toFixed(2)}%`,
-              name === "tknWeight" ? "Token" : "USDC",
+              name === 'tknWeight' ? 'Token' : 'USDC',
             ]}
           />
           <Line
@@ -101,7 +117,7 @@ const axisLabelColor = "#b3b3b3";
             strokeWidth={3}
             dot={false}
             name="tknWeight"
-            activeDot={{ r: 6, fill: "#e9d5ff" }}
+            activeDot={{ r: 6, fill: '#91E2C1' }}
             isAnimationActive={shouldAnimate}
             animationDuration={shouldAnimate ? 300 : 0}
           />
@@ -112,7 +128,7 @@ const axisLabelColor = "#b3b3b3";
             strokeWidth={3}
             dot={false}
             name="usdcWeight"
-            activeDot={{ r: 6, fill: "#fed7aa" }}
+            activeDot={{ r: 6, fill: '#E6F9C4' }}
             isAnimationActive={shouldAnimate}
             animationDuration={shouldAnimate ? 300 : 0}
           />

@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { RotateCcw, TrendingUp } from "lucide-react";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { DEFAULT_DEMAND_PRESSURE_CONFIG } from "@/lib/lbp-math";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/dialog';
+import { RotateCcw, TrendingUp } from 'lucide-react';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { DEFAULT_DEMAND_PRESSURE_CONFIG } from '@/lib/lbp-math';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   LineChart,
   Line,
@@ -30,16 +30,16 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { useMemo, useState, useEffect, memo } from "react";
+} from 'recharts';
+import { useMemo, useState, useEffect, memo } from 'react';
 import {
   getCumulativeBuyPressureCurve,
   DemandPressureConfig as DemandPressureConfigType,
-} from "@/lib/lbp-math";
-import { useDebounce } from "@/lib/useDebounce";
-import { useShallow } from "zustand/react/shallow";
-import { GiBull } from "react-icons/gi";
-import { GiBearFace } from "react-icons/gi";
+} from '@/lib/lbp-math';
+import { useDebounce } from '@/lib/useDebounce';
+import { useShallow } from 'zustand/react/shallow';
+import { GiBull } from 'react-icons/gi';
+import { GiBearFace } from 'react-icons/gi';
 
 function DemandPressureConfigComponent() {
   const { demandPressureConfig, updateDemandPressureConfig, config } =
@@ -137,32 +137,33 @@ function DemandPressureConfigComponent() {
                     <XAxis
                       dataKey="time"
                       stroke={
-                        typeof window !== "undefined" &&
-                        document.documentElement.classList.contains("dark")
-                          ? "#505050"
-                          : "hsl(var(--muted-foreground))"
+                        typeof window !== 'undefined' &&
+                        document.documentElement.classList.contains('dark')
+                          ? '#505050'
+                          : 'hsl(var(--muted-foreground))'
                       }
                       fontSize={10}
                       tickFormatter={(val) => `${val.toFixed(0)}h`}
                     />
                     <YAxis
                       stroke={
-                        typeof window !== "undefined" &&
-                        document.documentElement.classList.contains("dark")
-                          ? "#505050"
-                          : "hsl(var(--muted-foreground))"
+                        typeof window !== 'undefined' &&
+                        document.documentElement.classList.contains('dark')
+                          ? '#505050'
+                          : 'hsl(var(--muted-foreground))'
                       }
                       fontSize={10}
                       tickFormatter={(val) => {
                         const n = Number(val);
-                        if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+                        if (n >= 1_000_000)
+                          return `${(n / 1_000_000).toFixed(1)}M`;
                         if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
                         return `${n.toFixed(0)}`;
                       }}
                     />
                     <Tooltip
                       formatter={(value: any) => {
-                        if (value == null) return "";
+                        if (value == null) return '';
                         return `${Number(value).toLocaleString()} ${config.collateralToken}`;
                       }}
                       labelFormatter={(label) =>
@@ -195,18 +196,18 @@ function DemandPressureConfigComponent() {
                   <button
                     type="button"
                     onClick={() =>
-                      setLocalConfig((prev) => ({ ...prev, preset: "bullish" }))
+                      setLocalConfig((prev) => ({ ...prev, preset: 'bullish' }))
                     }
                     className={[
-                      "rounded-lg border p-3 text-left transition-colors",
-                      "bg-blue-500/10 hover:bg-blue-500/15 border-blue-500/30",
-                      localConfig.preset === "bullish"
-                        ? "ring-2 ring-blue-500/60"
-                        : "",
-                    ].join(" ")}
+                      'rounded-lg border p-3 text-left transition-colors',
+                      'bg-primary/10 hover:bg-primary/15 border-primary/30',
+                      localConfig.preset === 'bullish'
+                        ? 'ring-2 ring-primary/60'
+                        : '',
+                    ].join(' ')}
                   >
-                    <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex gap-2 items-center">
-                    <GiBull size={24} color="blue" />
+                    <div className="text-xs font-semibold text-primary flex gap-2 items-center">
+                      <GiBull size={24} color="#05D690" />
                       Bullish
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
@@ -217,18 +218,18 @@ function DemandPressureConfigComponent() {
                   <button
                     type="button"
                     onClick={() =>
-                      setLocalConfig((prev) => ({ ...prev, preset: "bearish" }))
+                      setLocalConfig((prev) => ({ ...prev, preset: 'bearish' }))
                     }
                     className={[
-                      "rounded-lg border p-3 text-left transition-colors",
-                      "bg-red-500/10 hover:bg-red-500/15 border-red-500/30",
-                      localConfig.preset === "bearish"
-                        ? "ring-2 ring-red-500/60"
-                        : "",
-                    ].join(" ")}
+                      'rounded-lg border p-3 text-left transition-colors',
+                      'bg-destructive/10 hover:bg-destructive/15 border-destructive/30',
+                      localConfig.preset === 'bearish'
+                        ? 'ring-2 ring-destructive/60'
+                        : '',
+                    ].join(' ')}
                   >
-                    <div className="text-xs font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
-                      <GiBearFace size={24} color="red"/>
+                    <div className="text-xs font-semibold text-destructive flex items-center gap-2">
+                      <GiBearFace size={24} color="#ff6b8a" />
                       Bearish
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
@@ -239,13 +240,17 @@ function DemandPressureConfigComponent() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs">Magnitude (end cumulative buy)</Label>
+                <Label className="text-xs">
+                  Magnitude (end cumulative buy)
+                </Label>
                 <Select
                   value={String(localConfig.magnitudeBase)}
                   onValueChange={(value) =>
                     setLocalConfig((prev) => ({
                       ...prev,
-                      magnitudeBase: Number(value) as DemandPressureConfigType["magnitudeBase"],
+                      magnitudeBase: Number(
+                        value,
+                      ) as DemandPressureConfigType['magnitudeBase'],
                     }))
                   }
                 >

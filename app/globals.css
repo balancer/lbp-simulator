@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -49,45 +49,48 @@
 @layer base {
   :root {
     --radius: 0.625rem;
-    --background: #31373f;
+    --background: #171923;
     --foreground: #ffffff;
-    --card: #363636;
+    --card: #1a202c;
     --card-foreground: #ffffff;
-    --popover: #363636;
+    --popover: #1a202c;
     --popover-foreground: #ffffff;
-    --primary: #05D690;
+    --primary: #05d690;
     --primary-foreground: #111111;
-    --secondary: #3d3d3d;
+    --secondary: #2d3748;
     --secondary-foreground: #ffffff;
-    --muted: #454545;
-    --muted-foreground: #BBBBBB;
-    --accent: #91E2C1;
-    --accent-foreground: #111111;
-    --destructive: #ff6b8a;
-    --border: rgba(255, 255, 255, 0.1);
-    --input: rgba(255, 255, 255, 0.15);
-    --ring: #05D690;
-    --chart-1: #05D690;
-    --chart-2: #91E2C1;
-    --chart-3: #78EABC;
-    --chart-4: #18B575;
-    --chart-5: #05D690;
-    --sidebar: #363636;
+    --muted: #2d3748;
+    --muted-foreground: #a0aec0;
+    --accent: #4a5568;
+    --accent-foreground: #ffffff;
+    --destructive: #ea6249;
+    --border: rgba(255, 255, 255, 0.06);
+    --input: rgba(255, 255, 255, 0.08);
+    --ring: #05d690;
+    --chart-1: #05d690;
+    --chart-2: #91e2c1;
+    --chart-3: #2d3748;
+    --chart-4: #4a5568;
+    --chart-5: #718096;
+    --sidebar: #1a202c;
     --sidebar-foreground: #ffffff;
-    --sidebar-primary: #05D690;
+    --sidebar-primary: #05d690;
     --sidebar-primary-foreground: #111111;
-    --sidebar-accent: #3d3d3d;
+    --sidebar-accent: #2d3748;
     --sidebar-accent-foreground: #ffffff;
-    --sidebar-border: rgba(255, 255, 255, 0.1);
-    --sidebar-ring: #05D690;
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+    --sidebar-ring: #05d690;
   }
-  }
+}
 
-  @layer base {
+@layer base {
   * {
     @apply border-border outline-ring/50;
-    }
-    body {
-    @apply bg-background text-foreground;
-    }
   }
+  body {
+    @apply bg-background text-foreground;
+    background-image: url('/images/background-noise.png');
+    background-repeat: repeat;
+    background-size: auto;
+  }
+}

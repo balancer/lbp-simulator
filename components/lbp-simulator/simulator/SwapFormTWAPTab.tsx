@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useMemo, useState, memo } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useShallow } from "zustand/react/shallow";
+import { useMemo, useState, memo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { SwapFormTWAPTabLive } from "./SwapFormTWAPTabLive";
-import { toast } from "@/components/ui/toast";
+} from '@/components/ui/collapsible';
+import { SwapFormTWAPTabLive } from './SwapFormTWAPTabLive';
+import { toast } from '@/components/ui/toast';
 
 function SwapFormTWAPTabComponent() {
   const {
@@ -30,10 +30,10 @@ function SwapFormTWAPTabComponent() {
     })),
   );
 
-  const [totalAmount, setTotalAmount] = useState<string>("");
-  const [numParts, setNumParts] = useState<string>("3");
-  const [totalDurationDays, setTotalDurationDays] = useState<string>("1");
-  const [priceProtectionPct, setPriceProtectionPct] = useState<string>("0");
+  const [totalAmount, setTotalAmount] = useState<string>('');
+  const [numParts, setNumParts] = useState<string>('3');
+  const [totalDurationDays, setTotalDurationDays] = useState<string>('1');
+  const [priceProtectionPct, setPriceProtectionPct] = useState<string>('0');
 
   const parsed = useMemo(() => {
     const amount = parseFloat(totalAmount);
@@ -61,11 +61,11 @@ function SwapFormTWAPTabComponent() {
   };
 
   const handleCreateSuccess = () => {
-    setTotalAmount("");
-    setPriceProtectionPct("0");
+    setTotalAmount('');
+    setPriceProtectionPct('0');
   };
 
-  const openTwapOrders = twapOrders.filter((o) => o.status === "open");
+  const openTwapOrders = twapOrders.filter((o) => o.status === 'open');
 
   const formatHours = (hours: number) => {
     if (hours < 1) {
@@ -79,7 +79,9 @@ function SwapFormTWAPTabComponent() {
     return `${days.toFixed(1)}d`;
   };
 
-  const createTwapOrderAndReset = (order: Parameters<typeof createTwapOrder>[0]) => {
+  const createTwapOrderAndReset = (
+    order: Parameters<typeof createTwapOrder>[0],
+  ) => {
     createTwapOrder(order);
     handleCreateSuccess();
 
@@ -100,16 +102,16 @@ function SwapFormTWAPTabComponent() {
           </span>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <span>
-              Balance:{" "}
+              Balance:{' '}
               {userUsdcBalance.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
-              })}{" "}
+              })}{' '}
               {config.collateralToken}
             </span>
             <Button
               variant="link"
               onClick={handleMax}
-              className="text-indigo-600 hover:text-indigo-700 font-medium ml-1 h-auto p-0 text-xs min-w-0"
+              className="text-primary hover:text-primary/80 font-medium ml-1 h-auto p-0 text-xs min-w-0"
             >
               Max
             </Button>
@@ -213,7 +215,7 @@ function SwapFormTWAPTabComponent() {
           <div>
             {parsed.spendPerPart.toLocaleString(undefined, {
               maximumFractionDigits: 4,
-            })}{" "}
+            })}{' '}
             {config.collateralToken}
           </div>
         </div>
@@ -274,17 +276,17 @@ function SwapFormTWAPTabComponent() {
                 >
                   <div className="space-y-0.5">
                     <div>
-                      Total:{" "}
+                      Total:{' '}
                       <span className="font-medium">
                         {order.totalCollateral.toLocaleString(undefined, {
                           maximumFractionDigits: 4,
-                        })}{" "}
+                        })}{' '}
                         {config.collateralToken}
                       </span>
                     </div>
                     <div className="text-muted-foreground">
-                      {order.numParts} parts over{" "}
-                      {formatHours(order.totalDurationHours)} • Protection{" "}
+                      {order.numParts} parts over{' '}
+                      {formatHours(order.totalDurationHours)} • Protection{' '}
                       {order.priceProtectionPct.toFixed(1)}%
                     </div>
                   </div>
