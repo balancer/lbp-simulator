@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Newsreader } from "next/font/google";
 import localFont from "next/font/local";
-import Script from "next/script";
 import "./globals.css";
 
 const satoshi = localFont({
@@ -23,26 +22,23 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "LBP Simulator | Balancer",
-  description: "Simulate a LBP sale to understand price discovery.",
+  title: "LBP Simulator | Beets",
+  description: "Simulate a Beets LBP sale to understand price discovery.",
   icons: {
     icon: [
       {
-        url: "/logo-balancer-black.svg",
+        url: "/logo-beets-white.svg",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/logo-balancer-white.svg",
+        url: "/logo-beets-white.svg",
         media: "(prefers-color-scheme: dark)",
       },
     ],
-    shortcut: "/logo-balancer-black.svg",
-    apple: "/logo-balancer-black.svg",
+    shortcut: "/logo-beets-white.svg",
+    apple: "/logo-beets-white.svg",
   },
 };
-
-import { ThemeProvider } from "@/components/theme-provider";
-import { Background3D } from "@/components/ui/Background3D";
 import { Toaster } from "@/components/ui/toast";
 import { PlayPauseButton } from "@/components/ui/PlayPauseButton";
 import { SvgDefinitions } from "@/components/ui/SvgDefinitions";
@@ -53,37 +49,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${satoshi.variable} ${newsreader.variable} antialiased font-sans text-foreground`}
-      >
-        {process.env.NODE_ENV === "development" && (
-          <Script
-            src="https://unpkg.com/react-scan/dist/auto.global.js"
-            strategy="afterInteractive"
-          />
-        )}
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          storageKey="vite-ui-theme"
-        >
-          <SvgDefinitions />
-          <Background3D />
-          <div
-            id="app-scroll"
-            className="fixed inset-0 z-10 overflow-y-auto overflow-x-hidden flex flex-col"
-          >
-            <Header />
-            <div className="flex-1 flex flex-col min-h-0">{children}</div>
-          </div>
-          <Toaster />
-          <PlayPauseButton />
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+    return (
+          <html lang="en" className="dark" suppressHydrationWarning>
+            <body
+              className={`${satoshi.variable} ${newsreader.variable} antialiased font-sans text-foreground`}
+            >
+<SvgDefinitions />
+            <div
+              id="app-scroll"
+              className="fixed inset-0 z-10 overflow-y-auto overflow-x-hidden flex flex-col"
+            >
+              <Header />
+              <div className="flex-1 flex flex-col min-h-0">{children}</div>
+            </div>
+            <Toaster />
+            <PlayPauseButton />
+            </body>
+          </html>
+        );
 }

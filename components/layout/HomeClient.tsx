@@ -8,8 +8,7 @@ import UseCases from "@/components/layout/UseCases";
 import { Live } from "@/components/layout/Live";
 import { Insights } from "@/components/layout/Insights";
 import { KPI } from "@/components/layout/KPI";
-import { CommomQuestions } from "@/components/layout/CommomQuestions";
-import { Chains } from "@/components/layout/Chains";
+import { CommonQuestions } from "@/components/layout/CommonQuestions";
 
 type HomeClientProps = {
   initialCase?: string | null;
@@ -44,8 +43,7 @@ export function HomeClient({ initialCase }: HomeClientProps) {
           openCaseSlug={openCase}
         />
         <Insights activeIndex={activeUseCase} />
-        <Chains />
-        <CommomQuestions />
+        <CommonQuestions />
       </main>
       <Footer />
     </div>

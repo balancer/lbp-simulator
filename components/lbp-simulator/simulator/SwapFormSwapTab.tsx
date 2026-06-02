@@ -210,7 +210,7 @@ function SwapFormSwapTabComponent() {
           </div>
           <Button
             variant="outline"
-            className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0"
+            className="flex items-center gap-2 px-3 py-2 h-auto bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground border-0"
           >
             <div className="h-6 w-6 bg-white rounded-full flex items-center justify-center font-bold">
             <span className="text-lg font-bold text-black">
@@ -241,7 +241,7 @@ function SwapFormSwapTabComponent() {
       <Button
         onClick={handleSubmit}
         disabled={!isValidAmount || hasInsufficientBalance}
-        className="w-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
         size="lg"
       >
         {direction === "buy"

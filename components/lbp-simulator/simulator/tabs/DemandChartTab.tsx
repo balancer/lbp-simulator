@@ -1,6 +1,4 @@
 "use client";
-
-import { useTheme } from "next-themes";
 import {
   LineChart,
   Line,
@@ -21,8 +19,7 @@ function DemandChartTabComponent({
   chartData,
   shouldAnimate,
 }: DemandChartTabProps) {
-  const { resolvedTheme } = useTheme();
-  const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
+const axisLabelColor = "#b3b3b3";
 
   return (
     <>

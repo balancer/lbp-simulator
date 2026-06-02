@@ -57,7 +57,7 @@ const SLIDES = [
       summary:
         "Maple DAO ran a public LBP sale to distribute 5% of MPL supply in a fixed 72-hour window, using on-chain price discovery for broad access.",
       whatHappened:
-        "Maple DAO proposed depositing 500,000 MPL and 850,000 USDC into a Balancer LBP. The pool opened at 4:30pm EST on April 28, 2021, ran for 72 hours, and returned raised USDC plus any remaining MPL to the DAO multisig afterward.",
+        "Maple DAO proposed depositing 500,000 MPL and 850,000 USDC into a Beets LBP. The pool opened at 4:30pm EST on April 28, 2021, ran for 72 hours, and returned raised USDC plus any remaining MPL to the DAO multisig afterward.",
       keyResults: [
         "500,000 MPL (5% of supply) allocated for the public sale",
         "72-hour, time-boxed sale window (April 28, 2021)",
@@ -87,9 +87,9 @@ const SLIDES = [
     caseStudy: {
       title: "Gitcoin’s AKITA Divestment via LBP",
       summary:
-        "Gitcoin used a Balancer LBP to gradually divest a large AKITA donation, creating predictable sell pressure and deeper liquidity without a sudden market dump.",
+        "Gitcoin used a Beets LBP to gradually divest a large AKITA donation, creating predictable sell pressure and deeper liquidity without a sudden market dump.",
       whatHappened:
-        "Gitcoin placed AKITA and WETH in a Balancer LBP (99% AKITA / 1% WETH) via Fjord Foundry, then slowly shifted weights over a year toward 99% WETH / 1% AKITA. The LBP both sold AKITA into the market and bought AKITA as needed to maintain the changing weights, while collecting swap fees.",
+        "Gitcoin placed AKITA and WETH in a Beets LBP (99% AKITA / 1% WETH) via Fjord Foundry, then slowly shifted weights over a year toward 99% WETH / 1% AKITA. The LBP both sold AKITA into the market and bought AKITA as needed to maintain the changing weights, while collecting swap fees.",
       keyResults: [
         "LBP concluded on December 19, 2022",
         "23,437,196,448,684.83 AKITA released",
@@ -198,7 +198,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
 
       animate(card, {
         boxShadow: isFocused
-          ? "0 24px 60px rgba(230, 200, 163, 0.35)"
+          ? "0 24px 60px rgba(5, 214, 144, 0.35)"
           : "0 18px 35px rgba(15, 23, 42, 0.2)",
         duration: 420,
         easing: "easeOutQuad",
@@ -227,7 +227,7 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
       wrapper.style.opacity = "1";
       wrapper.style.zIndex = (isFocused ? 40 : layout.baseZ).toString();
       card.style.boxShadow = isFocused
-        ? "0 24px 60px rgba(230, 200, 163, 0.35)"
+        ? "0 24px 60px rgba(5, 214, 144, 0.35)"
         : "0 18px 35px rgba(15, 23, 42, 0.2)";
     });
   }, [isMobile]);
@@ -377,8 +377,8 @@ const UseCases = ({ activeIndex, onSelect, openCaseSlug }: UseCasesProps) => {
                           className={cn(
                             "rounded-full border px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all",
                             copiedSlug === slide.slug
-                              ? "border-[#E6C8A3] bg-[#E6C8A3] text-[#171717]"
-                              : "border-[#E6C8A3] text-[#E6C8A3] hover:bg-[#E6C8A3]/15",
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-primary text-primary hover:bg-primary/15",
                             !isFocused &&
                               "cursor-not-allowed opacity-50 hover:bg-transparent",
                           )}

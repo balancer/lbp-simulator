@@ -42,7 +42,7 @@ export function HowItWorksTab() {
             variant="outline"
             className={
               isPlaying
-                ? "mb-4 bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0 font-semibold"
+                ? "mb-4 bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground border-0 font-semibold"
                 : "mb-4"
             }
           >
@@ -86,12 +86,12 @@ export function HowItWorksTab() {
         <p className="text-xs pt-2 border-t border-border/50">
           Learn more about LBPs on{" "}
           <a
-            href="https://docs.balancer.fi/concepts/explore-available-balancer-pools/liquidity-bootstrapping-pool/liquidity-bootstrapping-pool.html"
+            href="https://docs.beets.fi/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
+            className="text-accent hover:text-primary underline"
           >
-            Balancer Documentation
+            Beets Documentation
           </a>
         </p>
       </div>

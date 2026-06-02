@@ -81,7 +81,7 @@ export function KPI() {
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             Historical amount raised
           </div>
-          <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
+          <div className="text-4xl md:text-5xl font-semibold text-primary">
             {formatCurrency(raised)}
           </div>
           <div className="text-sm text-muted-foreground">
@@ -92,7 +92,7 @@ export function KPI() {
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             LBP pools created
           </div>
-          <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
+          <div className="text-4xl md:text-5xl font-semibold text-primary">
             {formatCount(pools)}
           </div>
           <div className="text-sm text-muted-foreground">
@@ -103,7 +103,7 @@ export function KPI() {
           <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             Single participants
           </div>
-          <div className="text-4xl md:text-5xl font-semibold text-[#E6C8A3]">
+          <div className="text-4xl md:text-5xl font-semibold text-primary">
             {formatCount(participants)}
           </div>
           <div className="text-sm text-muted-foreground">

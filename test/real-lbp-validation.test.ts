@@ -9,7 +9,7 @@ import {
 /**
  * Validation tests using real LBP parameters and expected behaviors.
  *
- * These tests are based on actual Balancer LBPs to ensure our simulation
+ * These tests are based on actual Beets LBPs to ensure our simulation
  * produces realistic results.
  */
 describe("Real LBP Validation", () => {

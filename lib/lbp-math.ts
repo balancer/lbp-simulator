@@ -126,7 +126,7 @@ export function calcTVLUSD(
 }
 
 /**
- * Calculates Spot Price based on Balancer formula
+ * Calculates Spot Price based on Beets formula
  * Price = (BalanceUSDC / WeightUSDC) / (BalanceTKN / WeightTKN)
  */
 export function calculateSpotPrice(
@@ -145,7 +145,7 @@ export function calculateSpotPrice(
  * Calculate the Amount of Token Received for a given Amount of Collateral Spent
  * Formula: Ao = Bo * (1 - (Bi / (Bi + Ai)) ^ (wi / wo))
  * When swapFee is provided, the formula uses amountInAfterFee = amountIn * (1 - swapFee)
- * so the pool receives only the amount after fee (Balancer convention).
+ * so the pool receives only the amount after fee (Beets convention).
  */
 export function calculateOutGivenIn(
   balanceIn: number,

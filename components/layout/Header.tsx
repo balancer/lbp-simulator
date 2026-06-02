@@ -4,8 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
-import { ModeToggle } from "@/components/ui/mode-toggle";
-import { useTheme } from "next-themes";
 import { useEffect, useState, useRef, memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
@@ -28,70 +26,59 @@ function getScrollParent(el: HTMLElement | null): HTMLElement | null {
 }
 
 function HeaderComponent() {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const headerRef = useRef<HTMLElement>(null);
-  const lastScrollY = useRef(0);
+    const [hidden, setHidden] = useState(false);
+      const headerRef = useRef<HTMLElement>(null);
+      const lastScrollY = useRef(0);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+      useEffect(() => {
+        const el = headerRef.current;
+        const scrollParent = getScrollParent(el);
+        if (!scrollParent) return;
 
-  useEffect(() => {
-    const el = headerRef.current;
-    const scrollParent = getScrollParent(el);
-    if (!scrollParent) return;
+        const handleScroll = () => {
+          const y = scrollParent.scrollTop;
+          const scrollingDown = y > lastScrollY.current;
+          lastScrollY.current = y;
 
-    const handleScroll = () => {
-      const y = scrollParent.scrollTop;
-      const scrollingDown = y > lastScrollY.current;
-      lastScrollY.current = y;
+          setHidden(() => {
+            if (y <= SCROLL_THRESHOLD) return false;
+            if (scrollingDown) return true;
+            return false;
+          });
+        };
 
-      setHidden((prev) => {
-        if (y <= SCROLL_THRESHOLD) return false;
-        if (scrollingDown) return true;
-        return false;
-      });
-    };
+        scrollParent.addEventListener("scroll", handleScroll, { passive: true });
+        return () => scrollParent.removeEventListener("scroll", handleScroll);
+      }, []);
 
-    scrollParent.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scrollParent.removeEventListener("scroll", handleScroll);
-  }, [mounted]);
+      const logoSrc = "/logo-beets-white.svg";
 
-  const logoSrc = useMemo(() => {
-    return mounted && resolvedTheme === "dark"
-      ? "/logo-balancer-white.svg"
-      : "/logo-balancer-black.svg";
-  }, [mounted, resolvedTheme]);
-
-  return (
-    <header
-      ref={headerRef}
-      className={cn(
-        "sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ease-out",
-        hidden && "-translate-y-full",
-      )}
-    >
-      <div className="w-full container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src={logoSrc} alt="Balancer Logo" width={30} height={30} />
-            <span className="text-xl font-bold tracking-tight">Balancer</span>
-          </Link>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="#"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground md:hidden"
-          >
-            Menu
-          </Link>
-          <ModeToggle />
-        </div>
-      </div>
-    </header>
-  );
+      return (
+        <header
+          ref={headerRef}
+          className={cn(
+            "sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ease-out",
+            hidden && "-translate-y-full",
+          )}
+        >
+          <div className="w-full container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
+            <div className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2">
+                <Image src={logoSrc} alt="Beets Logo" width={30} height={30} />
+                <span className="text-xl font-bold tracking-tight">Beets</span>
+              </Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link
+                href="#"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground md:hidden"
+              >
+                Menu
+              </Link>
+            </div>
+          </div>
+        </header>
+      );
 }
 
 export const Header = memo(HeaderComponent);

@@ -12,7 +12,7 @@ import {
 } from "../lib/lbp-math";
 
 describe("LBP Math Invariants", () => {
-  describe("Balancer Core Formulas", () => {
+  describe("Beets Core Formulas", () => {
     // Assumes no swap fee; see fee-aware test below.
     it("should maintain value function V = B_i^w_i * B_o^w_o after swaps", () => {
       const balanceIn = 100000; // USDC

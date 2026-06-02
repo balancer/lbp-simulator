@@ -1,6 +1,4 @@
 "use client";
-
-import { useTheme } from "next-themes";
 import {
   LineChart,
   Line,
@@ -21,8 +19,7 @@ interface WeightsChartTabProps {
 }
 
 function WeightsChartTabComponent({ chartData, shouldAnimate, currentStep }: WeightsChartTabProps) {
-  const { resolvedTheme } = useTheme();
-  const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
+const axisLabelColor = "#b3b3b3";
 
   const referenceTimeLabel = useMemo(() => {
     if (chartData.length === 0 || currentStep < 0) return null;
@@ -39,14 +36,14 @@ function WeightsChartTabComponent({ chartData, shouldAnimate, currentStep }: Wei
         >
           <defs>
             <linearGradient id="tknWeightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#bfdbfe" /> {/* blue-200 */}
-              <stop offset="50%" stopColor="#e9d5ff" /> {/* purple-200 */}
-              <stop offset="100%" stopColor="#fed7aa" /> {/* orange-200 */}
+              <stop offset="0%" stopColor="#91E2C1" /> {/* accent */}
+              <stop offset="50%" stopColor="#05D690" /> {/* primary */}
+              <stop offset="100%" stopColor="#18B575" /> {/* dark green */}
             </linearGradient>
             <linearGradient id="usdcWeightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#bfdbfe" /> {/* blue-200 */}
-              <stop offset="50%" stopColor="#e9d5ff" /> {/* purple-200 */}
-              <stop offset="100%" stopColor="#fed7aa" /> {/* orange-200 */}
+              <stop offset="0%" stopColor="#91E2C1" /> {/* accent */}
+              <stop offset="50%" stopColor="#05D690" /> {/* primary */}
+              <stop offset="100%" stopColor="#18B575" /> {/* dark green */}
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -123,11 +120,11 @@ function WeightsChartTabComponent({ chartData, shouldAnimate, currentStep }: Wei
       </ResponsiveContainer>
       <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200"></div>
+          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-accent to-primary"></div>
           <span>Token</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200"></div>
+          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-accent to-primary"></div>
           <span>USDC</span>
         </div>
       </div>

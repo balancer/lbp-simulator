@@ -60,7 +60,7 @@ export function PlayPauseButton() {
         {/* Pulsing blur effect when simulation is running */}
         {isPlaying && (
           <div
-            className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 opacity-30 blur-xl animate-pulse"
+            className="absolute inset-0 rounded-full bg-gradient-to-r from-accent to-primary opacity-30 blur-xl animate-pulse"
             style={{
               width: "80px",
               height: "80px",
@@ -73,7 +73,7 @@ export function PlayPauseButton() {
         <Button
           onClick={handleMainButtonClick}
           size="icon"
-          className="relative h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold"
+          className="relative h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground font-semibold"
           aria-label={
             isFinished
               ? "Restart simulation"

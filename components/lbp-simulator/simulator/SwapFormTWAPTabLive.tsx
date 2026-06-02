@@ -112,7 +112,7 @@ function SwapFormTWAPTabLiveComponent({
     <Button
       onClick={handleCreate}
       disabled={!isValid || hasInsufficientBalance}
-      className="w-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
       size="lg"
     >
       Start TWAP program

@@ -191,7 +191,7 @@ function SimulatorConfigComponent() {
 
   return (
     <>
-      <SidebarContent className="rounded-xl dark:bg-[#0F0F0F] shadow-xl p-4">
+      <SidebarContent className="rounded-xl bg-[#31373f] shadow-xl p-4">
         <ScrollArea className="flex-1 min-h-0 h-full">
           <div className="p-4 mt-2 pb-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -205,7 +205,7 @@ function SimulatorConfigComponent() {
                     variant="outline"
                     className={
                       isPlaying
-                        ? "bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0 font-semibold"
+                        ? "bg-gradient-to-r from-accent to-primary hover:from-[#78EABC] hover:to-[#04C17D] text-primary-foreground border-0 font-semibold"
                         : ""
                     }
                   >
