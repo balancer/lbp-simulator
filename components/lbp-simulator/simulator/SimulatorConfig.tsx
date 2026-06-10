@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Settings, Play, Pause, RotateCcw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/select';
+import { Settings, Play, Pause, RotateCcw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import {
   SidebarContent,
   SidebarFooter,
@@ -25,17 +25,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { DemandPressureConfig } from "./DemandPressureConfig";
-import { SellPressureConfig } from "./SellPressureConfig";
-import { useState, useEffect, useTransition, memo, useCallback } from "react";
-import { useDebounce } from "@/lib/useDebounce";
-import { LBPConfig } from "@/lib/lbp-math";
-import { useShallow } from "zustand/shallow";
-import { TokenLogo } from "@/components/ui/TokenLogo";
-import { formatNumber } from "@/lib/utils";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+} from '@/components/ui/sidebar';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { DemandPressureConfig } from './DemandPressureConfig';
+import { SellPressureConfig } from './SellPressureConfig';
+import { useState, useEffect, useTransition, memo, useCallback } from 'react';
+import { useDebounce } from '@/lib/useDebounce';
+import { LBPConfig } from '@/lib/lbp-math';
+import { useShallow } from 'zustand/shallow';
+import { TokenLogo } from '@/components/ui/TokenLogo';
+import { formatNumber } from '@/lib/utils';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 function SimulatorConfigComponent() {
   const { setOpen, toggleSidebar } = useSidebar();
@@ -92,8 +92,8 @@ function SimulatorConfigComponent() {
   const [localUsdcBalanceIn, setLocalUsdcBalanceIn] = useState(
     config.usdcBalanceIn,
   );
-  const [pressureMode, setPressureMode] = useState<"buy-and-sell" | "buy-only">(
-    "buy-and-sell",
+  const [pressureMode, setPressureMode] = useState<'buy-and-sell' | 'buy-only'>(
+    'buy-and-sell',
   );
 
   // Update local state when store config changes
@@ -191,7 +191,7 @@ function SimulatorConfigComponent() {
 
   return (
     <>
-      <SidebarContent className="rounded-xl dark:bg-[#0F0F0F] shadow-xl p-4">
+      <SidebarContent className="rounded-xl p-4">
         <ScrollArea className="flex-1 min-h-0 h-full">
           <div className="p-4 mt-2 pb-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -205,11 +205,11 @@ function SimulatorConfigComponent() {
                     variant="outline"
                     className={
                       isPlaying
-                        ? "bg-gradient-to-r from-blue-300 via-purple-300 to-orange-300 hover:from-blue-400 hover:via-purple-400 hover:to-orange-400 text-slate-900 border-0 font-semibold"
-                        : ""
+                        ? 'font-semibold bg-primary text-primary-foreground hover:bg-primary/90 border-0'
+                        : ''
                     }
                   >
-                    {isPlaying ? "Active" : "Paused"}
+                    {isPlaying ? 'Active' : 'Paused'}
                   </Badge>
                 </div>
 
@@ -268,8 +268,8 @@ function SimulatorConfigComponent() {
                       onClick={() => setSimulationSpeed(speed)}
                       className={`h-7 px-3 text-xs rounded-sm flex-1 ${
                         simulationSpeed === speed
-                          ? "bg-background shadow-sm text-foreground font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? 'bg-background shadow-sm text-foreground font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       {speed}x
@@ -279,9 +279,9 @@ function SimulatorConfigComponent() {
                 <div className="flex gap-2 items-center justify-center">
                   <RadioGroup
                     value={pressureMode}
-                    onValueChange={(value: "buy-and-sell" | "buy-only") => {
+                    onValueChange={(value: 'buy-and-sell' | 'buy-only') => {
                       setPressureMode(value);
-                      if (value === "buy-only") {
+                      if (value === 'buy-only') {
                         updateSellPressureConfig({ loyalSoldPct: 0 });
                       }
                     }}
@@ -301,17 +301,17 @@ function SimulatorConfigComponent() {
                   <DemandPressureConfig />
                   <div
                     className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-                      pressureMode === "buy-and-sell"
-                        ? "grid-rows-[1fr]"
-                        : "grid-rows-[0fr]"
+                      pressureMode === 'buy-and-sell'
+                        ? 'grid-rows-[1fr]'
+                        : 'grid-rows-[0fr]'
                     }`}
                   >
                     <div className="min-h-0 overflow-hidden">
                       <div
                         className={`transition-opacity duration-300 ease-out ${
-                          pressureMode === "buy-and-sell"
-                            ? "opacity-100"
-                            : "opacity-0 pointer-events-none"
+                          pressureMode === 'buy-and-sell'
+                            ? 'opacity-100'
+                            : 'opacity-0 pointer-events-none'
                         }`}
                       >
                         <SellPressureConfig />
@@ -333,9 +333,9 @@ function SimulatorConfigComponent() {
                     inputMode="numeric"
                     value={totalSupplyInput}
                     onChange={(e) => {
-                      const raw = e.target.value.replace(/,/g, "");
+                      const raw = e.target.value.replace(/,/g, '');
                       setTotalSupplyInput(e.target.value);
-                      const num = raw === "" ? 0 : Number(raw);
+                      const num = raw === '' ? 0 : Number(raw);
                       if (!Number.isNaN(num) && num >= 0) {
                         setLocalTotalSupply(num);
                       }
@@ -361,7 +361,7 @@ function SimulatorConfigComponent() {
                     onValueChange={(vals) => setLocalPercentForSale(vals[0])}
                   />
                   <p className="text-xs text-muted-foreground">
-                    For sale:{" "}
+                    For sale:{' '}
                     {(
                       (localTotalSupply * (localPercentForSale / 100)) /
                       1_000_000
@@ -377,12 +377,12 @@ function SimulatorConfigComponent() {
                     inputMode="numeric"
                     value={
                       localUsdcBalanceIn === 0
-                        ? ""
+                        ? ''
                         : formatNumber(localUsdcBalanceIn)
                     }
                     onChange={(e) => {
-                      const raw = e.target.value.replace(/,/g, "");
-                      setLocalUsdcBalanceIn(raw === "" ? 0 : Number(raw));
+                      const raw = e.target.value.replace(/,/g, '');
+                      setLocalUsdcBalanceIn(raw === '' ? 0 : Number(raw));
                     }}
                     onBlur={() => {
                       setLocalUsdcBalanceIn((prev) => Number(prev) || 0);
@@ -443,11 +443,7 @@ function SimulatorConfigComponent() {
                       value={config.collateralToken}
                       onValueChange={(value) =>
                         updateConfig({
-                          collateralToken: value as
-                            | "USDC"
-                            | "USDT"
-                            | "ETH"
-                            | "wETH",
+                          collateralToken: value as 'USSD' | 'stS' | 'wS',
                         })
                       }
                     >
@@ -455,7 +451,7 @@ function SimulatorConfigComponent() {
                         <SelectValue placeholder="Select collateral token" />
                       </SelectTrigger>
                       <SelectContent>
-                        {["USDC", "USDT", "ETH", "wETH"].map((token) => (
+                        {['USSD', 'stS', 'wS'].map((token) => (
                           <SelectItem key={token} value={token}>
                             <span className="flex items-center gap-2">
                               <span className="inline-block">
@@ -481,7 +477,7 @@ function SimulatorConfigComponent() {
                         <SelectValue placeholder="Select swap fee" />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7 , 8, 9, 10].map((fee) => (
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((fee) => (
                           <SelectItem key={fee} value={String(fee)}>
                             {fee}%
                           </SelectItem>

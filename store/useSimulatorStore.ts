@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 import {
   calculateSimulationData,
   LBPConfig,
@@ -12,9 +12,9 @@ import {
   SellPressureConfig,
   DEFAULT_SELL_PRESSURE_CONFIG,
   getLoyalSellSchedule,
-} from "@/lib/lbp-math";
-import type { SimulationStateSnapshot } from "@/lib/simulation-core";
-import { getEthereumPrice } from "@/lib/requests";
+} from '@/lib/lbp-math';
+import type { SimulationStateSnapshot } from '@/lib/simulation-core';
+import { getEthereumPrice } from '@/lib/requests';
 
 export interface Swap {
   id: string; // Unique identifier for React keys
@@ -24,22 +24,22 @@ export interface Swap {
   amountOut: number; // Output amount
   price: number;
   timestamp: number;
-  direction: "buy" | "sell"; // buy = USDC -> Token, sell = Token -> USDC
+  direction: 'buy' | 'sell'; // buy = USDC -> Token, sell = Token -> USDC
 }
 
 export interface LimitOrder {
   id: string;
-  type: "buy";
+  type: 'buy';
   triggerPrice: number; // Price in collateral token per project token
   collateralAmount: number; // Max collateral to spend when triggered
-  status: "open" | "filled" | "cancelled";
+  status: 'open' | 'filled' | 'cancelled';
   createdAt: number;
   filledAt?: number;
 }
 
 export interface TwapOrder {
   id: string;
-  type: "buy";
+  type: 'buy';
   totalCollateral: number;
   remainingCollateral: number;
   numParts: number;
@@ -49,7 +49,7 @@ export interface TwapOrder {
   nextExecutionStep: number;
   priceProtectionPct: number;
   referencePrice: number;
-  status: "open" | "completed" | "cancelled";
+  status: 'open' | 'completed' | 'cancelled';
   createdAt: number;
   completedAt?: number;
 }
@@ -121,13 +121,13 @@ interface SimulatorState {
   processSell: (amountToken: number) => void;
   updateUserBalance: (tknDelta: number, usdcDelta: number) => void;
   createLimitOrder: (order: {
-    type: "buy";
+    type: 'buy';
     triggerPrice: number;
     collateralAmount: number;
   }) => void;
   cancelLimitOrder: (id: string) => void;
   createTwapOrder: (order: {
-    type: "buy";
+    type: 'buy';
     totalCollateral: number;
     numParts: number;
     totalDurationHours: number;
@@ -142,11 +142,11 @@ interface SimulatorState {
 }
 
 const DEFAULT_CONFIG: LBPConfig = {
-  tokenName: "Project Token",
-  tokenSymbol: "XYZ",
+  tokenName: 'Project Token',
+  tokenSymbol: 'XYZ',
   totalSupply: 100_000_000,
   percentForSale: 10, // 10% of total supply
-  collateralToken: "USDC",
+  collateralToken: 'USSD',
 
   tknBalanceIn: 50_000_000, // 50% of 100M
   tknWeightIn: 90,
@@ -179,12 +179,11 @@ function computeSellPressureCurve(
   );
   const totalSupplyTokens = config.tknBalanceIn;
 
-  if (sellConfig.preset === "loyal") {
+  if (sellConfig.preset === 'loyal') {
     if (sellConfig.loyalSoldPct <= 0) {
       return new Array(steps).fill(0);
     }
-    const totalSellTokens =
-      totalSupplyTokens * (sellConfig.loyalSoldPct / 100);
+    const totalSellTokens = totalSupplyTokens * (sellConfig.loyalSoldPct / 100);
     const totalSellUSDC = totalSellTokens * initialPrice;
     return schedule.map((w) => totalSellUSDC * w);
   }
@@ -281,7 +280,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   updateConfig: (partialConfig) => {
     const currentConfig = get().config;
     // Merge new config
-    let newConfig = { ...currentConfig, ...partialConfig };
+    const newConfig = { ...currentConfig, ...partialConfig };
 
     // Auto-update tknBalanceIn if supply or percentForSale changed
     if (
@@ -333,7 +332,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       userPoolDeltaUsdc: 0,
       userPoolDeltaTkn: 0,
     });
-    if (newConfig.collateralToken === "ETH" || newConfig.collateralToken === "wETH") {
+    if (newConfig.collateralToken === 'wS') {
       get().fetchEthPrice();
     }
   },
@@ -357,7 +356,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
   setSimulationSpeed: (speed) => {
     const { isPlaying, intervalId } = get();
-    
+
     // If simulation is playing, restart with new speed
     if (isPlaying && intervalId) {
       clearInterval(intervalId);
@@ -375,7 +374,9 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     set({ isConfigOpen: open });
   },
 
-  updateDemandPressureConfig: (partialConfig: Partial<DemandPressureConfig>) => {
+  updateDemandPressureConfig: (
+    partialConfig: Partial<DemandPressureConfig>,
+  ) => {
     const { demandPressureConfig, config } = get();
     const newConfig = { ...demandPressureConfig, ...partialConfig };
     const newCurve = getDemandPressureCurve(
@@ -447,7 +448,9 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       config: DEFAULT_CONFIG,
       simulationData: calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS),
       priceHistory: new Float64Array(
-        calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS).map((d) => d.price),
+        calculateSimulationData(DEFAULT_CONFIG, TOTAL_STEPS).map(
+          (d) => d.price,
+        ),
       ),
       priceHistoryVersion: 0,
       baseSnapshots: [],
@@ -501,7 +504,10 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   },
 
   setCurrentStep: (step: number) => {
-    const clamped = Math.max(0, Math.min(Math.floor(step), get().totalSteps - 1));
+    const clamped = Math.max(
+      0,
+      Math.min(Math.floor(step), get().totalSteps - 1),
+    );
     set({ currentStep: clamped });
   },
 
@@ -542,7 +548,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     // Only record swaps for non-community accounts to avoid rendering cost
     // from per-step buy-pressure and sell-pressure bots.
     let nextSwaps: Swap[] = swaps;
-    if (account !== "community") {
+    if (account !== 'community') {
       const userSwap: Swap = {
         id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
         time: `${snapshot.time.toFixed(1)}h`,
@@ -553,7 +559,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
         amountOut: amountOut,
         price: newPrice,
         timestamp: Date.now(),
-        direction: "buy",
+        direction: 'buy',
       };
       nextSwaps = [userSwap, ...swaps];
       if (nextSwaps.length > MAX_SWAPS) nextSwaps.length = MAX_SWAPS;
@@ -562,7 +568,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     // Community holdings tracking (weighted-average cost basis)
     let nextCommunityTokens = communityTokensHeld;
     let nextCommunityAvgCost = communityAvgCost;
-    if (account === "community" && amountOut > 0) {
+    if (account === 'community' && amountOut > 0) {
       const pricePaid = amountUSDC / amountOut;
       const newTokens = communityTokensHeld + amountOut;
       nextCommunityAvgCost =
@@ -620,7 +626,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     );
 
     let nextSwaps: Swap[] = swaps;
-    if (account !== "community") {
+    if (account !== 'community') {
       const userSwap: Swap = {
         id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${account || Math.random().toString(36).substring(2, 9)}`,
         time: `${snapshot.time.toFixed(1)}h`,
@@ -631,17 +637,16 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
         amountOut: amountOut,
         price: newPrice,
         timestamp: Date.now(),
-        direction: "sell",
+        direction: 'sell',
       };
       nextSwaps = [userSwap, ...swaps];
       if (nextSwaps.length > MAX_SWAPS) nextSwaps.length = MAX_SWAPS;
     }
 
-
     // Community holdings tracking (reduces holdings; keep avg cost unchanged)
     let nextCommunityTokens = communityTokensHeld;
     let nextCommunityAvgCost = communityAvgCost;
-    if (account === "community" && amountToken > 0) {
+    if (account === 'community' && amountToken > 0) {
       nextCommunityTokens = Math.max(0, communityTokensHeld - amountToken);
       if (nextCommunityTokens === 0) nextCommunityAvgCost = 0;
     }
@@ -682,7 +687,10 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     );
 
     // Process pool trade (updates pool balances and records bid)
-    get()._processPoolSell(amountToken, `0x${Math.floor(Math.random() * 16777215).toString(16)}...`);
+    get()._processPoolSell(
+      amountToken,
+      `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
+    );
 
     // Update user wallet: subtract token, add USDC; subtract collateral out from total raised
     const { userTknBalance, userUsdcBalance } = get();
@@ -718,7 +726,10 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     );
 
     // Process pool trade (updates pool balances and records bid)
-    get()._processPoolBuy(amountUSDC, `0x${Math.floor(Math.random() * 16777215).toString(16)}...`);
+    get()._processPoolBuy(
+      amountUSDC,
+      `0x${Math.floor(Math.random() * 16777215).toString(16)}...`,
+    );
 
     // Update user wallet: subtract USDC, add token; add collateral in to total raised
     const { userTknBalance, userUsdcBalance } = get();
@@ -740,14 +751,14 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   },
 
   createLimitOrder: ({ type, triggerPrice, collateralAmount }) => {
-    if (type !== "buy" || triggerPrice <= 0 || collateralAmount <= 0) return;
+    if (type !== 'buy' || triggerPrice <= 0 || collateralAmount <= 0) return;
 
     const newOrder: LimitOrder = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type,
       triggerPrice,
       collateralAmount,
-      status: "open",
+      status: 'open',
       createdAt: Date.now(),
     };
 
@@ -759,8 +770,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   cancelLimitOrder: (id: string) => {
     set((state) => ({
       limitOrders: state.limitOrders.map((order) =>
-        order.id === id && order.status === "open"
-          ? { ...order, status: "cancelled" }
+        order.id === id && order.status === 'open'
+          ? { ...order, status: 'cancelled' }
           : order,
       ),
     }));
@@ -774,7 +785,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     priceProtectionPct,
   }) => {
     if (
-      type !== "buy" ||
+      type !== 'buy' ||
       totalCollateral <= 0 ||
       numParts < 1 ||
       totalDurationHours <= 0
@@ -808,7 +819,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       nextExecutionStep: currentStep + partDurationSteps,
       priceProtectionPct,
       referencePrice,
-      status: "open",
+      status: 'open',
       createdAt: Date.now(),
     };
 
@@ -820,8 +831,8 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
   cancelTwapOrder: (id: string) => {
     set((state) => ({
       twapOrders: state.twapOrders.map((order) =>
-        order.id === id && order.status === "open"
-          ? { ...order, status: "cancelled", completedAt: Date.now() }
+        order.id === id && order.status === 'open'
+          ? { ...order, status: 'cancelled', completedAt: Date.now() }
           : order,
       ),
     }));
@@ -878,12 +889,12 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
             .toString(36)
             .substring(2, 9)}-community-buy`,
           time: `${snapshot.time.toFixed(1)}h`,
-          account: "community",
+          account: 'community',
           amountIn: snapshot.buyVolumeUSDC,
           amountOut: snapshot.buyVolumeTKN,
           price: snapshot.price,
           timestamp: Date.now(),
-          direction: "buy",
+          direction: 'buy',
         });
       }
 
@@ -893,12 +904,12 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
             .toString(36)
             .substring(2, 9)}-community-sell`,
           time: `${snapshot.time.toFixed(1)}h`,
-          account: "community",
+          account: 'community',
           amountIn: snapshot.sellVolumeTKN,
           amountOut: snapshot.sellVolumeUSDC,
           price: snapshot.price,
           timestamp: Date.now(),
-          direction: "sell",
+          direction: 'sell',
         });
       }
 
@@ -922,10 +933,10 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
     // 4. Execute user limit orders when conditions are met
     if (limitOrders.length > 0) {
       const updatedOrders: LimitOrder[] = limitOrders.map((order) => {
-        if (order.status !== "open") return order;
+        if (order.status !== 'open') return order;
 
         // Only buy-type limit orders are currently supported
-        if (order.type === "buy" && currentPrice <= order.triggerPrice) {
+        if (order.type === 'buy' && currentPrice <= order.triggerPrice) {
           const { userUsdcBalance } = get();
 
           if (userUsdcBalance >= order.collateralAmount) {
@@ -934,7 +945,7 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
 
             const filledOrder: LimitOrder = {
               ...order,
-              status: "filled",
+              status: 'filled',
               filledAt: Date.now(),
             };
             return filledOrder;
@@ -952,17 +963,20 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
       const { userUsdcBalance } = get();
 
       const updatedTwapOrders: TwapOrder[] = twapOrders.map((order) => {
-        if (order.status !== "open") return order;
+        if (order.status !== 'open') return order;
 
         // Check schedule
         if (nextStep < order.nextExecutionStep) {
           return order;
         }
 
-        if (order.remainingCollateral <= 0 || order.partsExecuted >= order.numParts) {
+        if (
+          order.remainingCollateral <= 0 ||
+          order.partsExecuted >= order.numParts
+        ) {
           return {
             ...order,
-            status: "completed",
+            status: 'completed',
             completedAt: order.completedAt ?? Date.now(),
           };
         }
@@ -994,14 +1008,16 @@ export const useSimulatorStore = create<SimulatorState>((set, get) => ({
         const newRemaining = order.remainingCollateral - spendThisPart;
         const newPartsExecuted = order.partsExecuted + 1;
         const isCompleted =
-          newRemaining <= 0 || newPartsExecuted >= order.numParts || nextStep >= totalSteps - 1;
+          newRemaining <= 0 ||
+          newPartsExecuted >= order.numParts ||
+          nextStep >= totalSteps - 1;
 
         return {
           ...order,
           remainingCollateral: newRemaining,
           partsExecuted: newPartsExecuted,
           nextExecutionStep: nextStep + order.partDurationSteps,
-          status: isCompleted ? "completed" : "open",
+          status: isCompleted ? 'completed' : 'open',
           completedAt: isCompleted ? Date.now() : order.completedAt,
         };
       });

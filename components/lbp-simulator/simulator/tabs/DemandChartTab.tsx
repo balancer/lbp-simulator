@@ -1,6 +1,4 @@
-"use client";
-
-import { useTheme } from "next-themes";
+'use client';
 import {
   LineChart,
   Line,
@@ -9,8 +7,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { memo } from "react";
+} from 'recharts';
+import { memo } from 'react';
 
 interface DemandChartTabProps {
   chartData: any[];
@@ -21,8 +19,7 @@ function DemandChartTabComponent({
   chartData,
   shouldAnimate,
 }: DemandChartTabProps) {
-  const { resolvedTheme } = useTheme();
-  const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
+  const axisLabelColor = '#b3b3b3';
 
   return (
     <>
@@ -39,7 +36,7 @@ function DemandChartTabComponent({
           />
           <XAxis dataKey="timeLabel" hide={true} />
           <YAxis
-            domain={["auto", "auto"]}
+            domain={['auto', 'auto']}
             stroke={axisLabelColor}
             fontSize={12}
             tickFormatter={(val) => `${val.toFixed(0)}`}
@@ -50,9 +47,9 @@ function DemandChartTabComponent({
           <Tooltip
             formatter={(value: any, name: any) => {
               const labelMap: Record<string, string> = {
-                buyPressure: "Buy pressure (USDC/step)",
-                sellPressure: "Sell pressure (USDC/step)",
-                netPressure: "Net demand (buy - sell)",
+                buyPressure: 'Buy pressure (USDC/step)',
+                sellPressure: 'Sell pressure (USDC/step)',
+                netPressure: 'Net demand (buy - sell)',
               };
               return [
                 `${Number(value).toFixed(0)}`,
@@ -63,7 +60,7 @@ function DemandChartTabComponent({
           <Line
             type="monotone"
             dataKey="buyPressure"
-            stroke="#16a34a" // green-600
+            stroke="#05D690"
             strokeWidth={2}
             dot={false}
             name="buyPressure"
@@ -84,7 +81,7 @@ function DemandChartTabComponent({
           <Line
             type="monotone"
             dataKey="netPressure"
-            stroke="#2563eb" // blue-600
+            stroke="#18B575"
             strokeWidth={3}
             dot={false}
             name="netPressure"

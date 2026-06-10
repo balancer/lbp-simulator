@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef } from "react";
-import { animate } from "animejs";
-import { cn } from "@/lib/utils";
+import { useEffect, useMemo, useRef } from 'react';
+import { animate } from 'animejs';
+import { cn } from '@/lib/utils';
 import {
   ShieldCheck,
   Clock,
@@ -13,85 +13,78 @@ import {
   Settings2,
   ArrowDownRight,
   Search,
-  LucideIcon,
-} from "lucide-react";
+} from 'lucide-react';
 
 type InsightsProps = {
   activeIndex: number;
 };
 
-type InsightItem = {
-  subtitle: string;
-  paragraph: string;
-  Icon: LucideIcon;
-};
-
 const INSIGHTS = [
   {
-    title: "Buy Back",
+    title: 'Buy Back',
     items: [
       {
-        subtitle: "Invert the Mechanics",
+        subtitle: 'Invert the Mechanics',
         paragraph:
-          "Reverse the standard logic by starting with high collateral weight (e.g., 90% DAI) to generate natural upward price pressure.",
+          'Reverse the standard logic by starting with high collateral weight (e.g., 90% DAI) to generate natural upward price pressure.',
         Icon: RefreshCcw,
       },
       {
-        subtitle: "Passive Accumulation",
+        subtitle: 'Passive Accumulation',
         paragraph:
-          "Operate as an automated limit order where arbitrageurs are incentivized to fill your treasury organically as weights adjust.",
+          'Operate as an automated limit order where arbitrageurs are incentivized to fill your treasury organically as weights adjust.',
         Icon: Magnet,
       },
       {
-        subtitle: "Preserve Capital",
+        subtitle: 'Preserve Capital',
         paragraph:
-          "Execute institutional-scale volume with a marginal premium (as low as +0.15%), significantly cheaper than instant market buys.",
+          'Execute institutional-scale volume with a marginal premium (as low as +0.15%), significantly cheaper than instant market buys.',
         Icon: Coins,
       },
     ],
   },
   {
-    title: "Token Launch",
+    title: 'Token Launch',
     items: [
       {
-        subtitle: "Defend the Floor",
+        subtitle: 'Defend the Floor',
         paragraph:
-          "Start with a high project weight (e.g., 95%+) to create a valuation buffer that absorbs early volatility and deters snipers.",
+          'Start with a high project weight (e.g., 95%+) to create a valuation buffer that absorbs early volatility and deters snipers.',
         Icon: ShieldCheck,
       },
       {
-        subtitle: "Time it Right",
+        subtitle: 'Time it Right',
         paragraph:
-          "Set a duration between 48 and 72 hours to maximize capital efficiency while minimizing algorithmic value extraction.",
+          'Set a duration between 48 and 72 hours to maximize capital efficiency while minimizing algorithmic value extraction.',
         Icon: Clock,
       },
       {
-        subtitle: "Smooth the Curve",
+        subtitle: 'Smooth the Curve',
         paragraph:
-          "Keep the weight slope below 0.6 to ensure the price decay acts as a discovery mechanism rather than a structural dump.",
+          'Keep the weight slope below 0.6 to ensure the price decay acts as a discovery mechanism rather than a structural dump.',
         Icon: TrendingDown,
       },
     ],
   },
   {
-    title: "Investment & Divestment",
+    title: 'Investment & Divestment',
     items: [
       {
-        subtitle: "Programmed Release",
+        subtitle: 'Programmed Release',
         paragraph:
-          "Use controlled market pressure over time to build or unwind large positions, avoiding sudden price movements.",
+          'Use controlled market pressure over time to build or unwind large positions, avoiding sudden price movements.',
         Icon: Settings2,
       },
       {
-        subtitle: "Minimize Slippage",
+        subtitle: 'Minimize Slippage',
         paragraph:
-          "Apply controlled execution over time to enter or exit large positions, minimizing immediate market impact.",
+          'Apply controlled execution over time to enter or exit large positions, minimizing immediate market impact.',
         Icon: ArrowDownRight,
       },
       {
-        subtitle: "Trade on a market fair price",
+        subtitle: 'Trade on a market fair price',
         paragraph:
-          "The curvature of an LBP continuously ensures external attractiveness for interacting with the token, which in the long term generates trades always around a fair price.",
+          'The curvature of an LBP continuously ensures external attractiveness for interacting with the token, which in the long term generates trades always around a fair price.',
         Icon: Search,
       },
     ],
@@ -107,7 +100,7 @@ export function Insights({ activeIndex }: InsightsProps) {
   useEffect(() => {
     rowsRef.current.forEach((row, index) => {
       if (!row) return;
-      row.style.opacity = "0";
+      row.style.opacity = '0';
       row.style.transform = `translateX(${index % 2 === 0 ? 28 : -28}px)`;
     });
   }, [activeIndex]);
@@ -127,7 +120,7 @@ export function Insights({ activeIndex }: InsightsProps) {
             opacity: [0, 1],
             duration: 700,
             delay: index * 120,
-            easing: "easeOutExpo",
+            easing: 'easeOutExpo',
           });
         });
         observer.disconnect();
@@ -155,7 +148,7 @@ export function Insights({ activeIndex }: InsightsProps) {
               rowsRef.current[index] = node;
             }}
             className={cn(
-              "w-full rounded-2xl border border-border/60 bg-card/80 px-6 py-4 text-sm md:text-base text-foreground/90 shadow-[0_12px_30px_rgba(15,23,42,0.08)]",
+              'w-full rounded-2xl border border-border/60 bg-card/80 px-6 py-4 text-sm md:text-base text-foreground/90 shadow-[0_12px_30px_rgba(15,23,42,0.08)]',
             )}
           >
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

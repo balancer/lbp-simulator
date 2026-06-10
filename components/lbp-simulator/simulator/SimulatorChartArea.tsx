@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useShallow } from "zustand/react/shallow";
-import { TabsContent } from "@/components/ui/tabs";
-import { useMemo, useEffect, useTransition, useState, memo } from "react";
-import { useDebounce } from "@/lib/useDebounce";
-import { useThrottle } from "@/lib/useThrottle";
-import { usePricePathsWorker } from "@/lib/hooks/usePricePathsWorker";
-import { PriceChartWithAnimation } from "./PriceChartWithAnimation";
-import { SwapsTab } from "./tabs/SwapsTab";
-import { DemandChartTab } from "./tabs/DemandChartTab";
-import { WeightsChartTab } from "./tabs/WeightsChartTab";
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useShallow } from 'zustand/react/shallow';
+import { TabsContent } from '@/components/ui/tabs';
+import { useMemo, useEffect, useTransition, useState, memo } from 'react';
+import { useDebounce } from '@/lib/useDebounce';
+import { useThrottle } from '@/lib/useThrottle';
+import { usePricePathsWorker } from '@/lib/hooks/usePricePathsWorker';
+import { PriceChartWithAnimation } from './PriceChartWithAnimation';
+import { SwapsTab } from './tabs/SwapsTab';
+import { DemandChartTab } from './tabs/DemandChartTab';
+import { WeightsChartTab } from './tabs/WeightsChartTab';
 
 /**
  * Isolated component that subscribes only to step-changing / chart-related store state.
@@ -62,9 +62,7 @@ function SimulatorChartAreaComponent() {
   );
 
   const collateralUsd =
-    config.collateralToken === "ETH" || config.collateralToken === "wETH"
-      ? ethPriceUsd ?? 1
-      : 1;
+    config.collateralToken === 'wS' ? (ethPriceUsd ?? 1) : 1;
 
   const [effectiveIsPlaying, setEffectiveIsPlaying] = useState(isPlaying);
   const [, startTransition] = useTransition();
@@ -102,7 +100,7 @@ function SimulatorChartAreaComponent() {
     if (fullChartData.length === 0) return undefined;
     const prices = fullChartData
       .map((d: any) => d.price)
-      .filter((p: any) => typeof p === "number" && !Number.isNaN(p));
+      .filter((p: any) => typeof p === 'number' && !Number.isNaN(p));
     if (prices.length === 0) return undefined;
     const minP = Math.min(...prices);
     const maxP = Math.max(...prices);
@@ -203,11 +201,11 @@ function SimulatorChartAreaComponent() {
 
       return {
         ...data,
-        potentialPathLow: typeof low === "number" ? low * collateralUsd : null,
+        potentialPathLow: typeof low === 'number' ? low * collateralUsd : null,
         potentialPathMedium:
-          typeof med === "number" ? med * collateralUsd : null,
+          typeof med === 'number' ? med * collateralUsd : null,
         potentialPathHigh:
-          typeof high === "number" ? high * collateralUsd : null,
+          typeof high === 'number' ? high * collateralUsd : null,
       };
     });
   }, [

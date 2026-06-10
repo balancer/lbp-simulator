@@ -1,15 +1,13 @@
-"use client";
+'use client';
 
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { StatCard } from "./StatCard";
-import { useShallow } from "zustand/react/shallow";
-import { memo, useEffect } from "react";
-import { calcTVLUSD } from "@/lib/lbp-math";
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { StatCard } from './StatCard';
+import { useShallow } from 'zustand/react/shallow';
+import { memo, useEffect } from 'react';
+import { calcTVLUSD } from '@/lib/lbp-math';
 
-function isEthOrWeth(
-  token: string,
-): token is "ETH" | "wETH" {
-  return token === "ETH" || token === "wETH";
+function isEthOrWeth(token: string): token is 'wS' {
+  return token === 'wS';
 }
 
 type StoreState = ReturnType<typeof useSimulatorStore.getState>;
@@ -45,8 +43,8 @@ function getDerived(state: StoreState) {
   const collW = stepData?.usdcWeight ?? state.config.usdcWeightIn;
   const tvlUsd =
     stepData &&
-    "tvlUsd" in stepData &&
-    typeof stepData.tvlUsd === "number" &&
+    'tvlUsd' in stepData &&
+    typeof stepData.tvlUsd === 'number' &&
     !isEthOrWeth(state.config.collateralToken)
       ? stepData.tvlUsd
       : calcTVLUSD(
@@ -113,34 +111,34 @@ const StatValue = memo(function StatValue({
 
 const STAT_META = [
   {
-    label: "Tokens for sale",
+    label: 'Tokens for sale',
     description:
-      "The total number of tokens available for purchase in this Liquidity Bootstrapping Pool (LBP). This represents the portion of the total token supply that the project is selling during the LBP period.",
+      'The total number of tokens available for purchase in this Liquidity Bootstrapping Pool (LBP). This represents the portion of the total token supply that the project is selling during the LBP period.',
   },
   {
-    label: "Implied Market Cap",
+    label: 'Implied Market Cap',
     description:
-      "The market cap implied by the sale: current token price × tokens for sale. Represents the valuation of the portion of supply being sold in the LBP at the current price.",
+      'The market cap implied by the sale: current token price × tokens for sale. Represents the valuation of the portion of supply being sold in the LBP at the current price.',
   },
   {
-    label: "Starting price",
+    label: 'Starting price',
     description:
-      "The initial price of the token when the LBP begins (in USD). LBPs typically start with a high price to prevent front-running and allow fair price discovery as the pool weights shift over time.",
+      'The initial price of the token when the LBP begins (in USD). LBPs typically start with a high price to prevent front-running and allow fair price discovery as the pool weights shift over time.',
   },
   {
-    label: "Current price",
+    label: 'Current price',
     description:
-      "The current spot price of the token in the LBP in USD, calculated based on the current pool balances and weights. This price updates in real-time as trades occur and pool weights shift.",
+      'The current spot price of the token in the LBP in USD, calculated based on the current pool balances and weights. This price updates in real-time as trades occur and pool weights shift.',
   },
   {
-    label: "FDV",
+    label: 'FDV',
     description:
-      "Fully diluted valuation: total token supply × current price. The valuation if all tokens were valued at the current LBP spot price.",
+      'Fully diluted valuation: total token supply × current price. The valuation if all tokens were valued at the current LBP spot price.',
   },
   {
-    label: "TVL",
+    label: 'TVL',
     description:
-      "Total value locked in the pool: collateral balance (e.g. USDC) plus token balance valued at current spot price in collateral.",
+      'Total value locked in the pool: collateral balance (e.g. USDC) plus token balance valued at current spot price in collateral.',
   },
 ] as const;
 

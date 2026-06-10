@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useMemo, useState, memo } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useShallow } from "zustand/react/shallow";
+import { useMemo, useState, memo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { toast } from "@/components/ui/toast";
+} from '@/components/ui/collapsible';
+import { toast } from '@/components/ui/toast';
 
 function SwapFormLimitTabComponent() {
   const {
@@ -29,8 +29,8 @@ function SwapFormLimitTabComponent() {
     })),
   );
 
-  const [triggerPrice, setTriggerPrice] = useState<string>("");
-  const [collateralAmount, setCollateralAmount] = useState<string>("");
+  const [triggerPrice, setTriggerPrice] = useState<string>('');
+  const [collateralAmount, setCollateralAmount] = useState<string>('');
 
   const estimatedTokens = useMemo(() => {
     const price = parseFloat(triggerPrice);
@@ -58,13 +58,13 @@ function SwapFormLimitTabComponent() {
     const amount = parseFloat(collateralAmount);
 
     createLimitOrder({
-      type: "buy",
+      type: 'buy',
       triggerPrice: price,
       collateralAmount: amount,
     });
 
-    setTriggerPrice("");
-    setCollateralAmount("");
+    setTriggerPrice('');
+    setCollateralAmount('');
 
     toast({
       title: `Schedule ${config.tokenSymbol}`,
@@ -73,7 +73,7 @@ function SwapFormLimitTabComponent() {
     });
   };
 
-  const openOrders = limitOrders.filter((o) => o.status === "open");
+  const openOrders = limitOrders.filter((o) => o.status === 'open');
 
   return (
     <div className="space-y-4">
@@ -106,21 +106,19 @@ function SwapFormLimitTabComponent() {
       {/* Amount to spend */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            Spend at most
-          </span>
+          <span className="text-sm text-muted-foreground">Spend at most</span>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <span>
-              Balance:{" "}
+              Balance:{' '}
               {userUsdcBalance.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
-              })}{" "}
+              })}{' '}
               {config.collateralToken}
             </span>
             <Button
               variant="link"
               onClick={handleMax}
-              className="text-indigo-600 hover:text-indigo-700 font-medium ml-1 h-auto p-0 text-xs min-w-0"
+              className="text-primary hover:text-primary/80 font-medium ml-1 h-auto p-0 text-xs min-w-0"
             >
               Max
             </Button>
@@ -143,23 +141,23 @@ function SwapFormLimitTabComponent() {
       {/* Summary */}
       <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground space-y-1">
         <div>
-          When price ≤{" "}
+          When price ≤{' '}
           <span className="font-medium">
-            {triggerPrice || "0.00"} {config.collateralToken}
-          </span>{" "}
+            {triggerPrice || '0.00'} {config.collateralToken}
+          </span>{' '}
           per {config.tokenSymbol},
         </div>
         <div>
-          buy up to{" "}
+          buy up to{' '}
           <span className="font-medium">
             {estimatedTokens.toLocaleString(undefined, {
               maximumFractionDigits: 4,
-            })}{" "}
+            })}{' '}
             {config.tokenSymbol}
-          </span>{" "}
-          spending{" "}
+          </span>{' '}
+          spending{' '}
           <span className="font-medium">
-            {collateralAmount || "0.00"} {config.collateralToken}
+            {collateralAmount || '0.00'} {config.collateralToken}
           </span>
           .
         </div>
@@ -174,7 +172,7 @@ function SwapFormLimitTabComponent() {
       <Button
         onClick={handleCreateOrder}
         disabled={!isValid || hasInsufficientBalance}
-        className="w-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl px-6 h-11 disabled:opacity-50 disabled:cursor-not-allowed"
         size="lg"
       >
         Place limit order
@@ -203,28 +201,29 @@ function SwapFormLimitTabComponent() {
                 >
                   <div className="space-y-0.5">
                     <div>
-                      Buy up to{" "}
+                      Buy up to{' '}
                       <span className="font-medium">
-                        {(order.collateralAmount / order.triggerPrice).toLocaleString(
-                          undefined,
-                          { maximumFractionDigits: 4 },
-                        )}{" "}
+                        {(
+                          order.collateralAmount / order.triggerPrice
+                        ).toLocaleString(undefined, {
+                          maximumFractionDigits: 4,
+                        })}{' '}
                         {config.tokenSymbol}
                       </span>
                     </div>
                     <div className="text-muted-foreground">
-                      When price ≤{" "}
+                      When price ≤{' '}
                       <span className="font-medium">
                         {order.triggerPrice.toLocaleString(undefined, {
                           maximumFractionDigits: 4,
-                        })}{" "}
+                        })}{' '}
                         {config.collateralToken}
                       </span>
-                      , spend up to{" "}
+                      , spend up to{' '}
                       <span className="font-medium">
                         {order.collateralAmount.toLocaleString(undefined, {
                           maximumFractionDigits: 2,
-                        })}{" "}
+                        })}{' '}
                         {config.collateralToken}
                       </span>
                     </div>

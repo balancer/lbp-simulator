@@ -1,25 +1,35 @@
-import Link from "next/link";
+import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
   return (
     <footer className="w-full border-t border-border/40 py-8 mt-20">
       <div className="w-full container mx-auto max-w-7xl px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/logo-beets-white.svg"
+            alt="Beets Logo"
+            width={24}
+            height={24}
+          />
           <span className="text-sm font-semibold text-muted-foreground">
-            Balancer
+            Beets
           </span>
-        </div>
+        </Link>
         <nav className="flex gap-6 text-sm text-muted-foreground">
-          <Link href="https://balancer.fi/terms-of-use" className="hover:text-foreground">
-            Terms of use
+          <Link
+            href="https://beets.fi/terms-of-use"
+            className="hover:text-foreground"
+          >
+            Terms of Use
           </Link>
-          <Link href="https://balancer.fi/privacy-policy" className="hover:text-foreground">
-            Privacy Policy
-          </Link>
-          <Link href="https://x.com/Balancer" className="hover:text-foreground">
+          <Link href="https://x.com/beets_fi" className="hover:text-foreground">
             Twitter
           </Link>
-          <Link href="https://discord.balancer.fi/" className="hover:text-foreground">
+          <Link
+            href="https://beets.fi/discord"
+            className="hover:text-foreground"
+          >
             Discord
           </Link>
         </nav>

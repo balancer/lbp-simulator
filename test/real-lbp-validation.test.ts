@@ -9,7 +9,7 @@ import {
 /**
  * Validation tests using real LBP parameters and expected behaviors.
  *
- * These tests are based on actual Balancer LBPs to ensure our simulation
+ * These tests are based on actual Beets LBPs to ensure our simulation
  * produces realistic results.
  */
 describe("Real LBP Validation", () => {
@@ -22,7 +22,7 @@ describe("Real LBP Validation", () => {
       tokenSymbol: "PERP",
       totalSupply: 150000000,
       percentForSale: 5,
-      collateralToken: "USDC",
+      collateralToken: "USSD",
       tknBalanceIn: 7500000, // 5% of 150M
       tknWeightIn: 96,
       usdcBalanceIn: 200000, // Initial ~$200k
@@ -178,7 +178,7 @@ describe("Real LBP Validation", () => {
       tokenSymbol: "APW",
       totalSupply: 50000000,
       percentForSale: 10,
-      collateralToken: "USDC",
+      collateralToken: "USSD",
       tknBalanceIn: 3_500_000,
       tknWeightIn: 90,
       usdcBalanceIn: 800_000,
@@ -241,7 +241,7 @@ describe("Real LBP Validation", () => {
         tokenSymbol: "GEN",
         totalSupply: 100000000,
         percentForSale: 10,
-        collateralToken: "USDC",
+        collateralToken: "USSD",
         tknBalanceIn: 10000000,
         tknWeightIn: 92,
         usdcBalanceIn: 1000000,
@@ -293,7 +293,7 @@ describe("Real LBP Validation", () => {
         tokenSymbol: "BAL",
         totalSupply: 100000000,
         percentForSale: 10,
-        collateralToken: "USDC",
+        collateralToken: "USSD",
         tknBalanceIn: 10000000,
         tknWeightIn: 90,
         usdcBalanceIn: 500000,
@@ -332,7 +332,7 @@ describe("Real LBP Validation", () => {
         tokenSymbol: "SLIP",
         totalSupply: 100000000,
         percentForSale: 10,
-        collateralToken: "USDC",
+        collateralToken: "USSD",
         tknBalanceIn: 10000000,
         tknWeightIn: 80,
         usdcBalanceIn: 1000000,
@@ -471,7 +471,7 @@ describe("Real LBP Validation", () => {
         tokenSymbol: "TVL",
         totalSupply: 100000000,
         percentForSale: 10,
-        collateralToken: "USDC",
+        collateralToken: "USSD",
         tknBalanceIn: 10000000,
         tknWeightIn: 85,
         usdcBalanceIn: 500000,

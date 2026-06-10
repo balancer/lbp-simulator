@@ -1,4 +1,4 @@
-export type CollateralToken = "USDC" | "USDT" | "ETH" | "wETH";
+export type CollateralToken = 'USSD' | 'stS' | 'wS';
 
 export interface LBPConfig {
   tokenName: string;
@@ -31,7 +31,7 @@ export interface SimulationStep {
   marketCap: number;
 }
 
-export type BuyPressurePreset = "bullish" | "bearish";
+export type BuyPressurePreset = 'bullish' | 'bearish';
 
 export type BuyPressureMagnitudeBase = 10_000 | 100_000 | 1_000_000;
 
@@ -48,12 +48,12 @@ export interface DemandPressureConfig {
 }
 
 export const DEFAULT_DEMAND_PRESSURE_CONFIG: DemandPressureConfig = {
-  preset: "bullish",
+  preset: 'bullish',
   magnitudeBase: 100_000,
   multiplier: 1,
 };
 
-export type SellPressurePreset = "loyal" | "greedy";
+export type SellPressurePreset = 'loyal' | 'greedy';
 
 export interface SellPressureConfig {
   preset: SellPressurePreset;
@@ -66,7 +66,7 @@ export interface SellPressureConfig {
 }
 
 export const DEFAULT_SELL_PRESSURE_CONFIG: SellPressureConfig = {
-  preset: "loyal",
+  preset: 'loyal',
   loyalSoldPct: 5,
   loyalConcentrationPct: 60,
   greedySpreadPct: 2,
@@ -126,7 +126,7 @@ export function calcTVLUSD(
 }
 
 /**
- * Calculates Spot Price based on Balancer formula
+ * Calculates Spot Price based on Beets formula
  * Price = (BalanceUSDC / WeightUSDC) / (BalanceTKN / WeightTKN)
  */
 export function calculateSpotPrice(
@@ -145,7 +145,7 @@ export function calculateSpotPrice(
  * Calculate the Amount of Token Received for a given Amount of Collateral Spent
  * Formula: Ao = Bo * (1 - (Bi / (Bi + Ai)) ^ (wi / wo))
  * When swapFee is provided, the formula uses amountInAfterFee = amountIn * (1 - swapFee)
- * so the pool receives only the amount after fee (Balancer convention).
+ * so the pool receives only the amount after fee (Beets convention).
  */
 export function calculateOutGivenIn(
   balanceIn: number,
@@ -232,14 +232,14 @@ export function getCumulativeBuyPressureCurve(
   const base = config.magnitudeBase;
 
   // Make bearish overall "lighter" than bullish at the same base, per product spec.
-  const endScale = config.preset === "bearish" ? 0.35 : 1.0;
+  const endScale = config.preset === 'bearish' ? 0.35 : 1.0;
   const endTotalUsdc = base * multiplier * endScale;
 
   for (let i = 0; i <= safeSteps; i++) {
     const progress = i / safeSteps; // 0..1
 
     let normalized: number;
-    if (config.preset === "bearish") {
+    if (config.preset === 'bearish') {
       // Convex: slow early, faster later
       normalized = Math.pow(progress, 1.8);
     } else {
@@ -464,7 +464,7 @@ export function calculatePotentialPricePaths(
       );
 
       // --- SELL PRESSURE ---
-      if (sellPressureConfig.preset === "loyal") {
+      if (sellPressureConfig.preset === 'loyal') {
         const weight = loyalSchedule[i] || 0;
         if (
           weight > 0 &&
@@ -474,10 +474,7 @@ export function calculatePotentialPricePaths(
           const totalTargetSellTokens =
             config.tknBalanceIn * (sellPressureConfig.loyalSoldPct / 100);
           const stepTargetTokens = totalTargetSellTokens * weight;
-          const sellFraction = Math.min(
-            0.1,
-            Math.max(0.001, weight * 100),
-          );
+          const sellFraction = Math.min(0.1, Math.max(0.001, weight * 100));
           const amountToken = Math.min(
             communityTokensHeld * sellFraction,
             stepTargetTokens * 5,
@@ -510,15 +507,14 @@ export function calculatePotentialPricePaths(
             );
           }
         }
-      } else if (sellPressureConfig.preset === "greedy") {
+      } else if (sellPressureConfig.preset === 'greedy') {
         if (communityTokensHeld > 0) {
           let shouldSell = false;
           let sellFraction = 0;
 
           if (communityAvgCost > 0) {
             const threshold =
-              communityAvgCost *
-              (1 + sellPressureConfig.greedySpreadPct / 100);
+              communityAvgCost * (1 + sellPressureConfig.greedySpreadPct / 100);
             if (priceAfterBuys >= threshold) {
               shouldSell = true;
               sellFraction = Math.min(

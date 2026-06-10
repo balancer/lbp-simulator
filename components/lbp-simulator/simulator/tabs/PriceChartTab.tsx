@@ -1,6 +1,4 @@
 "use client";
-
-import { useTheme } from "next-themes";
 import {
   LineChart,
   Line,
@@ -32,8 +30,7 @@ function PriceChartTabComponent({
   currentStep,
   priceDomain,
 }: PriceChartTabProps) {
-  const { resolvedTheme } = useTheme();
-  const axisLabelColor = resolvedTheme === "dark" ? "#b3b3b3" : "#6b7280";
+const axisLabelColor = "#b3b3b3";
 
   const displayData = useMemo(() => {
     const step = currentStep ?? 0;
@@ -98,7 +95,7 @@ function PriceChartTabComponent({
               color: "hsl(var(--muted-foreground))",
               marginBottom: "0.25rem",
             }}
-            formatter={(value: any, name?: string) => {
+            formatter={(value: any, name?: any) => {
               if (value == null) return "";
               const labels: Record<string, string> = {
                 price: "Spot price",

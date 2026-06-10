@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
-import { Play, Pause, RotateCcw } from "lucide-react";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useShallow } from "zustand/react/shallow";
+import { Button } from '@/components/ui/button';
+import { usePathname } from 'next/navigation';
+import { Play, Pause, RotateCcw } from 'lucide-react';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const SPEED_OPTIONS = [1, 5, 10] as const;
 
@@ -49,7 +49,7 @@ export function PlayPauseButton() {
     setSimulationSpeed(SPEED_OPTIONS[nextIndex]);
   };
 
-  if (!pathname?.startsWith("/lbp-simulator")) {
+  if (!pathname?.startsWith('/lbp-simulator')) {
     return null;
   }
 
@@ -60,26 +60,26 @@ export function PlayPauseButton() {
         {/* Pulsing blur effect when simulation is running */}
         {isPlaying && (
           <div
-            className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 opacity-30 blur-xl animate-pulse"
+            className="absolute inset-0 rounded-full bg-primary/20 opacity-40 blur-xl animate-pulse"
             style={{
-              width: "80px",
-              height: "80px",
-              left: "50%",
-              top: "50%",
-              transform: "translate(-50%, -50%)",
+              width: '80px',
+              height: '80px',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
             }}
           />
         )}
         <Button
           onClick={handleMainButtonClick}
           size="icon"
-          className="relative h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-200 via-purple-200 to-orange-200 hover:from-blue-300 hover:via-purple-300 hover:to-orange-300 text-slate-900 font-semibold"
+          className="relative h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           aria-label={
             isFinished
-              ? "Restart simulation"
+              ? 'Restart simulation'
               : isPlaying
-              ? "Pause simulation"
-              : "Play simulation"
+                ? 'Pause simulation'
+                : 'Play simulation'
           }
         >
           {isFinished ? (

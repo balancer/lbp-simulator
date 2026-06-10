@@ -118,7 +118,7 @@ export function UseCaseStudyDialog({
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="w-[50%] rounded-full bg-[#E6C8A3] text-[#171717] hover:bg-[#E6C8A3]/85"
+          className="w-[50%] rounded-full bg-primary text-primary-foreground hover:bg-primary/85"
           onClick={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
         >
@@ -146,7 +146,7 @@ export function UseCaseStudyDialog({
             <div className="space-y-2 text-sm text-muted-foreground">
               {keyResults.map((item, i) => (
                 <div key={i} className="flex gap-2">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-[#E6C8A3]" />
+                  <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -161,7 +161,7 @@ export function UseCaseStudyDialog({
             <div className="space-y-2 text-sm text-muted-foreground">
               {rightChoice.map((item, i) => (
                 <div key={i} className="flex gap-2">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-[#E6C8A3]" />
+                  <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -240,7 +240,7 @@ export function UseCaseStudyDialog({
             <div className="space-y-2 text-sm text-muted-foreground">
               {takeaways.map((item, i) => (
                 <div key={i} className="flex gap-2">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-[#E6C8A3]" />
+                  <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -255,8 +255,8 @@ export function UseCaseStudyDialog({
             <svg viewBox="0 0 320 170" className="mt-3 h-28 w-full">
               <defs>
                 <linearGradient id="rlbpLine" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#E6C8A3" stopOpacity="0.95" />
-                  <stop offset="100%" stopColor="#E6C8A3" stopOpacity="0.75" />
+                  <stop offset="0%" stopColor="#05D690" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="#18B575" stopOpacity="0.75" />
                 </linearGradient>
               </defs>
               <rect x="12" y="16" width="296" height="130" fill="transparent" />

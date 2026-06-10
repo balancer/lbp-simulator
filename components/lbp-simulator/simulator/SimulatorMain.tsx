@@ -69,9 +69,9 @@ function SimulatorMainComponent() {
       </div>
 
       <div className="border rounded-md bg-background/50 p-4 relative h-[560px]">
-        <div className="mb-3 p-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-md flex items-start gap-2">
+        <div className="mb-3 p-2 bg-primary/10 dark:bg-primary/10 border border-primary/20 dark:border-primary/20 rounded-md flex items-start gap-2">
           <svg
-            className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0"
+            className="h-4 w-4 text-primary dark:text-primary/80 mt-0.5 flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -83,7 +83,7 @@ function SimulatorMainComponent() {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <p className="text-xs text-emerald-800 dark:text-emerald-200">
+          <p className="text-xs text-primary dark:text-primary/80">
             <span className="font-semibold">Dynamic price:</span> Decays with
             time, rises with demand. Dotted lines show potential price paths
             based on different demand scenarios.

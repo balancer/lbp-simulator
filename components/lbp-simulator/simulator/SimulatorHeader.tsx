@@ -1,11 +1,10 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
-import { Clock } from "lucide-react";
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import { useMemo, memo } from "react";
-import { useShallow } from "zustand/react/shallow";
-import Image from "next/image";
+import { Badge } from '@/components/ui/badge';
+import { Clock } from 'lucide-react';
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { useMemo, memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 function SimulatorHeaderComponent() {
   const {
@@ -29,7 +28,7 @@ function SimulatorHeaderComponent() {
   );
 
   const timeRemaining = useMemo(() => {
-    if (!simulationData || simulationData.length === 0) return "0d 0h";
+    if (!simulationData || simulationData.length === 0) return '0d 0h';
     const currentStepData = simulationData[currentStep] || simulationData[0];
     const totalDurationHours = config.duration;
     const currentHour = currentStepData.time;
@@ -48,9 +47,7 @@ function SimulatorHeaderComponent() {
   // Total raised: net collateral that has entered the pool (bots + user),
   // derived from pool USDC balance plus user-raised collateral.
   const collateralUsd =
-    config.collateralToken === "ETH" || config.collateralToken === "wETH"
-      ? ethPriceUsd ?? 1
-      : 1;
+    config.collateralToken === 'wS' ? (ethPriceUsd ?? 1) : 1;
 
   // Use worker snapshots if available, otherwise fall back to live balance.
   const currentSnapshot =
@@ -79,7 +76,7 @@ function SimulatorHeaderComponent() {
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center font-bold">
           <span className="text-lg font-bold text-black">
-            {config.tokenSymbol?.charAt(0) ?? "?"}
+            {config.tokenSymbol?.charAt(0) ?? '?'}
           </span>
         </div>
         <div>
@@ -89,7 +86,7 @@ function SimulatorHeaderComponent() {
             </h2>
             <Badge
               variant="secondary"
-              className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0"
+              className="bg-primary/15 text-primary hover:bg-primary/15 border-0"
             >
               Live
             </Badge>
@@ -127,12 +124,12 @@ function SimulatorHeaderComponent() {
             className="text-2xl font-mono font-medium"
             style={{
               background:
-                "linear-gradient(90deg, #93c5fd 0%, #c4b5fd 50%, #fdba74 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              color: "transparent",
-              display: "inline-block",
+                'linear-gradient(90deg, #91E2C1 0%, #05D690 50%, #18B575 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              color: 'transparent',
+              display: 'inline-block',
             }}
           >
             $

@@ -1,107 +1,87 @@
-"use client";
+'use client';
 
-import React, { memo, useCallback, startTransition } from "react";
+import React, { memo, useCallback, startTransition } from 'react';
 
-import { SimulatorHeader } from "./SimulatorHeader";
-import { SimulatorStats } from "./SimulatorStats";
-import { SimulatorConfig } from "./SimulatorConfig";
-import { SwapForm } from "./SwapForm";
+import { SimulatorHeader } from './SimulatorHeader';
+import { SimulatorStats } from './SimulatorStats';
+import { SimulatorConfig } from './SimulatorConfig';
+import { SwapForm } from './SwapForm';
 
-import { useSimulatorStore } from "@/store/useSimulatorStore";
-import {
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { SimulatorMain } from "./SimulatorMain";
+import { useSimulatorStore } from '@/store/useSimulatorStore';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { SimulatorMain } from './SimulatorMain';
 
-const CONFIG_MAX_HEIGHT = "70vh";
-
-/** Config overlay: sits on top of header + stats when open; animates open/close. */
-const ConfigOverlay = memo(function ConfigOverlay() {
-  const { open, setOpen, openMobile, setOpenMobile, isMobile } = useSidebar();
-  const isOpen = isMobile ? openMobile : open;
-  const closePanel = useCallback(() => {
-    setOpen(false);
-    if (isMobile) setOpenMobile(false);
-  }, [setOpen, setOpenMobile, isMobile]);
-
+const ConfigToggleButton = memo(function ConfigToggleButton() {
+  const { open, toggleSidebar } = useSidebar();
   return (
-    <>
-      {isOpen && (
-        <button
-          type="button"
-          className="absolute inset-0 z-9 cursor-default bg-transparent"
-          onClick={closePanel}
-          aria-label="Close config"
-        />
-      )}
-      <div
+    <Button
+      variant="ghost"
+      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      onClick={toggleSidebar}
+    >
+      <span>Configure your LBP</span>
+      <ChevronDown
         className={cn(
-          "absolute top-0 left-0 right-0 z-10 overflow-hidden rounded-t-xl border-b border-border/60 bg-card shadow-lg transition-[max-height,opacity] duration-300 ease-out",
-          isOpen
-            ? "max-h-(--config-overlay-max) opacity-100"
-            : "max-h-0 opacity-0 pointer-events-none border-transparent",
+          'h-4 w-4 transition-transform duration-200',
+          open && 'rotate-180',
         )}
-        style={
-          { "--config-overlay-max": CONFIG_MAX_HEIGHT } as React.CSSProperties
-        }
-        onClick={(e) => e.stopPropagation()} // 👈 IMPORTANT
-      >
-        <div className="overflow-auto max-h-[70vh]">
-          <SimulatorConfig />
-        </div>
-      </div>
-    </>
+      />
+    </Button>
   );
 });
 
 const SimulatorContent = memo(function SimulatorContent() {
-  const { setOpen, open, openMobile, setOpenMobile, isMobile } = useSidebar();
+  const { open, openMobile, isMobile } = useSidebar();
   const isOpen = isMobile ? openMobile : open;
 
-  const closePanel = useCallback(() => {
-    if (isOpen) {
-      setOpen(false);
-      if (isMobile) setOpenMobile(false);
-    }
-  }, [isOpen, setOpen, setOpenMobile, isMobile]);
-
   return (
-    <div
-      onClick={closePanel}
-      className="
-    min-w-0 flex-1
-    rounded-b-2xl
-    border border-border/60 border-t-0
-    bg-card
-    shadow-xl
-    p-4 sm:p-6 md:p-8
-    overflow-hidden
-  "
-    >
-      <div className="relative">
+    <>
+      {/* Accordion card: trigger + panel */}
+      <div className="bg-card rounded-2xl border border-border/60 shadow-xl overflow-hidden">
+        <div className="flex items-center gap-2 px-2 py-2 border-b border-border/60">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="min-w-11 min-h-11 touch-manipulation shrink-0"
+              aria-label="Back to landing page"
+            >
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </Link>
+          <ConfigToggleButton />
+        </div>
+        <div
+          className={cn(
+            'overflow-hidden transition-[max-height] duration-300 ease-out',
+            isOpen ? 'max-h-[70vh]' : 'max-h-0',
+          )}
+        >
+          <div className="overflow-auto max-h-[70vh]">
+            <SimulatorConfig />
+          </div>
+        </div>
+      </div>
+
+      {/* Main simulator content card */}
+      <div className="min-w-0 flex-1 rounded-2xl border border-border/60 bg-card shadow-xl p-4 sm:p-6 md:p-8 overflow-hidden mt-4">
         <SimulatorHeader />
         <SimulatorStats />
-        <ConfigOverlay />
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <SimulatorMain />
-        </div>
-        <div className="lg:col-span-1 flex">
-          <SwapForm />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <SimulatorMain />
+          </div>
+          <div className="lg:col-span-1 flex">
+            <SwapForm />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 });
 
@@ -114,12 +94,6 @@ export function Simulator() {
       startTransition(() => {
         setIsConfigOpen(open);
       });
-      if (open) {
-        document.getElementById("lbp-settings")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }
     },
     [setIsConfigOpen],
   );
@@ -132,32 +106,8 @@ export function Simulator() {
       <SidebarProvider
         open={isConfigOpen}
         onOpenChange={onOpenChange}
-        className="w-full flex flex-col"
+        className="w-full flex flex-col gap-0"
       >
-        <div className="relative z-10 flex items-center gap-2 border-b border-border/60 bg-card px-2 py-2 rounded-t-2xl">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <SidebarTrigger
-                className="flex shrink-0 relative"
-                aria-label="Toggle config panel"
-              >
-                <span className="text-sm text-muted-foreground">
-                  Configure your LBP
-                </span>
-              </SidebarTrigger>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                Use{" "}
-                <KbdGroup>
-                  <Kbd>⌘ + b</Kbd>
-                </KbdGroup>{" "}
-                to open the configuration panel
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
         <SimulatorContent />
       </SidebarProvider>
     </section>
